@@ -33,4 +33,8 @@ dependencies {
     api("androidx.compose.runtime:runtime")
     api("androidx.annotation:annotation:1.8.2")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+
+    // JVM-тесты чистой логики: только тестовая конфигурация.
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")
 }

@@ -1,23 +1,30 @@
 package app.vdvoem.ui.dashboard
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
@@ -25,6 +32,7 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -41,16 +49,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.vdvoem.R
 import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.model.Pair
 import app.vdvoem.core.domain.module.AppModule
 import app.vdvoem.core.domain.time.Dates
-import app.vdvoem.core.ui.components.EmptyState
 import app.vdvoem.core.ui.components.InfoPill
 import app.vdvoem.core.ui.components.SectionHeader
 import app.vdvoem.core.ui.components.VdvoemCard
@@ -62,9 +72,15 @@ fun DashboardScreen(
     modules: List<AppModule>,
     pair: Pair?,
     nextEvent: CalendarEvent?,
+    eventCount: Int,
+    wishCount: Int,
+    giftCount: Int,
     onOpenModule: (AppModule) -> Unit,
     onOpenStore: () -> Unit,
-    onSavePair: (nameA: String, nameB: String, sinceMillis: Long) -> Unit,
+    onOpenWishes: () -> Unit,
+    onOpenQuizzes: () -> Unit,
+    onPoke: () -> Unit,
+    onSavePair: (nameA: String, nameB: String, sinceMillis: Long, birthdayA: Long?, birthdayB: Long?) -> Unit,
     onOpenCalendar: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -75,67 +91,73 @@ fun DashboardScreen(
         contentPadding = PaddingValues(
             start = VdvoemSpacing.screenHorizontal,
             end = VdvoemSpacing.screenHorizontal,
-            top = VdvoemSpacing.lg,
+            top = VdvoemSpacing.sm,
             bottom = VdvoemSpacing.listBottom
         ),
         verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)
     ) {
-        item(key = "hero") {
-            HeroCard(
+        item(key = "pair") {
+            PairCard(
                 pair = pair,
-                onEditPair = { showPairDialog = true }
+                onEditPair = { showPairDialog = true },
+                onPoke = onPoke
             )
         }
 
-        item(key = "modules_header") {
+        item(key = "quick_cards") {
+            Row(horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)) {
+                QuickCard(
+                    icon = Icons.Filled.Favorite,
+                    title = stringResource(R.string.dashboard_wishes_card),
+                    subtitle = pluralStringResource(
+                        R.plurals.dashboard_wishes_count,
+                        wishCount,
+                        wishCount
+                    ),
+                    container = MaterialTheme.colorScheme.tertiaryContainer,
+                    onContainer = MaterialTheme.colorScheme.onTertiaryContainer,
+                    onClick = onOpenWishes,
+                    modifier = Modifier.weight(1f)
+                )
+                QuickCard(
+                    icon = Icons.Filled.Star,
+                    title = stringResource(R.string.dashboard_tests_card),
+                    subtitle = stringResource(R.string.dashboard_tests_card_subtitle),
+                    container = MaterialTheme.colorScheme.secondaryContainer,
+                    onContainer = MaterialTheme.colorScheme.onSecondaryContainer,
+                    onClick = onOpenQuizzes,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        item(key = "widgets_header") {
             SectionHeader(
-                title = stringResource(R.string.dashboard_modules_title),
+                title = stringResource(R.string.dashboard_widgets_title),
                 modifier = Modifier.padding(top = VdvoemSpacing.sm),
                 trailing = {
-                    TextButton(onClick = onOpenStore) {
-                        Text(text = stringResource(R.string.dashboard_modules_all))
+                    IconButton(onClick = onOpenStore) {
+                        Icon(
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = stringResource(R.string.dashboard_widget_add)
+                        )
                     }
                 }
             )
         }
 
-        if (modules.isEmpty()) {
-            item(key = "modules_empty") {
-                EmptyState(
-                    icon = Icons.AutoMirrored.Filled.List,
-                    title = stringResource(R.string.dashboard_modules_empty_title),
-                    message = stringResource(R.string.dashboard_modules_empty_message),
-                    actionLabel = stringResource(R.string.dashboard_open_store),
-                    onAction = onOpenStore
-                )
-            }
-        } else {
-            items(modules, key = { it.manifest.id }) { module ->
-                ModuleQuickRow(module = module, onClick = { onOpenModule(module) })
-            }
-        }
-
-        item(key = "upcoming_header") {
-            SectionHeader(
-                title = stringResource(R.string.dashboard_upcoming_title),
-                modifier = Modifier.padding(top = VdvoemSpacing.lg)
+        item(key = "widgets") {
+            WidgetsRow(
+                nextEvent = nextEvent,
+                eventCount = eventCount,
+                wishCount = wishCount,
+                giftCount = giftCount,
+                enabledModules = modules.size,
+                onOpenCalendar = onOpenCalendar,
+                onOpenWishes = onOpenWishes,
+                onOpenModule = { module -> onOpenModule(module) },
+                onOpenStore = onOpenStore
             )
-        }
-
-        if (nextEvent == null) {
-            item(key = "upcoming_empty") {
-                EmptyState(
-                    icon = Icons.Filled.DateRange,
-                    title = stringResource(R.string.dashboard_upcoming_empty_title),
-                    message = stringResource(R.string.dashboard_upcoming_empty_message),
-                    actionLabel = stringResource(R.string.dashboard_upcoming_empty_action),
-                    onAction = onOpenCalendar
-                )
-            }
-        } else {
-            item(key = "upcoming_event") {
-                UpcomingEventCard(event = nextEvent, onClick = onOpenCalendar)
-            }
         }
     }
 
@@ -143,57 +165,115 @@ fun DashboardScreen(
         PairDialog(
             pair = pair,
             onDismiss = { showPairDialog = false },
-            onConfirm = { nameA, nameB, sinceMillis ->
-                onSavePair(nameA, nameB, sinceMillis)
+            onConfirm = { nameA, nameB, sinceMillis, birthdayA, birthdayB ->
+                onSavePair(nameA, nameB, sinceMillis, birthdayA, birthdayB)
                 showPairDialog = false
             }
         )
     }
 }
 
+/** Большая карточка пары: два аватара, сердечко и счётчик дней. */
 @Composable
-private fun HeroCard(pair: Pair?, onEditPair: () -> Unit) {
-    VdvoemCard(containerColor = MaterialTheme.colorScheme.primary) {
-        Text(
-            text = if (pair == null) stringResource(R.string.dashboard_hero_title)
-            else stringResource(R.string.dashboard_pair_names, pair.nameA, pair.nameB),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onPrimary
-        )
-        Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
-        Text(
-            text = if (pair == null) stringResource(R.string.dashboard_hero_text)
-            else stringResource(R.string.dashboard_pair_since, Dates.format(Dates.toLocalDate(pair.sinceMillis))),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.86f)
-        )
-        if (pair != null) {
+private fun PairCard(
+    pair: Pair?,
+    onEditPair: () -> Unit,
+    onPoke: () -> Unit
+) {
+    VdvoemCard(containerColor = MaterialTheme.colorScheme.primaryContainer) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Avatar(
+                letter = pair?.nameA?.firstOrNull()?.uppercase() ?: "?",
+                background = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.14f),
+                content = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            IconButton(onClick = onPoke) {
+                Icon(
+                    imageVector = Icons.Filled.Favorite,
+                    contentDescription = stringResource(R.string.dashboard_poke),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(VdvoemSizes.iconLg)
+                )
+            }
+            Avatar(
+                letter = pair?.nameB?.firstOrNull()?.uppercase() ?: "?",
+                background = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.14f),
+                content = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
+
+        Spacer(modifier = Modifier.size(VdvoemSpacing.lg))
+
+        if (pair == null) {
+            Text(
+                text = stringResource(R.string.dashboard_hero_title),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
+            Text(
+                text = stringResource(R.string.dashboard_hero_text),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        } else {
             val days = Dates.daysUntil(Dates.today(), Dates.toLocalDate(pair.sinceMillis))
-            if (days > 0) {
-                Spacer(modifier = Modifier.size(VdvoemSpacing.md))
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.16f)
-                ) {
-                    Text(
-                        text = pluralStringResource(R.plurals.dashboard_days_together, days.toInt(), days),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.padding(
-                            horizontal = VdvoemSpacing.md,
-                            vertical = VdvoemSpacing.sm
-                        )
-                    )
-                }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onEditPair),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Text(
+                    text = days.toString(),
+                    style = MaterialTheme.typography.displayLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Spacer(modifier = Modifier.width(VdvoemSpacing.sm))
+                Text(
+                    text = pluralStringResource(R.plurals.dashboard_days_word, days.toInt()),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.padding(bottom = VdvoemSpacing.md)
+                )
+            }
+            Text(
+                text = stringResource(
+                    R.string.dashboard_pair_since,
+                    Dates.format(Dates.toLocalDate(pair.sinceMillis))
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+            )
+            pair.birthdayA?.let { birthday ->
+                BirthdayLine(
+                    name = pair.nameA,
+                    birthday = birthday,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                )
+            }
+            pair.birthdayB?.let { birthday ->
+                BirthdayLine(
+                    name = pair.nameB,
+                    birthday = birthday,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                )
             }
         }
-        Spacer(modifier = Modifier.size(VdvoemSpacing.xl))
+
+        Spacer(modifier = Modifier.size(VdvoemSpacing.lg))
+
         FilledTonalButton(
             onClick = onEditPair,
             colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = MaterialTheme.colorScheme.onPrimary,
-                contentColor = MaterialTheme.colorScheme.primary
+                containerColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                contentColor = MaterialTheme.colorScheme.primaryContainer
             )
         ) {
             Icon(
@@ -211,86 +291,166 @@ private fun HeroCard(pair: Pair?, onEditPair: () -> Unit) {
 }
 
 @Composable
-private fun UpcomingEventCard(event: CalendarEvent, onClick: () -> Unit) {
-    val date = Dates.nextOccurrence(event.dateMillis, event.annual)
-    val days = Dates.daysUntil(date)
+private fun BirthdayLine(name: String, birthday: Long, color: Color) {
+    val date = Dates.toLocalDate(birthday)
+    Text(
+        text = stringResource(R.string.dashboard_birthday, name, Dates.format(date)),
+        style = MaterialTheme.typography.bodySmall,
+        color = color
+    )
+}
 
-    VdvoemCard(modifier = Modifier.clickable(onClick = onClick)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.tertiaryContainer,
-                modifier = Modifier.size(VdvoemSizes.avatarLg)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.DateRange,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                    modifier = Modifier.padding(VdvoemSpacing.lg)
-                )
-            }
-            Spacer(modifier = Modifier.size(VdvoemSpacing.md))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = event.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = Dates.format(date),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            if (days >= 0) {
-                InfoPill(
-                    text = pluralStringResource(R.plurals.dashboard_days_short, days.toInt(), days)
-                )
-            }
+@Composable
+private fun Avatar(letter: String, background: Color, content: Color) {
+    Box(
+        modifier = Modifier
+            .size(VdvoemSizes.avatarXl)
+            .background(background, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = letter,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = content
+        )
+    }
+}
+
+@Composable
+private fun QuickCard(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    container: Color,
+    onContainer: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    VdvoemCard(
+        containerColor = container,
+        modifier = modifier.clickable(onClick = onClick)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = onContainer,
+            modifier = Modifier.size(VdvoemSizes.iconLg)
+        )
+        Spacer(modifier = Modifier.size(VdvoemSpacing.md))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = onContainer
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = onContainer.copy(alpha = 0.8f)
+        )
+    }
+}
+
+/** Горизонтальная лента виджетов: то, что пользователь хочет видеть на главной. */
+@Composable
+private fun WidgetsRow(
+    nextEvent: CalendarEvent?,
+    eventCount: Int,
+    wishCount: Int,
+    giftCount: Int,
+    enabledModules: Int,
+    onOpenCalendar: () -> Unit,
+    onOpenWishes: () -> Unit,
+    onOpenModule: (AppModule) -> Unit,
+    onOpenStore: () -> Unit
+) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)) {
+        item(key = "widget_event") {
+            WidgetCard(
+                icon = Icons.Filled.DateRange,
+                title = nextEvent?.title ?: stringResource(R.string.dashboard_upcoming_empty_title),
+                value = nextEvent?.let {
+                    val days = Dates.daysUntil(Dates.nextOccurrence(it.dateMillis, it.annual))
+                    pluralStringResource(R.plurals.dashboard_days_short, days.toInt(), days)
+                } ?: stringResource(R.string.dashboard_widget_empty),
+                onClick = onOpenCalendar
+            )
+        }
+        item(key = "widget_wishes") {
+            WidgetCard(
+                icon = Icons.Filled.Favorite,
+                title = stringResource(R.string.dashboard_wishes_card),
+                value = wishCount.toString(),
+                onClick = onOpenWishes
+            )
+        }
+        item(key = "widget_gifts") {
+            WidgetCard(
+                icon = Icons.Filled.ShoppingCart,
+                title = stringResource(R.string.dashboard_gifts_card),
+                value = giftCount.toString(),
+                onClick = onOpenStore
+            )
+        }
+        item(key = "widget_modules") {
+            WidgetCard(
+                icon = Icons.Filled.Star,
+                title = stringResource(R.string.dashboard_modules_title),
+                value = eventCount.toString() + " / " + enabledModules,
+                onClick = onOpenStore
+            )
+        }
+        item(key = "widget_add") {
+            WidgetCard(
+                icon = Icons.Filled.Add,
+                title = stringResource(R.string.dashboard_widget_add),
+                value = "",
+                onClick = onOpenStore,
+                dashed = true
+            )
         }
     }
 }
 
 @Composable
-private fun ModuleQuickRow(
-    module: AppModule,
-    onClick: () -> Unit
+private fun WidgetCard(
+    icon: ImageVector,
+    title: String,
+    value: String,
+    onClick: () -> Unit,
+    dashed: Boolean = false
 ) {
-    VdvoemCard(modifier = Modifier.clickable(onClick = onClick)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                modifier = Modifier.size(VdvoemSizes.avatarMd)
-            ) {
-                Icon(
-                    imageVector = module.icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.padding(VdvoemSpacing.sm + VdvoemSpacing.xxs)
-                )
-            }
-            Spacer(modifier = Modifier.size(VdvoemSpacing.md))
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.xxs)
-            ) {
-                Text(
-                    text = stringResource(module.manifest.titleRes),
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = stringResource(module.manifest.descriptionRes),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2
-                )
-            }
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+    VdvoemCard(
+        containerColor = if (dashed) {
+            MaterialTheme.colorScheme.surfaceContainerLow
+        } else {
+            MaterialTheme.colorScheme.surfaceContainer
+        },
+        modifier = Modifier
+            .width(168.dp)
+            .height(112.dp)
+            .clickable(onClick = onClick)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(VdvoemSizes.iconMd)
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1
+        )
+        if (value.isNotEmpty()) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Start
             )
         }
     }
@@ -301,14 +461,16 @@ private fun ModuleQuickRow(
 private fun PairDialog(
     pair: Pair?,
     onDismiss: () -> Unit,
-    onConfirm: (nameA: String, nameB: String, sinceMillis: Long) -> Unit
+    onConfirm: (nameA: String, nameB: String, sinceMillis: Long, birthdayA: Long?, birthdayB: Long?) -> Unit
 ) {
     var nameA by remember { mutableStateOf(pair?.nameA.orEmpty()) }
     var nameB by remember { mutableStateOf(pair?.nameB.orEmpty()) }
     var sinceMillis by remember {
         mutableLongStateOf(pair?.sinceMillis ?: Dates.startOfDay(Dates.today()))
     }
-    var showPicker by remember { mutableStateOf(false) }
+    var birthdayA by remember { mutableStateOf(pair?.birthdayA) }
+    var birthdayB by remember { mutableStateOf(pair?.birthdayB) }
+    var pickerTarget by remember { mutableStateOf<Int?>(null) }
     val canSave = nameA.isNotBlank() && nameB.isNotBlank()
 
     AlertDialog(
@@ -331,7 +493,7 @@ private fun PairDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedButton(
-                    onClick = { showPicker = true },
+                    onClick = { pickerTarget = 0 },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
@@ -341,11 +503,31 @@ private fun PairDialog(
                         )
                     )
                 }
+                OutlinedButton(
+                    onClick = { pickerTarget = 1 },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = birthdayA?.let {
+                            stringResource(R.string.pair_birthday_a_value, Dates.format(Dates.toLocalDate(it)))
+                        } ?: stringResource(R.string.pair_birthday_a)
+                    )
+                }
+                OutlinedButton(
+                    onClick = { pickerTarget = 2 },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = birthdayB?.let {
+                            stringResource(R.string.pair_birthday_b_value, Dates.format(Dates.toLocalDate(it)))
+                        } ?: stringResource(R.string.pair_birthday_b)
+                    )
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(nameA, nameB, sinceMillis) },
+                onClick = { onConfirm(nameA, nameB, sinceMillis, birthdayA, birthdayB) },
                 enabled = canSave
             ) {
                 Text(stringResource(R.string.pair_save))
@@ -358,31 +540,42 @@ private fun PairDialog(
         }
     )
 
-    if (showPicker) {
-        val pickerState = rememberDatePickerState(
-            initialSelectedDateMillis = Dates.toPickerMillis(sinceMillis)
+    val picker = pickerTarget ?: return
+    val initial = when (picker) {
+        1 -> birthdayA
+        2 -> birthdayB
+        else -> sinceMillis
+    }
+    val pickerState = rememberDatePickerState(
+        initialSelectedDateMillis = Dates.toPickerMillis(
+            initial ?: Dates.startOfDay(Dates.today())
         )
-        DatePickerDialog(
-            onDismissRequest = { showPicker = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        pickerState.selectedDateMillis?.let {
-                            sinceMillis = Dates.fromPickerMillis(it)
+    )
+    DatePickerDialog(
+        onDismissRequest = { pickerTarget = null },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    pickerState.selectedDateMillis?.let { picked ->
+                        val value = Dates.fromPickerMillis(picked)
+                        when (picker) {
+                            1 -> birthdayA = value
+                            2 -> birthdayB = value
+                            else -> sinceMillis = value
                         }
-                        showPicker = false
                     }
-                ) {
-                    Text(stringResource(R.string.pair_ok))
+                    pickerTarget = null
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPicker = false }) {
-                    Text(stringResource(R.string.pair_cancel))
-                }
+            ) {
+                Text(stringResource(R.string.pair_ok))
             }
-        ) {
-            DatePicker(state = pickerState)
+        },
+        dismissButton = {
+            TextButton(onClick = { pickerTarget = null }) {
+                Text(stringResource(R.string.pair_cancel))
+            }
         }
+    ) {
+        DatePicker(state = pickerState)
     }
 }

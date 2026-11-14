@@ -26,6 +26,8 @@ private fun PairEntity.toDomain() = Pair(
     nameA = nameA,
     nameB = nameB,
     sinceMillis = sinceMillis,
+    birthdayA = birthdayA,
+    birthdayB = birthdayB,
     updatedAt = updatedAt
 )
 
@@ -35,5 +37,7 @@ private fun Pair.toEntity() = PairEntity(
     nameA = nameA,
     nameB = nameB,
     sinceMillis = sinceMillis,
+    birthdayA = birthdayA,
+    birthdayB = birthdayB,
     updatedAt = updatedAt
 )

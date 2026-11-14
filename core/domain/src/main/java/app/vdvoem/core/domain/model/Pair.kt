@@ -9,5 +9,7 @@ data class Pair(
     val nameA: String,
     val nameB: String,
     val sinceMillis: Long,
+    val birthdayA: Long? = null,
+    val birthdayB: Long? = null,
     val updatedAt: Long = System.currentTimeMillis()
 )

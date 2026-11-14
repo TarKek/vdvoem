@@ -2,8 +2,55 @@
 <resources>
     <string name="wishes_module_title">Желания</string>
     <string name="wishes_module_description">Список мечт и идей, что подарить</string>
-    <string name="wishes_hero_title">Хочу, но не знаю что</string>
-    <string name="wishes_hero_text">Собирайте желания заранее: к празднику останется только выбрать. Скрытые желания партнёр не увидит.</string>
+
+    <string name="wishes_hero_text">Собирайте желания заранее: к празднику останется только выбрать. Отмечайте подаренное, чтобы партнёр не повторялся.</string>
+    <string name="wishes_section_list">Мои желания</string>
+    <string name="wishes_action_add">Добавить</string>
+    <string name="wishes_fab">Желание</string>
+    <string name="wishes_delete">Удалить желание</string>
+    <string name="wishes_mark_done">Подарено</string>
+    <string name="wishes_price">≈ %1$s ₽</string>
+
+    <string name="wishes_filter_all">Все</string>
+    <string name="wishes_status_wanted">Хочу</string>
+    <string name="wishes_status_reserved">Бронь</string>
+    <string name="wishes_status_done">Подарено</string>
+
+    <string name="wishes_search_label">Поиск</string>
+    <string name="wishes_search_hint">Название или заметка</string>
+    <string name="wishes_search_reset">Сбросить поиск</string>
+    <string name="wishes_sort">Сортировка</string>
+    <string name="wishes_sort_newest">Сначала новые</string>
+    <string name="wishes_sort_price">По цене (дороже)</string>
+    <string name="wishes_sort_alphabet">По алфавиту</string>
+
+    <string name="wishes_search_empty_title">Ничего не нашлось</string>
+    <string name="wishes_search_empty_message">По этому запросу желаний нет. Попробуйте другое слово или сбросьте поиск.</string>
+
     <string name="wishes_empty_title">Желаний пока нет</string>
     <string name="wishes_empty_message">Добавьте то, о чём мечтаете — от книги до поездки. Партнёр увидит только то, что вы откроете.</string>
+    <string name="wishes_empty_action">Добавить желание</string>
+    <string name="wishes_filter_empty_title">Здесь пусто</string>
+    <string name="wishes_filter_empty_message">В этом списке пока нет желаний. Выберите другой фильтр или добавьте новое.</string>
+
+    <string name="wishes_dialog_title">Новое желание</string>
+    <string name="wishes_dialog_edit_title">Изменить желание</string>
+    <string name="wishes_delete_title">Удалить желание?</string>
+    <string name="wishes_delete_message">«%1$s» исчезнет из общего списка. Отменить это не получится.</string>
+    <string name="wishes_delete_confirm">Удалить</string>
+    <string name="wishes_field_title">Название</string>
+    <string name="wishes_field_title_hint">Например, наушники</string>
+    <string name="wishes_field_note">Заметка</string>
+    <string name="wishes_field_note_hint">Цвет, размер, ссылка — всё, что поможет выбрать</string>
+    <string name="wishes_field_price">Примерная цена, ₽</string>
+    <string name="wishes_field_price_hint">Только цифры</string>
+    <string name="wishes_save">Сохранить</string>
+    <string name="wishes_cancel">Отмена</string>
+
+    <plurals name="wishes_count">
+        <item quantity="one">%d желание</item>
+        <item quantity="few">%d желания</item>
+        <item quantity="many">%d желаний</item>
+        <item quantity="other">%d желания</item>
+    </plurals>
 </resources>

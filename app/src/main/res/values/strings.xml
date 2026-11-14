@@ -8,6 +8,13 @@
     <string name="action_store">Дополнения</string>
     <string name="action_back">Назад</string>
     <string name="action_open">Открыть</string>
+    <string name="action_more">Ещё</string>
+
+    <string name="backup_export">Сохранить данные в файл</string>
+    <string name="backup_import">Загрузить данные из файла</string>
+    <string name="backup_export_done">Файл сохранён</string>
+    <string name="backup_import_done">Загружено записей: %1$d</string>
+    <string name="backup_failed">Не получилось: файл повреждён или не подходит</string>
 
     <string name="dashboard_hero_title">Вы вдвоём</string>
     <string name="dashboard_hero_text">Общие планы, желания и подарки — в одном месте. Начните с настройки пары.</string>
@@ -31,6 +38,13 @@
         <item quantity="other">вместе %d дня</item>
     </plurals>
 
+    <plurals name="dashboard_days_word">
+        <item quantity="one">день</item>
+        <item quantity="few">дня</item>
+        <item quantity="many">дней</item>
+        <item quantity="other">дня</item>
+    </plurals>
+
     <plurals name="dashboard_days_short">
         <item quantity="one">%d день</item>
         <item quantity="few">%d дня</item>
@@ -38,11 +52,48 @@
         <item quantity="other">%d дня</item>
     </plurals>
 
+    <string name="dashboard_wishes_card">Желания</string>
+    <string name="dashboard_gifts_card">Подарки</string>
+    <string name="dashboard_tests_card">Тесты</string>
+    <string name="dashboard_tests_card_subtitle">Для двоих</string>
+    <string name="dashboard_widgets_title">Доп. виджеты</string>
+    <string name="dashboard_widget_add">Добавить виджет</string>
+    <string name="dashboard_widget_empty">Пусто</string>
+    <string name="dashboard_poke">Отправить сердечко</string>
+    <string name="dashboard_poke_sent">Сердечко отправлено — партнёр увидит его после синхронизации</string>
+    <string name="dashboard_birthday">%1$s · %2$s</string>
+
+    <string name="pair_birthday_a">День рождения: я</string>
+    <string name="pair_birthday_a_value">Мой день рождения: %1$s</string>
+    <string name="pair_birthday_b">День рождения: партнёр</string>
+    <string name="pair_birthday_b_value">День рождения партнёра: %1$s</string>
+
     <string name="dashboard_modules_title">Ваши модули</string>
     <string name="dashboard_modules_all">Все</string>
     <string name="dashboard_modules_empty_title">Пока пусто</string>
     <string name="dashboard_modules_empty_message">Включите модули в магазине дополнений — календарь, желания или подарки.</string>
     <string name="dashboard_open_store">Открыть дополнения</string>
+
+    <plurals name="dashboard_events_count">
+        <item quantity="one">%d событие</item>
+        <item quantity="few">%d события</item>
+        <item quantity="many">%d событий</item>
+        <item quantity="other">%d события</item>
+    </plurals>
+
+    <plurals name="dashboard_wishes_count">
+        <item quantity="one">%d желание</item>
+        <item quantity="few">%d желания</item>
+        <item quantity="many">%d желаний</item>
+        <item quantity="other">%d желания</item>
+    </plurals>
+
+    <plurals name="dashboard_gifts_count">
+        <item quantity="one">%d подарок</item>
+        <item quantity="few">%d подарка</item>
+        <item quantity="many">%d подарков</item>
+        <item quantity="other">%d подарка</item>
+    </plurals>
 
     <string name="dashboard_upcoming_title">Ближайшее</string>
     <string name="dashboard_upcoming_empty_title">Событий пока нет</string>

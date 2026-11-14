@@ -3,11 +3,14 @@ package app.vdvoem.feature.gifts
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.vdvoem.core.domain.module.AppModule
 import app.vdvoem.core.domain.module.ModuleCategory
 import app.vdvoem.core.domain.module.ModuleManifest
+import org.koin.androidx.compose.koinViewModel
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
@@ -26,7 +29,19 @@ class GiftsModule : AppModule {
 
     @Composable
     override fun Screen(modifier: Modifier) {
-        GiftsScreen(modifier)
+        val viewModel: GiftsViewModel = koinViewModel()
+        val state by viewModel.state.collectAsStateWithLifecycle()
+        GiftsScreen(
+            state = state,
+            onAdd = viewModel::add,
+            onUpdate = viewModel::update,
+            onSetStatus = viewModel::setStatus,
+            onDelete = viewModel::delete,
+            onQueryChange = viewModel::setQuery,
+            onResetQuery = viewModel::resetQuery,
+            onSortChange = viewModel::setSort,
+            modifier = modifier
+        )
     }
 }
 

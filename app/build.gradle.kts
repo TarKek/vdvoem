@@ -12,8 +12,8 @@ android {
         applicationId = "app.vdvoem"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 4
+        versionName = "0.4.0"
     }
 
     buildTypes {
@@ -67,6 +67,14 @@ dependencies {
     implementation(project(":feature:wishes"))
     implementation(project(":feature:gifts"))
     implementation(project(":feature:store"))
+    implementation(project(":feature:settings"))
+    implementation(project(":feature:quizzes"))
 
     debugImplementation("androidx.compose.ui:ui-tooling")
+
+    // JVM-тесты чистой логики: только тестовая конфигурация.
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")
+    // org.json в JVM-тестах не заглушка из android.jar, а рабочая реализация.
+    testImplementation("org.json:json:20240303")
 }

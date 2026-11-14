@@ -10,6 +10,8 @@ data class PairEntity(
     val nameA: String,
     val nameB: String,
     val sinceMillis: Long,
+    val birthdayA: Long?,
+    val birthdayB: Long?,
     val updatedAt: Long,
     val deletedAt: Long? = null
 )

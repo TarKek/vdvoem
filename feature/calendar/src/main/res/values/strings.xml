@@ -7,22 +7,35 @@
     <string name="calendar_hero_text">Добавьте первую дату — годовщину, свидание или поездку — и увидите, сколько дней осталось.</string>
     <string name="calendar_hero_next">Ближайшее событие</string>
     <string name="calendar_today">Сегодня</string>
-    <string name="calendar_date_passed">Дата уже прошла</string>
 
     <string name="calendar_section_events">События</string>
     <string name="calendar_action_add">Добавить</string>
     <string name="calendar_fab">Событие</string>
     <string name="calendar_delete">Удалить событие</string>
     <string name="calendar_annual">каждый год</string>
+    <string name="calendar_card_meta_annual">%1$s · каждый год</string>
+
+    <string name="calendar_filter_all">Все</string>
+    <string name="calendar_filter_today">Сегодня</string>
+    <string name="calendar_filter_week">7 дней</string>
+    <string name="calendar_filter_month">Месяц</string>
+
+    <string name="calendar_filter_empty_title">В этом периоде пусто</string>
+    <string name="calendar_filter_empty_message">По выбранному фильтру событий нет. Покажите все — там точно что-то есть.</string>
+    <string name="calendar_filter_reset">Показать все</string>
 
     <string name="calendar_empty_title">Пока нет событий</string>
     <string name="calendar_empty_message">Добавьте первое событие — годовщину, свидание или поездку, — и оно появится в общем календаре.</string>
     <string name="calendar_empty_action">Добавить событие</string>
 
     <string name="calendar_dialog_title">Новое событие</string>
+    <string name="calendar_dialog_edit_title">Изменить событие</string>
+    <string name="calendar_action_delete">Удалить</string>
+    <string name="calendar_delete_title">Удалить событие?</string>
+    <string name="calendar_delete_message">«%1$s» исчезнет из общего календаря у обоих партнёров.</string>
+    <string name="calendar_delete_confirm">Удалить</string>
     <string name="calendar_field_title">Название</string>
     <string name="calendar_field_title_hint">Например, годовщина</string>
-    <string name="calendar_pick_date">Выберите дату</string>
     <string name="calendar_save">Сохранить</string>
     <string name="calendar_cancel">Отмена</string>
     <string name="calendar_ok">ОК</string>

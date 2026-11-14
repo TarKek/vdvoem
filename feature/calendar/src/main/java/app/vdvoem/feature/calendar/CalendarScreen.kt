@@ -1,5 +1,7 @@
 package app.vdvoem.feature.calendar
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,16 +14,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -43,24 +48,33 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import app.vdvoem.core.domain.time.Dates
 import app.vdvoem.core.ui.components.EmptyState
 import app.vdvoem.core.ui.components.SectionHeader
 import app.vdvoem.core.ui.components.VdvoemCard
 import app.vdvoem.core.ui.theme.VdvoemSizes
 import app.vdvoem.core.ui.theme.VdvoemSpacing
+import app.vdvoem.core.ui.theme.VdvoemTheme
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
 fun CalendarScreen(
     state: CalendarUiState,
-    onAddEvent: (title: String, dateMillis: Long, annual: Boolean) -> Unit,
+    onFilterChange: (CalendarFilter) -> Unit,
+    onSaveEvent: (id: String?, title: String, dateMillis: Long, annual: Boolean) -> Unit,
     onDeleteEvent: (id: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var showAddDialog by remember { mutableStateOf(false) }
+    var editorOpen by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<EventUi?>(null) }
+    var pendingDelete by remember { mutableStateOf<EventUi?>(null) }
+
+    val startCreate = {
+        editing = null
+        editorOpen = true
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         LazyColumn(
@@ -77,37 +91,64 @@ fun CalendarScreen(
                 CalendarHero(next = state.next)
             }
 
+            if (state.totalCount > 0) {
+                item(key = "filters") {
+                    CalendarFilterRow(
+                        filter = state.filter,
+                        onFilterChange = onFilterChange,
+                        modifier = Modifier.padding(top = VdvoemSpacing.sm)
+                    )
+                }
+            }
+
             item(key = "header") {
                 SectionHeader(
                     title = stringResource(R.string.calendar_section_events),
                     modifier = Modifier.padding(top = VdvoemSpacing.sm),
                     trailing = {
-                        TextButton(onClick = { showAddDialog = true }) {
+                        TextButton(onClick = startCreate) {
                             Text(stringResource(R.string.calendar_action_add))
                         }
                     }
                 )
             }
 
-            if (state.events.isEmpty()) {
-                item(key = "empty") {
+            when {
+                state.totalCount == 0 -> item(key = "empty") {
                     EmptyState(
                         icon = Icons.Filled.DateRange,
                         title = stringResource(R.string.calendar_empty_title),
                         message = stringResource(R.string.calendar_empty_message),
                         actionLabel = stringResource(R.string.calendar_empty_action),
-                        onAction = { showAddDialog = true }
+                        onAction = startCreate
                     )
                 }
-            } else {
-                items(state.events, key = { it.id }) { event ->
-                    EventCard(event = event, onDelete = { onDeleteEvent(event.id) })
+
+                state.events.isEmpty() -> item(key = "empty_filter") {
+                    EmptyState(
+                        icon = Icons.Filled.DateRange,
+                        title = stringResource(R.string.calendar_filter_empty_title),
+                        message = stringResource(R.string.calendar_filter_empty_message),
+                        actionLabel = stringResource(R.string.calendar_filter_reset),
+                        onAction = { onFilterChange(CalendarFilter.ALL) }
+                    )
+                }
+
+                else -> items(state.events, key = { it.id }) { event ->
+                    EventCard(
+                        event = event,
+                        onEdit = {
+                            editing = event
+                            editorOpen = true
+                        },
+                        onRequestDelete = { pendingDelete = event }
+                    )
                 }
             }
         }
 
         ExtendedFloatingActionButton(
-            onClick = { showAddDialog = true },
+            onClick = startCreate,
             icon = { Icon(Icons.Filled.Add, contentDescription = null) },
             text = { Text(stringResource(R.string.calendar_fab)) },
             modifier = Modifier
@@ -119,12 +160,31 @@ fun CalendarScreen(
         )
     }
 
-    if (showAddDialog) {
-        AddEventDialog(
-            onDismiss = { showAddDialog = false },
-            onConfirm = { title, dateMillis, annual ->
-                onAddEvent(title, dateMillis, annual)
-                showAddDialog = false
+    if (editorOpen) {
+        val target = editing
+        EventDialog(
+            event = target,
+            onDismiss = { editorOpen = false },
+            onSave = { title, dateMillis, annual ->
+                onSaveEvent(target?.id, title, dateMillis, annual)
+                editorOpen = false
+            },
+            onDelete = target?.let {
+                {
+                    editorOpen = false
+                    pendingDelete = it
+                }
+            }
+        )
+    }
+
+    pendingDelete?.let { target ->
+        DeleteEventDialog(
+            title = target.title,
+            onDismiss = { pendingDelete = null },
+            onConfirm = {
+                onDeleteEvent(target.id)
+                pendingDelete = null
             }
         )
     }
@@ -162,37 +222,29 @@ private fun CalendarHero(next: EventUi?) {
             color = MaterialTheme.colorScheme.onPrimaryContainer
         )
         Spacer(modifier = Modifier.size(VdvoemSpacing.md))
-        if (next.daysLeft >= 0) {
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    text = next.daysLeft.toString(),
-                    style = MaterialTheme.typography.displayMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
-                Text(
-                    text = pluralStringResource(
-                        R.plurals.calendar_days_left,
-                        next.daysLeft.toInt(),
-                        next.daysLeft
-                    ),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(bottom = VdvoemSpacing.sm)
-                )
-            }
-            if (next.daysLeft == 0L) {
-                Text(
-                    text = stringResource(R.string.calendar_today),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-        } else {
+        Row(verticalAlignment = Alignment.Bottom) {
             Text(
-                text = stringResource(R.string.calendar_date_passed),
-                style = MaterialTheme.typography.bodyLarge,
+                text = next.daysLeft.toString(),
+                style = MaterialTheme.typography.displayMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+            Text(
+                text = pluralStringResource(
+                    R.plurals.calendar_days_left,
+                    next.daysLeft.toInt(),
+                    next.daysLeft
+                ),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.padding(bottom = VdvoemSpacing.sm)
+            )
+        }
+        if (next.daysLeft == 0L) {
+            Text(
+                text = stringResource(R.string.calendar_today),
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }
@@ -206,8 +258,34 @@ private fun CalendarHero(next: EventUi?) {
 }
 
 @Composable
-private fun EventCard(event: EventUi, onDelete: () -> Unit) {
-    VdvoemCard {
+private fun CalendarFilterRow(
+    filter: CalendarFilter,
+    onFilterChange: (CalendarFilter) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)
+    ) {
+        CalendarFilter.entries.forEach { item ->
+            FilterChip(
+                selected = item == filter,
+                onClick = { onFilterChange(item) },
+                label = { Text(stringResource(item.labelRes())) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun EventCard(
+    event: EventUi,
+    onEdit: () -> Unit,
+    onRequestDelete: () -> Unit
+) {
+    VdvoemCard(modifier = Modifier.clickable(onClick = onEdit)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Surface(
                 shape = CircleShape,
@@ -240,13 +318,16 @@ private fun EventCard(event: EventUi, onDelete: () -> Unit) {
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = Dates.format(event.date) +
-                        if (event.annual) " · " + stringResource(R.string.calendar_annual) else "",
+                    text = if (event.annual) {
+                        stringResource(R.string.calendar_card_meta_annual, Dates.format(event.date))
+                    } else {
+                        Dates.format(event.date)
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            IconButton(onClick = onDelete) {
+            IconButton(onClick = onRequestDelete) {
                 Icon(
                     imageVector = Icons.Filled.Delete,
                     contentDescription = stringResource(R.string.calendar_delete),
@@ -262,19 +343,30 @@ private fun shortMonth(event: EventUi): String =
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AddEventDialog(
+private fun EventDialog(
+    event: EventUi?,
     onDismiss: () -> Unit,
-    onConfirm: (title: String, dateMillis: Long, annual: Boolean) -> Unit
+    onSave: (title: String, dateMillis: Long, annual: Boolean) -> Unit,
+    onDelete: (() -> Unit)?
 ) {
-    var title by remember { mutableStateOf("") }
-    var dateMillis by remember { mutableLongStateOf(Dates.startOfDay(Dates.today())) }
-    var annual by remember { mutableStateOf(false) }
-    var showPicker by remember { mutableStateOf(false) }
+    var title by remember(event?.id) { mutableStateOf(event?.title.orEmpty()) }
+    var dateMillis by remember(event?.id) {
+        mutableLongStateOf(event?.dateMillis ?: Dates.startOfDay(Dates.today()))
+    }
+    var annual by remember(event?.id) { mutableStateOf(event?.annual ?: false) }
+    var showPicker by remember(event?.id) { mutableStateOf(false) }
     val canSave = title.isNotBlank()
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.calendar_dialog_title)) },
+        title = {
+            Text(
+                stringResource(
+                    if (event == null) R.string.calendar_dialog_title
+                    else R.string.calendar_dialog_edit_title
+                )
+            )
+        },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)) {
                 OutlinedTextField(
@@ -289,10 +381,7 @@ private fun AddEventDialog(
                     onClick = { showPicker = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
-                        text = if (dateMillis > 0L) Dates.format(Dates.toLocalDate(dateMillis))
-                        else stringResource(R.string.calendar_pick_date)
-                    )
+                    Text(Dates.format(Dates.toLocalDate(dateMillis)))
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -306,22 +395,40 @@ private fun AddEventDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(title, dateMillis, annual) },
+                onClick = { onSave(title, dateMillis, annual) },
                 enabled = canSave
             ) {
                 Text(stringResource(R.string.calendar_save))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.calendar_cancel))
+            Row {
+                if (onDelete != null) {
+                    TextButton(
+                        onClick = onDelete,
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Delete,
+                            contentDescription = null,
+                            modifier = Modifier.size(VdvoemSizes.iconSm)
+                        )
+                        Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
+                        Text(stringResource(R.string.calendar_action_delete))
+                    }
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.calendar_cancel))
+                }
             }
         }
     )
 
     if (showPicker) {
         val pickerState = rememberDatePickerState(
-            initialSelectedDateMillis = if (dateMillis > 0L) Dates.toPickerMillis(dateMillis) else null
+            initialSelectedDateMillis = Dates.toPickerMillis(dateMillis)
         )
         DatePickerDialog(
             onDismissRequest = { showPicker = false },
@@ -345,5 +452,80 @@ private fun AddEventDialog(
         ) {
             DatePicker(state = pickerState)
         }
+    }
+}
+
+@Composable
+private fun DeleteEventDialog(
+    title: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.calendar_delete_title)) },
+        text = { Text(stringResource(R.string.calendar_delete_message, title)) },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text(stringResource(R.string.calendar_delete_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.calendar_cancel))
+            }
+        }
+    )
+}
+
+@Composable
+private fun CalendarFilter.labelRes(): Int = when (this) {
+    CalendarFilter.ALL -> R.string.calendar_filter_all
+    CalendarFilter.TODAY -> R.string.calendar_filter_today
+    CalendarFilter.WEEK -> R.string.calendar_filter_week
+    CalendarFilter.MONTH -> R.string.calendar_filter_month
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun CalendarScreenPreview() {
+    val today = Dates.today()
+    VdvoemTheme {
+        CalendarScreen(
+            state = CalendarUiState(
+                events = listOf(
+                    EventUi(
+                        id = "1",
+                        pairId = "local",
+                        title = "Годовщина",
+                        date = today.plusDays(5),
+                        dateMillis = Dates.startOfDay(today.minusYears(2)),
+                        annual = true,
+                        daysLeft = 5
+                    ),
+                    EventUi(
+                        id = "2",
+                        pairId = "local",
+                        title = "Поездка в Карелию",
+                        date = today.plusDays(24),
+                        dateMillis = Dates.startOfDay(today.plusDays(24)),
+                        annual = false,
+                        daysLeft = 24
+                    )
+                ),
+                totalCount = 2,
+                filter = CalendarFilter.ALL,
+                loading = false
+            ),
+            onFilterChange = {},
+            onSaveEvent = { _, _, _, _ -> },
+            onDeleteEvent = {},
+            modifier = Modifier
+        )
     }
 }

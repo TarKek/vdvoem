@@ -31,5 +31,6 @@ object VdvoemSizes {
     val avatarSm = 32.dp
     val avatarMd = 40.dp
     val avatarLg = 56.dp
+    val avatarXl = 76.dp
     val heroBadge = 44.dp
 }

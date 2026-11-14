@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="quizzes_module_title">Тесты</string>
+    <string name="quizzes_module_description">Короткие тесты для пары: совместимость, язык любви и забавные привычки</string>
+
+    <string name="quizzes_hero_text">Отвечайте вдвоём и сравнивайте: тесты помогают заметить то, о чём в быту обычно молчат. Результат сохраняется на этом устройстве.</string>
+    <string name="quizzes_section_list">Все тесты</string>
+
+    <string name="quizzes_action_start">Начать</string>
+    <string name="quizzes_action_prev">Назад</string>
+    <string name="quizzes_action_next">Далее</string>
+    <string name="quizzes_action_finish">Показать результат</string>
+    <string name="quizzes_action_restart">Пройти заново</string>
+    <string name="quizzes_action_back_to_list">К списку</string>
+
+    <string name="quizzes_question_progress">Вопрос %1$d из %2$d</string>
+
+    <string name="quizzes_passed_on">Пройден: %1$s · %2$d%%</string>
+    <string name="quizzes_not_passed">Ещё не пройден</string>
+
+    <string name="quizzes_result_title">Ваш результат</string>
+    <string name="quizzes_result_percent">%1$d%%</string>
+    <string name="quizzes_result_score">%1$d из %2$d баллов</string>
+    <string name="quizzes_result_saved">Результат сохранён</string>
+
+    <plurals name="quizzes_questions_count">
+        <item quantity="one">%d вопрос</item>
+        <item quantity="few">%d вопроса</item>
+        <item quantity="many">%d вопросов</item>
+        <item quantity="other">%d вопроса</item>
+    </plurals>
+</resources>

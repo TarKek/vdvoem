@@ -12,7 +12,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         WishEntity::class,
         GiftEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class VdvoemDatabase : RoomDatabase() {
@@ -57,6 +57,14 @@ abstract class VdvoemDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
+            }
+        }
+
+        /** v2 → v3: дни рождения партнёров. */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `pair` ADD COLUMN `birthdayA` INTEGER")
+                db.execSQL("ALTER TABLE `pair` ADD COLUMN `birthdayB` INTEGER")
             }
         }
     }

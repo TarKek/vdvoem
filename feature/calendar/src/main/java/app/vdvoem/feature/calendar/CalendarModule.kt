@@ -31,7 +31,8 @@ class CalendarModule : AppModule {
         val state by viewModel.state.collectAsStateWithLifecycle()
         CalendarScreen(
             state = state,
-            onAddEvent = viewModel::addEvent,
+            onFilterChange = viewModel::setFilter,
+            onSaveEvent = viewModel::saveEvent,
             onDeleteEvent = viewModel::deleteEvent,
             modifier = modifier
         )
