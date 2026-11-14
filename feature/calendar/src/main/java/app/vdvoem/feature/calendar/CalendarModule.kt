@@ -39,5 +39,5 @@ class CalendarModule : AppModule {
 }
 
 val calendarFeatureModule = module {
-    single<AppModule> { CalendarModule() }
+    single { CalendarModule() }
 }

@@ -267,10 +267,10 @@ private fun AddEventDialog(
     onConfirm: (title: String, dateMillis: Long, annual: Boolean) -> Unit
 ) {
     var title by remember { mutableStateOf("") }
-    var dateMillis by remember { mutableLongStateOf(0L) }
+    var dateMillis by remember { mutableLongStateOf(Dates.startOfDay(Dates.today())) }
     var annual by remember { mutableStateOf(false) }
     var showPicker by remember { mutableStateOf(false) }
-    val canSave = title.isNotBlank() && dateMillis > 0L
+    val canSave = title.isNotBlank()
 
     AlertDialog(
         onDismissRequest = onDismiss,

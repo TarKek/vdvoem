@@ -28,3 +28,27 @@ interface EventDao {
     @Query("UPDATE events SET deletedAt = :now, updatedAt = :now WHERE id = :id")
     suspend fun softDelete(id: String, now: Long)
 }
+
+@Dao
+interface WishDao {
+    @Query("SELECT * FROM wishes WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
+    fun observeAll(): Flow<List<WishEntity>>
+
+    @Upsert
+    suspend fun upsert(wish: WishEntity)
+
+    @Query("UPDATE wishes SET deletedAt = :now, updatedAt = :now WHERE id = :id")
+    suspend fun softDelete(id: String, now: Long)
+}
+
+@Dao
+interface GiftDao {
+    @Query("SELECT * FROM gifts WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
+    fun observeAll(): Flow<List<GiftEntity>>
+
+    @Upsert
+    suspend fun upsert(gift: GiftEntity)
+
+    @Query("UPDATE gifts SET deletedAt = :now, updatedAt = :now WHERE id = :id")
+    suspend fun softDelete(id: String, now: Long)
+}

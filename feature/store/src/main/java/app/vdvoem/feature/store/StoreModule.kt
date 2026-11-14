@@ -39,5 +39,5 @@ class StoreModule : AppModule {
 }
 
 val storeFeatureModule: Module = module {
-    single<AppModule> { StoreModule() }
+    single { StoreModule() }
 }

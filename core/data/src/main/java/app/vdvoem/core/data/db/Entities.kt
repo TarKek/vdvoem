@@ -24,3 +24,27 @@ data class EventEntity(
     val updatedAt: Long,
     val deletedAt: Long? = null
 )
+
+@Entity(tableName = "wishes")
+data class WishEntity(
+    @PrimaryKey val id: String,
+    val pairId: String,
+    val title: String,
+    val note: String,
+    val priceEstimate: Long?,
+    val status: String,
+    val updatedAt: Long,
+    val deletedAt: Long? = null
+)
+
+@Entity(tableName = "gifts")
+data class GiftEntity(
+    @PrimaryKey val id: String,
+    val pairId: String,
+    val title: String,
+    val note: String,
+    val budget: Long?,
+    val status: String,
+    val updatedAt: Long,
+    val deletedAt: Long? = null
+)

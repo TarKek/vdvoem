@@ -31,5 +31,5 @@ class WishesModule : AppModule {
 }
 
 val wishesFeatureModule: Module = module {
-    single<AppModule> { WishesModule() }
+    single { WishesModule() }
 }
