@@ -6,6 +6,7 @@ import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.repository.CalendarRepository
 import app.vdvoem.core.domain.repository.PairRepository
 import app.vdvoem.core.domain.time.Dates
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -39,13 +40,29 @@ data class CalendarUiState(
     val filter: CalendarFilter = CalendarFilter.ALL,
     val sort: CalendarSort = CalendarSort.NEAREST,
     val next: EventUi? = null,
+    /** Включены ли напоминания о событиях (DataStore модуля). */
+    val remindersEnabled: Boolean = false,
     val loading: Boolean = true
 )
 
 class CalendarViewModel(
     private val calendarRepository: CalendarRepository,
-    private val pairRepository: PairRepository
+    private val pairRepository: PairRepository,
+    private var reminderScheduler: ReminderScheduler? = null,
+    private var reminderPreferences: ReminderPreferences? = null
 ) : ViewModel() {
+
+    /** Состояние напоминаний: включается переключателем на экране календаря. */
+    private val remindersEnabled = MutableStateFlow(false)
+
+    /** Последний полученный список — из него строится расписание напоминаний. */
+    private var latestEvents: List<CalendarEvent> = emptyList()
+
+    private var reminderJob: Job? = null
+
+    init {
+        if (reminderScheduler != null && reminderPreferences != null) observeReminders()
+    }
 
     private val filter = MutableStateFlow(CalendarFilter.ALL)
     private val sort = MutableStateFlow(CalendarSort.NEAREST)
@@ -54,13 +71,59 @@ class CalendarViewModel(
         combine(
             calendarRepository.observeEvents(),
             filter,
-            sort
-        ) { events, selected, order -> buildState(events, selected, order) }
+            sort,
+            remindersEnabled
+        ) { events, selected, order, reminders ->
+            buildState(events, selected, order, reminders)
+        }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
                 initialValue = CalendarUiState()
             )
+
+    /**
+     * Подключает напоминания, если зависимости не пришли в конструкторе.
+     * Экран календаря досоздаёт их из Koin, поэтому модуль работает без правок `app/`.
+     */
+    fun bindReminders(
+        scheduler: ReminderScheduler,
+        preferences: ReminderPreferences
+    ) {
+        if (reminderJob != null) return
+        reminderScheduler = scheduler
+        reminderPreferences = preferences
+        observeReminders()
+    }
+
+    /** Включение/выключение напоминаний: сразу пересобираем или снимаем задачи. */
+    fun setRemindersEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            val preferences = reminderPreferences ?: return@launch
+            preferences.setEnabled(enabled)
+            val scheduler = reminderScheduler ?: return@launch
+            if (enabled) scheduler.sync(latestEvents) else scheduler.cancelAll()
+        }
+    }
+
+    private fun observeReminders() {
+        val preferences = reminderPreferences ?: return
+        val scheduler = reminderScheduler ?: return
+        // Настройка: включённые напоминания сразу получают расписание.
+        reminderJob = viewModelScope.launch {
+            preferences.enabled.collect { enabled ->
+                remindersEnabled.value = enabled
+                if (enabled) scheduler.sync(latestEvents) else scheduler.cancelAll()
+            }
+        }
+        // Список событий: любое изменение (создание, правка, удаление) — повод пересобрать задачи.
+        viewModelScope.launch {
+            calendarRepository.observeEvents().collect { events ->
+                latestEvents = events
+                if (remindersEnabled.value) scheduler.sync(events)
+            }
+        }
+    }
 
     fun setFilter(value: CalendarFilter) {
         filter.value = value
@@ -90,13 +153,15 @@ class CalendarViewModel(
     }
 
     fun deleteEvent(id: String) {
+        reminderScheduler?.cancel(id)
         viewModelScope.launch { calendarRepository.delete(id) }
     }
 
     private fun buildState(
         events: List<CalendarEvent>,
         selected: CalendarFilter,
-        order: CalendarSort
+        order: CalendarSort,
+        reminders: Boolean
     ): CalendarUiState {
         val today = Dates.today()
         val all = events.map { event ->
@@ -122,6 +187,7 @@ class CalendarViewModel(
             totalCount = all.size,
             filter = selected,
             sort = order,
+            remindersEnabled = reminders,
             // Ближайшее событие показываем в hero независимо от выбранного порядка.
             next = byNearest.firstOrNull { it.daysLeft >= 0 },
             loading = false

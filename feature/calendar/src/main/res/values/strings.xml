@@ -50,6 +50,14 @@
     <string name="calendar_cancel">Отмена</string>
     <string name="calendar_ok">ОК</string>
 
+    <string name="calendar_reminder_title">Напоминания</string>
+    <string name="calendar_reminder_hint">За 7 дней и в день события</string>
+    <string name="calendar_reminder_denied">Уведомления отключены в системе</string>
+    <string name="calendar_reminder_today">Сегодня</string>
+    <string name="calendar_reminder_in_days">Через %1$s</string>
+    <string name="calendar_reminder_channel">Напоминания</string>
+    <string name="calendar_reminder_channel_description">Напоминания о событиях календаря</string>
+
     <plurals name="calendar_days_left">
         <item quantity="one">%d день</item>
         <item quantity="few">%d дня</item>

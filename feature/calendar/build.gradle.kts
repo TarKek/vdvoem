@@ -30,7 +30,13 @@ dependencies {
     implementation(project(":core:ui"))
     implementation(project(":core:domain"))
     implementation("io.insert-koin:koin-core:4.0.0")
+    implementation("io.insert-koin:koin-android:4.0.0")
     implementation("io.insert-koin:koin-androidx-compose:4.0.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
+    // Напоминания: фоновые задачи, запрос разрешения уведомлений, настройка в DataStore.
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.activity:activity-compose:1.9.3")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 }

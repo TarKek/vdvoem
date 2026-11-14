@@ -1,5 +1,10 @@
 package app.vdvoem.feature.calendar
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,6 +42,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -47,14 +54,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.content.ContextCompat
 import app.vdvoem.core.domain.time.Dates
 import app.vdvoem.core.ui.components.EmptyState
 import app.vdvoem.core.ui.components.SectionHeader
@@ -62,6 +72,7 @@ import app.vdvoem.core.ui.components.VdvoemCard
 import app.vdvoem.core.ui.theme.VdvoemSizes
 import app.vdvoem.core.ui.theme.VdvoemSpacing
 import app.vdvoem.core.ui.theme.VdvoemTheme
+import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -72,11 +83,40 @@ fun CalendarScreen(
     onSortChange: (CalendarSort) -> Unit,
     onSaveEvent: (id: String?, title: String, dateMillis: Long, annual: Boolean) -> Unit,
     onDeleteEvent: (id: String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onRemindersChange: (Boolean) -> Unit = {}
 ) {
     var editorOpen by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<EventUi?>(null) }
     var pendingDelete by remember { mutableStateOf<EventUi?>(null) }
+
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val deniedMessage = stringResource(R.string.calendar_reminder_denied)
+
+    // Разрешение на уведомления: без него напоминания молча не покажутся.
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        onRemindersChange(granted)
+        if (!granted) {
+            scope.launch { snackbarHostState.showSnackbar(deniedMessage) }
+        }
+    }
+
+    val toggleReminders: (Boolean) -> Unit = { enabled ->
+        val needsPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        when {
+            !enabled -> onRemindersChange(false)
+            needsPermission -> permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            else -> onRemindersChange(true)
+        }
+    }
 
     val startCreate = {
         editing = null
@@ -96,6 +136,13 @@ fun CalendarScreen(
         ) {
             item(key = "hero") {
                 CalendarHero(next = state.next)
+            }
+
+            item(key = "reminders") {
+                RemindersCard(
+                    enabled = state.remindersEnabled,
+                    onToggle = toggleReminders
+                )
             }
 
             if (state.totalCount > 0) {
@@ -173,6 +220,13 @@ fun CalendarScreen(
             Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
             Text(stringResource(R.string.calendar_add))
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = VdvoemSpacing.lg, vertical = VdvoemSpacing.listBottom)
+        )
     }
 
     if (editorOpen) {
@@ -239,6 +293,32 @@ private fun CalendarHero(next: EventUi?) {
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
+    }
+}
+
+/** Переключатель напоминаний: понятно, что включится и когда придёт уведомление. */
+@Composable
+private fun RemindersCard(
+    enabled: Boolean,
+    onToggle: (Boolean) -> Unit
+) {
+    VdvoemCard(onClick = { onToggle(!enabled) }) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.calendar_reminder_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = stringResource(R.string.calendar_reminder_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+            Switch(checked = enabled, onCheckedChange = onToggle)
+        }
     }
 }
 
@@ -602,6 +682,7 @@ private fun CalendarScreenPreview() {
                 totalCount = 2,
                 filter = CalendarFilter.ALL,
                 sort = CalendarSort.NEAREST,
+                remindersEnabled = true,
                 next = EventUi(
                     id = "1",
                     pairId = "local",
@@ -634,5 +715,17 @@ private fun CalendarScreenEmptyPreview() {
             onDeleteEvent = {},
             modifier = Modifier
         )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RemindersCardPreview() {
+    VdvoemTheme {
+        Column(modifier = Modifier.padding(VdvoemSpacing.screenHorizontal)) {
+            RemindersCard(enabled = true, onToggle = {})
+            Spacer(modifier = Modifier.size(VdvoemSpacing.md))
+            RemindersCard(enabled = false, onToggle = {})
+        }
     }
 }
