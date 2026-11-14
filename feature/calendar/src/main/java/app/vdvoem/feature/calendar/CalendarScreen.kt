@@ -1,6 +1,5 @@
 package app.vdvoem.feature.calendar
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,13 +16,19 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
@@ -48,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import app.vdvoem.core.domain.time.Dates
 import app.vdvoem.core.ui.components.EmptyState
@@ -63,6 +69,7 @@ import java.util.Locale
 fun CalendarScreen(
     state: CalendarUiState,
     onFilterChange: (CalendarFilter) -> Unit,
+    onSortChange: (CalendarSort) -> Unit,
     onSaveEvent: (id: String?, title: String, dateMillis: Long, annual: Boolean) -> Unit,
     onDeleteEvent: (id: String) -> Unit,
     modifier: Modifier = Modifier
@@ -93,10 +100,9 @@ fun CalendarScreen(
 
             if (state.totalCount > 0) {
                 item(key = "filters") {
-                    CalendarFilterRow(
+                    CalendarPeriodChips(
                         filter = state.filter,
-                        onFilterChange = onFilterChange,
-                        modifier = Modifier.padding(top = VdvoemSpacing.sm)
+                        onFilterChange = onFilterChange
                     )
                 }
             }
@@ -104,23 +110,30 @@ fun CalendarScreen(
             item(key = "header") {
                 SectionHeader(
                     title = stringResource(R.string.calendar_section_events),
-                    modifier = Modifier.padding(top = VdvoemSpacing.sm),
+                    modifier = Modifier.padding(top = VdvoemSpacing.xs),
                     trailing = {
-                        TextButton(onClick = startCreate) {
-                            Text(stringResource(R.string.calendar_action_add))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (state.filter != CalendarFilter.ALL) {
+                                TextButton(onClick = { onFilterChange(CalendarFilter.ALL) }) {
+                                    Text(stringResource(R.string.calendar_show_all))
+                                }
+                            }
+                            SortMenuButton(sort = state.sort, onSortChange = onSortChange)
                         }
                     }
                 )
             }
 
             when {
+                state.loading -> item(key = "loading") {
+                    HintText(stringResource(R.string.calendar_loading))
+                }
+
                 state.totalCount == 0 -> item(key = "empty") {
                     EmptyState(
                         icon = Icons.Filled.DateRange,
                         title = stringResource(R.string.calendar_empty_title),
-                        message = stringResource(R.string.calendar_empty_message),
-                        actionLabel = stringResource(R.string.calendar_empty_action),
-                        onAction = startCreate
+                        message = stringResource(R.string.calendar_empty_message)
                     )
                 }
 
@@ -140,8 +153,7 @@ fun CalendarScreen(
                         onEdit = {
                             editing = event
                             editorOpen = true
-                        },
-                        onRequestDelete = { pendingDelete = event }
+                        }
                     )
                 }
             }
@@ -149,15 +161,18 @@ fun CalendarScreen(
 
         ExtendedFloatingActionButton(
             onClick = startCreate,
-            icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-            text = { Text(stringResource(R.string.calendar_fab)) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(
-                    end = VdvoemSpacing.screenHorizontal,
-                    bottom = VdvoemSpacing.xxl
-                )
-        )
+                .padding(VdvoemSpacing.lg)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = null,
+                modifier = Modifier.size(VdvoemSizes.iconMd)
+            )
+            Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+            Text(stringResource(R.string.calendar_add))
+        }
     }
 
     if (editorOpen) {
@@ -191,80 +206,50 @@ fun CalendarScreen(
 }
 
 @Composable
+private fun HintText(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = VdvoemSpacing.xl)
+    )
+}
+
+/** Компактный hero: ближайшее событие или призыв добавить дату. Главное действие — FAB. */
+@Composable
 private fun CalendarHero(next: EventUi?) {
     VdvoemCard(containerColor = MaterialTheme.colorScheme.primaryContainer) {
-        if (next == null) {
-            Text(
-                text = stringResource(R.string.calendar_hero_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-            Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
-            Text(
-                text = stringResource(R.string.calendar_hero_text),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-            return@VdvoemCard
-        }
-
         Text(
-            text = stringResource(R.string.calendar_hero_next),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
-        )
-        Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
-        Text(
-            text = next.title,
-            style = MaterialTheme.typography.headlineSmall,
+            text = stringResource(R.string.calendar_hero_title),
+            style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onPrimaryContainer
         )
-        Spacer(modifier = Modifier.size(VdvoemSpacing.md))
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                text = next.daysLeft.toString(),
-                style = MaterialTheme.typography.displayMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-            Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
-            Text(
-                text = pluralStringResource(
-                    R.plurals.calendar_days_left,
-                    next.daysLeft.toInt(),
-                    next.daysLeft
-                ),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.padding(bottom = VdvoemSpacing.sm)
-            )
-        }
-        if (next.daysLeft == 0L) {
-            Text(
-                text = stringResource(R.string.calendar_today),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        }
         Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
         Text(
-            text = Dates.format(next.date),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+            text = if (next != null) {
+                stringResource(R.string.calendar_hero_next, next.title, next.relativeLabel())
+            } else {
+                stringResource(R.string.calendar_hero_empty)
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
 
+/** Периоды — одна прокручиваемая строка: без переносов и без второй строки. */
 @Composable
-private fun CalendarFilterRow(
+private fun CalendarPeriodChips(
     filter: CalendarFilter,
-    onFilterChange: (CalendarFilter) -> Unit,
-    modifier: Modifier = Modifier
+    onFilterChange: (CalendarFilter) -> Unit
 ) {
     Row(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)
@@ -273,8 +258,61 @@ private fun CalendarFilterRow(
             FilterChip(
                 selected = item == filter,
                 onClick = { onFilterChange(item) },
-                label = { Text(stringResource(item.labelRes())) }
+                label = { Text(stringResource(item.labelRes())) },
+                leadingIcon = if (item == filter) {
+                    {
+                        Icon(
+                            imageVector = Icons.Filled.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(VdvoemSizes.iconSm)
+                        )
+                    }
+                } else {
+                    null
+                }
             )
+        }
+    }
+}
+
+/** Сортировка — иконка в шапке секции; название текущего порядка в описании. */
+@Composable
+private fun SortMenuButton(
+    sort: CalendarSort,
+    onSortChange: (CalendarSort) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.List,
+                contentDescription = stringResource(
+                    R.string.calendar_sort_label,
+                    stringResource(sort.labelRes())
+                ),
+                modifier = Modifier.size(VdvoemSizes.iconMd)
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            CalendarSort.entries.forEach { item ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(item.labelRes())) },
+                    onClick = {
+                        onSortChange(item)
+                        expanded = false
+                    },
+                    trailingIcon = {
+                        if (item == sort) {
+                            Icon(
+                                imageVector = Icons.Filled.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(VdvoemSizes.iconMd)
+                            )
+                        }
+                    }
+                )
+            }
         }
     }
 }
@@ -282,10 +320,10 @@ private fun CalendarFilterRow(
 @Composable
 private fun EventCard(
     event: EventUi,
-    onEdit: () -> Unit,
-    onRequestDelete: () -> Unit
+    onEdit: () -> Unit
 ) {
-    VdvoemCard(modifier = Modifier.clickable(onClick = onEdit)) {
+    val editHint = stringResource(R.string.calendar_card_edit_hint, event.title)
+    VdvoemCard(onClick = onEdit) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Surface(
                 shape = CircleShape,
@@ -315,27 +353,48 @@ private fun EventCard(
                 Text(
                     text = event.title,
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = if (event.annual) {
-                        stringResource(R.string.calendar_card_meta_annual, Dates.format(event.date))
-                    } else {
-                        Dates.format(event.date)
-                    },
+                    text = event.metaLine(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            IconButton(onClick = onRequestDelete) {
-                Icon(
-                    imageVector = Icons.Filled.Delete,
-                    contentDescription = stringResource(R.string.calendar_delete),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = editHint,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(VdvoemSizes.iconLg)
+            )
         }
     }
+}
+
+/** «Через 5 дней · 1 января 2025 · каждый год» — без догадок, что именно за дата. */
+@Composable
+private fun EventUi.metaLine(): String {
+    val relative = relativeLabel()
+    val date = Dates.format(date)
+    return if (annual) {
+        stringResource(R.string.calendar_card_meta_annual, relative, date)
+    } else {
+        stringResource(R.string.calendar_card_meta, relative, date)
+    }
+}
+
+@Composable
+private fun EventUi.relativeLabel(): String = when {
+    daysLeft == 0L -> stringResource(R.string.calendar_today)
+    daysLeft > 0L -> stringResource(
+        R.string.calendar_in_days,
+        pluralStringResource(R.plurals.calendar_days_left, daysLeft.toInt(), daysLeft)
+    )
+
+    else -> stringResource(R.string.calendar_passed)
 }
 
 private fun shortMonth(event: EventUi): String =
@@ -381,20 +440,55 @@ private fun EventDialog(
                     onClick = { showPicker = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(Dates.format(Dates.toLocalDate(dateMillis)))
+                    Icon(
+                        imageVector = Icons.Filled.DateRange,
+                        contentDescription = null,
+                        modifier = Modifier.size(VdvoemSizes.iconMd)
+                    )
+                    Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+                    Text(
+                        text = stringResource(
+                            R.string.calendar_field_date,
+                            Dates.format(Dates.toLocalDate(dateMillis))
+                        )
+                    )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = stringResource(R.string.calendar_annual),
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.weight(1f)
-                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.calendar_annual),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = stringResource(R.string.calendar_annual_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     Switch(checked = annual, onCheckedChange = { annual = it })
+                }
+                if (onDelete != null) {
+                    Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
+                    OutlinedButton(
+                        onClick = onDelete,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Delete,
+                            contentDescription = null,
+                            modifier = Modifier.size(VdvoemSizes.iconMd)
+                        )
+                        Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+                        Text(stringResource(R.string.calendar_action_delete))
+                    }
                 }
             }
         },
         confirmButton = {
-            TextButton(
+            Button(
                 onClick = { onSave(title, dateMillis, annual) },
                 enabled = canSave
             ) {
@@ -402,26 +496,8 @@ private fun EventDialog(
             }
         },
         dismissButton = {
-            Row {
-                if (onDelete != null) {
-                    TextButton(
-                        onClick = onDelete,
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Delete,
-                            contentDescription = null,
-                            modifier = Modifier.size(VdvoemSizes.iconSm)
-                        )
-                        Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
-                        Text(stringResource(R.string.calendar_action_delete))
-                    }
-                }
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.calendar_cancel))
-                }
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.calendar_cancel))
             }
         }
     )
@@ -466,10 +542,11 @@ private fun DeleteEventDialog(
         title = { Text(stringResource(R.string.calendar_delete_title)) },
         text = { Text(stringResource(R.string.calendar_delete_message, title)) },
         confirmButton = {
-            TextButton(
+            Button(
                 onClick = onConfirm,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
                 )
             ) {
                 Text(stringResource(R.string.calendar_delete_confirm))
@@ -483,12 +560,16 @@ private fun DeleteEventDialog(
     )
 }
 
-@Composable
 private fun CalendarFilter.labelRes(): Int = when (this) {
     CalendarFilter.ALL -> R.string.calendar_filter_all
     CalendarFilter.TODAY -> R.string.calendar_filter_today
     CalendarFilter.WEEK -> R.string.calendar_filter_week
     CalendarFilter.MONTH -> R.string.calendar_filter_month
+}
+
+private fun CalendarSort.labelRes(): Int = when (this) {
+    CalendarSort.NEAREST -> R.string.calendar_sort_nearest
+    CalendarSort.ALPHABET -> R.string.calendar_sort_alphabet
 }
 
 @Preview(showBackground = true)
@@ -520,9 +601,35 @@ private fun CalendarScreenPreview() {
                 ),
                 totalCount = 2,
                 filter = CalendarFilter.ALL,
+                sort = CalendarSort.NEAREST,
+                next = EventUi(
+                    id = "1",
+                    pairId = "local",
+                    title = "Годовщина",
+                    date = today.plusDays(5),
+                    dateMillis = Dates.startOfDay(today.minusYears(2)),
+                    annual = true,
+                    daysLeft = 5
+                ),
                 loading = false
             ),
             onFilterChange = {},
+            onSortChange = {},
+            onSaveEvent = { _, _, _, _ -> },
+            onDeleteEvent = {},
+            modifier = Modifier
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun CalendarScreenEmptyPreview() {
+    VdvoemTheme {
+        CalendarScreen(
+            state = CalendarUiState(loading = false),
+            onFilterChange = {},
+            onSortChange = {},
             onSaveEvent = { _, _, _, _ -> },
             onDeleteEvent = {},
             modifier = Modifier

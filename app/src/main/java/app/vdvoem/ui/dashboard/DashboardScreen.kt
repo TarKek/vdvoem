@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -57,6 +55,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.vdvoem.R
 import app.vdvoem.core.domain.model.CalendarEvent
@@ -69,6 +68,7 @@ import app.vdvoem.core.ui.components.VdvoemCard
 import app.vdvoem.core.ui.theme.VdvoemSizes
 import app.vdvoem.core.ui.theme.VdvoemSpacing
 import app.vdvoem.data.HomePreferences
+import app.vdvoem.ui.presents.PresentsModule
 
 @Composable
 fun DashboardScreen(
@@ -85,14 +85,18 @@ fun DashboardScreen(
     onOpenModule: (AppModule) -> Unit,
     onOpenStore: () -> Unit,
     onOpenWishes: () -> Unit,
+    onOpenGifts: () -> Unit,
     onOpenQuizzes: () -> Unit,
-    onSavePair: (nameA: String, nameB: String, sinceMillis: Long, birthdayA: Long?, birthdayB: Long?) -> Unit,
+    onOpenPairEditor: () -> Unit,
     onOpenCalendar: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var showPairDialog by rememberSaveable { mutableStateOf(false) }
     var showPokeDialog by rememberSaveable { mutableStateOf(false) }
     var showWidgetPicker by rememberSaveable { mutableStateOf(false) }
+    val enabledRoutes = remember(modules) { modules.map { it.route }.toSet() }
+    val visibleWidgetIds = remember(widgetIds, enabledRoutes) {
+        widgetIds.filter { widgetAvailable(it, enabledRoutes) }
+    }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -108,36 +112,9 @@ fun DashboardScreen(
             PairCard(
                 pair = pair,
                 lastPoke = lastPoke,
-                onEditPair = { showPairDialog = true },
+                onEditPair = onOpenPairEditor,
                 onPoke = { showPokeDialog = true }
             )
-        }
-
-        item(key = "quick_cards") {
-            Row(horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)) {
-                QuickCard(
-                    icon = Icons.Filled.Favorite,
-                    title = stringResource(R.string.dashboard_wishes_card),
-                    subtitle = pluralStringResource(
-                        R.plurals.dashboard_wishes_count,
-                        wishCount,
-                        wishCount
-                    ),
-                    container = MaterialTheme.colorScheme.tertiaryContainer,
-                    onContainer = MaterialTheme.colorScheme.onTertiaryContainer,
-                    onClick = onOpenWishes,
-                    modifier = Modifier.weight(1f)
-                )
-                QuickCard(
-                    icon = Icons.Filled.Star,
-                    title = stringResource(R.string.dashboard_tests_card),
-                    subtitle = stringResource(R.string.dashboard_tests_card_subtitle),
-                    container = MaterialTheme.colorScheme.secondaryContainer,
-                    onContainer = MaterialTheme.colorScheme.onSecondaryContainer,
-                    onClick = onOpenQuizzes,
-                    modifier = Modifier.weight(1f)
-                )
-            }
         }
 
         item(key = "widgets_header") {
@@ -156,8 +133,8 @@ fun DashboardScreen(
         }
 
         item(key = "widgets") {
-            WidgetsRow(
-                widgetIds = widgetIds,
+            WidgetGrid(
+                widgetIds = visibleWidgetIds,
                 nextEvent = nextEvent,
                 eventCount = eventCount,
                 wishCount = wishCount,
@@ -165,9 +142,11 @@ fun DashboardScreen(
                 enabledModules = modules.size,
                 onOpenCalendar = onOpenCalendar,
                 onOpenWishes = onOpenWishes,
+                onOpenGifts = onOpenGifts,
                 onOpenQuizzes = onOpenQuizzes,
                 onOpenModule = { module -> onOpenModule(module) },
-                onOpenStore = onOpenStore
+                onOpenStore = onOpenStore,
+                onAddWidget = { showWidgetPicker = true }
             )
         }
     }
@@ -192,20 +171,9 @@ fun DashboardScreen(
             }
         )
     }
-
-    if (showPairDialog) {
-        PairDialog(
-            pair = pair,
-            onDismiss = { showPairDialog = false },
-            onConfirm = { nameA, nameB, sinceMillis, birthdayA, birthdayB ->
-                onSavePair(nameA, nameB, sinceMillis, birthdayA, birthdayB)
-                showPairDialog = false
-            }
-        )
-    }
 }
 
-/** Большая карточка пары: два аватара, сердечко и счётчик дней. */
+/** Большая карточка пары: аватары A и B с сердечком между ними и счётчик дней. */
 @Composable
 private fun PairCard(
     pair: Pair?,
@@ -213,18 +181,23 @@ private fun PairCard(
     onEditPair: () -> Unit,
     onPoke: () -> Unit
 ) {
-    VdvoemCard(containerColor = MaterialTheme.colorScheme.primaryContainer) {
+    VdvoemCard(
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        onClick = onEditPair
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.Center
         ) {
-            Avatar(
+            AvatarColumn(
                 letter = pair?.nameA?.firstOrNull()?.uppercase() ?: "?",
-                background = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.14f),
-                content = MaterialTheme.colorScheme.onPrimaryContainer
+                name = pair?.nameA ?: stringResource(R.string.pair_field_you)
             )
-            IconButton(onClick = onPoke) {
+            IconButton(
+                onClick = onPoke,
+                modifier = Modifier.padding(horizontal = VdvoemSpacing.sm)
+            ) {
                 Icon(
                     imageVector = Icons.Filled.Favorite,
                     contentDescription = stringResource(R.string.dashboard_poke),
@@ -232,101 +205,100 @@ private fun PairCard(
                     modifier = Modifier.size(VdvoemSizes.iconLg)
                 )
             }
-            Avatar(
+            AvatarColumn(
                 letter = pair?.nameB?.firstOrNull()?.uppercase() ?: "?",
-                background = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.14f),
-                content = MaterialTheme.colorScheme.onPrimaryContainer
+                name = pair?.nameB ?: stringResource(R.string.pair_field_partner)
             )
         }
 
         Spacer(modifier = Modifier.size(VdvoemSpacing.lg))
 
-        if (pair == null) {
-            Text(
-                text = stringResource(R.string.dashboard_hero_title),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-            Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
-            Text(
-                text = stringResource(R.string.dashboard_hero_text),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        } else {
-            val days = Dates.daysUntil(Dates.today(), Dates.toLocalDate(pair.sinceMillis))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onEditPair),
-                verticalAlignment = Alignment.Bottom
-            ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            if (pair == null) {
+                Text(
+                    text = stringResource(R.string.dashboard_hero_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
+                Text(
+                    text = stringResource(R.string.dashboard_hero_text),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    textAlign = TextAlign.Center
+                )
+            } else {
+                val days = Dates.daysUntil(Dates.today(), Dates.toLocalDate(pair.sinceMillis))
                 Text(
                     text = days.toString(),
                     style = MaterialTheme.typography.displayLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
-                Spacer(modifier = Modifier.width(VdvoemSpacing.sm))
                 Text(
                     text = pluralStringResource(R.plurals.dashboard_days_word, days.toInt()),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(bottom = VdvoemSpacing.md)
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
-            }
-            Text(
-                text = stringResource(
-                    R.string.dashboard_pair_since,
-                    Dates.format(Dates.toLocalDate(pair.sinceMillis))
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-            )
-            pair.birthdayA?.let { birthday ->
-                BirthdayLine(
-                    name = pair.nameA,
-                    birthday = birthday,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                )
-            }
-            pair.birthdayB?.let { birthday ->
-                BirthdayLine(
-                    name = pair.nameB,
-                    birthday = birthday,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                )
-            }
-            if (!lastPoke.isNullOrBlank()) {
                 Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
                 Text(
-                    text = stringResource(R.string.dashboard_poke_last, lastPoke),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    text = stringResource(
+                        R.string.dashboard_pair_since,
+                        Dates.format(Dates.toLocalDate(pair.sinceMillis))
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                    textAlign = TextAlign.Center
                 )
+                pair.birthdayA?.let { birthday ->
+                    BirthdayLine(
+                        name = pair.nameA,
+                        birthday = birthday,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                    )
+                }
+                pair.birthdayB?.let { birthday ->
+                    BirthdayLine(
+                        name = pair.nameB,
+                        birthday = birthday,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                    )
+                }
+                if (!lastPoke.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+                    Text(
+                        text = stringResource(R.string.dashboard_poke_last, lastPoke),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
 
-        Spacer(modifier = Modifier.size(VdvoemSpacing.lg))
-
-        FilledTonalButton(
-            onClick = onEditPair,
-            colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                contentColor = MaterialTheme.colorScheme.primaryContainer
-            )
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Edit,
-                contentDescription = null,
-                modifier = Modifier.size(VdvoemSizes.iconSm)
-            )
-            Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
-            Text(
-                text = if (pair == null) stringResource(R.string.dashboard_setup_pair)
-                else stringResource(R.string.dashboard_edit_pair)
-            )
+        if (pair == null) {
+            Spacer(modifier = Modifier.size(VdvoemSpacing.lg))
+            FilledTonalButton(
+                onClick = onEditPair,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    contentColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Edit,
+                    contentDescription = null,
+                    modifier = Modifier.size(VdvoemSizes.iconSm)
+                )
+                Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+                Text(stringResource(R.string.dashboard_setup_pair))
+            }
         }
     }
 }
@@ -342,18 +314,32 @@ private fun BirthdayLine(name: String, birthday: Long, color: Color) {
 }
 
 @Composable
-private fun Avatar(letter: String, background: Color, content: Color) {
-    Box(
-        modifier = Modifier
-            .size(VdvoemSizes.avatarXl)
-            .background(background, CircleShape),
-        contentAlignment = Alignment.Center
-    ) {
+private fun AvatarColumn(letter: String, name: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier
+                .size(VdvoemSizes.avatarLg)
+                .background(
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.14f),
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = letter,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
+        Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
         Text(
-            text = letter,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = content
+            text = name,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -393,9 +379,9 @@ private fun QuickCard(
     }
 }
 
-/** Горизонтальная лента виджетов: состав и порядок задаёт пользователь. */
+/** Сетка виджетов 2 колонки: состав задаёт пользователь, порядок — порядок в списке. */
 @Composable
-private fun WidgetsRow(
+private fun WidgetGrid(
     widgetIds: List<String>,
     nextEvent: CalendarEvent?,
     eventCount: Int,
@@ -404,81 +390,114 @@ private fun WidgetsRow(
     enabledModules: Int,
     onOpenCalendar: () -> Unit,
     onOpenWishes: () -> Unit,
+    onOpenGifts: () -> Unit,
     onOpenQuizzes: () -> Unit,
     onOpenModule: (AppModule) -> Unit,
-    onOpenStore: () -> Unit
+    onOpenStore: () -> Unit,
+    onAddWidget: () -> Unit
 ) {
     val daysToEvent = nextEvent?.let {
         Dates.daysUntil(Dates.nextOccurrence(it.dateMillis, it.annual))
     }
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)) {
-        items(widgetIds, key = { it }) { id ->
-            when (id) {
-                HomePreferences.WIDGET_COUNTDOWN -> WidgetCard(
-                    icon = Icons.Filled.DateRange,
-                    title = nextEvent?.title
-                        ?: stringResource(R.string.widget_countdown_title),
-                    value = daysToEvent?.let {
-                        pluralStringResource(R.plurals.dashboard_days_short, it.toInt(), it)
-                    } ?: stringResource(R.string.dashboard_widget_empty),
-                    onClick = onOpenCalendar,
-                    highlight = true
-                )
+    val tiles: List<String?> = widgetIds.map { it as String? } + listOf(null)
 
-                HomePreferences.WIDGET_EVENT -> WidgetCard(
-                    icon = Icons.Filled.DateRange,
-                    title = stringResource(R.string.dashboard_upcoming_title),
-                    value = pluralStringResource(R.plurals.dashboard_events_count, eventCount, eventCount),
-                    onClick = onOpenCalendar
-                )
+    Column(verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)) {
+        tiles.chunked(2).forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)
+            ) {
+                row.forEach { id ->
+                    if (id == null) {
+                        WidgetCard(
+                            icon = Icons.Filled.Add,
+                            title = stringResource(R.string.dashboard_widget_add),
+                            titleLines = 2,
+                            value = "",
+                            onClick = onAddWidget,
+                            dashed = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        when (id) {
+                            HomePreferences.WIDGET_COUNTDOWN -> WidgetCard(
+                                icon = Icons.Filled.DateRange,
+                                title = nextEvent?.title
+                                    ?: stringResource(R.string.widget_countdown_title),
+                                value = daysToEvent?.let {
+                                    pluralStringResource(R.plurals.dashboard_days_short, it.toInt(), it)
+                                } ?: stringResource(R.string.dashboard_widget_empty),
+                                onClick = onOpenCalendar,
+                                highlight = true,
+                                modifier = Modifier.weight(1f)
+                            )
 
-                HomePreferences.WIDGET_WISHES -> WidgetCard(
-                    icon = Icons.Filled.Favorite,
-                    title = stringResource(R.string.dashboard_wishes_card),
-                    value = wishCount.toString(),
-                    onClick = onOpenWishes
-                )
+                            HomePreferences.WIDGET_EVENT -> WidgetCard(
+                                icon = Icons.Filled.DateRange,
+                                title = stringResource(R.string.dashboard_upcoming_title),
+                                value = pluralStringResource(
+                                    R.plurals.dashboard_events_count,
+                                    eventCount,
+                                    eventCount
+                                ),
+                                onClick = onOpenCalendar,
+                                modifier = Modifier.weight(1f)
+                            )
 
-                HomePreferences.WIDGET_GIFTS -> WidgetCard(
-                    icon = Icons.Filled.ShoppingCart,
-                    title = stringResource(R.string.dashboard_gifts_card),
-                    value = giftCount.toString(),
-                    onClick = onOpenStore
-                )
+                            HomePreferences.WIDGET_WISHES -> WidgetCard(
+                                icon = Icons.Filled.Favorite,
+                                title = stringResource(R.string.dashboard_wishes_card),
+                                value = wishCount.toString(),
+                                onClick = onOpenWishes,
+                                modifier = Modifier.weight(1f)
+                            )
 
-                HomePreferences.WIDGET_TESTS -> WidgetCard(
-                    icon = Icons.Filled.Star,
-                    title = stringResource(R.string.dashboard_tests_card),
-                    value = stringResource(R.string.dashboard_tests_card_subtitle),
-                    onClick = onOpenQuizzes
-                )
+                            HomePreferences.WIDGET_GIFTS -> WidgetCard(
+                                icon = Icons.Filled.ShoppingCart,
+                                title = stringResource(R.string.dashboard_gifts_card),
+                                value = giftCount.toString(),
+                                onClick = onOpenGifts,
+                                modifier = Modifier.weight(1f)
+                            )
 
-                HomePreferences.WIDGET_MODULES -> WidgetCard(
-                    icon = Icons.Filled.Star,
-                    title = stringResource(R.string.dashboard_modules_title),
-                    value = enabledModules.toString(),
-                    onClick = onOpenStore
-                )
+                            HomePreferences.WIDGET_TESTS -> WidgetCard(
+                                icon = Icons.Filled.Star,
+                                title = stringResource(R.string.dashboard_tests_card),
+                                value = stringResource(R.string.dashboard_tests_card_subtitle),
+                                onClick = onOpenQuizzes,
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            HomePreferences.WIDGET_MODULES -> WidgetCard(
+                                icon = Icons.Filled.Star,
+                                title = stringResource(R.string.dashboard_modules_title),
+                                value = enabledModules.toString(),
+                                onClick = onOpenStore,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+                if (row.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
             }
-        }
-        item(key = "widget_add") {
-            WidgetCard(
-                icon = Icons.Filled.Add,
-                title = stringResource(R.string.dashboard_widget_add),
-                value = "",
-                onClick = onOpenStore,
-                dashed = true
-            )
         }
     }
 }
 
+/**
+ * Плитка виджета. Ширину задаёт сетка (вес колонки), высота фиксирована,
+ * чтобы ряды не «прыгали» при разном объёме текста.
+ */
 @Composable
 private fun WidgetCard(
     icon: ImageVector,
     title: String,
     value: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    titleLines: Int = 1,
     dashed: Boolean = false,
     highlight: Boolean = false
 ) {
@@ -488,9 +507,8 @@ private fun WidgetCard(
             dashed -> MaterialTheme.colorScheme.surfaceContainerLow
             else -> MaterialTheme.colorScheme.surfaceContainer
         },
-        modifier = Modifier
-            .width(168.dp)
-            .height(112.dp)
+        modifier = modifier
+            .height(VdvoemSizes.widgetHeight)
             .clickable(onClick = onClick)
     ) {
         Icon(
@@ -512,14 +530,17 @@ private fun WidgetCard(
             } else {
                 MaterialTheme.colorScheme.onSurfaceVariant
             },
-            maxLines = 1
+            maxLines = titleLines,
+            overflow = TextOverflow.Ellipsis
         )
         if (value.isNotEmpty()) {
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Start,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 color = if (highlight) {
                     MaterialTheme.colorScheme.onTertiaryContainer
                 } else {
@@ -528,6 +549,15 @@ private fun WidgetCard(
             )
         }
     }
+}
+
+/** Сопоставление виджета с модулем: виджеты выключенных модулей не показываем. */
+private fun widgetAvailable(id: String, enabledRoutes: Set<String>): Boolean = when (id) {
+    HomePreferences.WIDGET_EVENT -> "calendar" in enabledRoutes
+    HomePreferences.WIDGET_WISHES, HomePreferences.WIDGET_GIFTS ->
+        PresentsModule.ROUTE in enabledRoutes
+    HomePreferences.WIDGET_TESTS -> "quizzes" in enabledRoutes
+    else -> true
 }
 
 private data class WidgetEntry(
@@ -699,7 +729,7 @@ private fun PokeDialog(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PairDialog(
+fun PairDialog(
     pair: Pair?,
     onDismiss: () -> Unit,
     onConfirm: (nameA: String, nameB: String, sinceMillis: Long, birthdayA: Long?, birthdayB: Long?) -> Unit

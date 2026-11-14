@@ -18,6 +18,9 @@ import java.util.UUID
 /** Фильтр списка по ближайшему вступлению события. */
 enum class CalendarFilter { ALL, TODAY, WEEK, MONTH }
 
+/** Порядок событий в списке. */
+enum class CalendarSort { NEAREST, ALPHABET }
+
 data class EventUi(
     val id: String,
     val pairId: String,
@@ -34,6 +37,7 @@ data class CalendarUiState(
     val events: List<EventUi> = emptyList(),
     val totalCount: Int = 0,
     val filter: CalendarFilter = CalendarFilter.ALL,
+    val sort: CalendarSort = CalendarSort.NEAREST,
     val next: EventUi? = null,
     val loading: Boolean = true
 )
@@ -44,18 +48,26 @@ class CalendarViewModel(
 ) : ViewModel() {
 
     private val filter = MutableStateFlow(CalendarFilter.ALL)
+    private val sort = MutableStateFlow(CalendarSort.NEAREST)
 
     val state: StateFlow<CalendarUiState> =
-        combine(calendarRepository.observeEvents(), filter) { events, selected ->
-            buildState(events, selected)
-        }.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = CalendarUiState()
-        )
+        combine(
+            calendarRepository.observeEvents(),
+            filter,
+            sort
+        ) { events, selected, order -> buildState(events, selected, order) }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = CalendarUiState()
+            )
 
     fun setFilter(value: CalendarFilter) {
         filter.value = value
+    }
+
+    fun setSort(value: CalendarSort) {
+        sort.value = value
     }
 
     /** Создаёт событие при `id == null`, иначе обновляет существующее. */
@@ -81,27 +93,37 @@ class CalendarViewModel(
         viewModelScope.launch { calendarRepository.delete(id) }
     }
 
-    private fun buildState(events: List<CalendarEvent>, selected: CalendarFilter): CalendarUiState {
+    private fun buildState(
+        events: List<CalendarEvent>,
+        selected: CalendarFilter,
+        order: CalendarSort
+    ): CalendarUiState {
         val today = Dates.today()
-        val items = sortEvents(
-            events.map { event ->
-                val date = Dates.nextOccurrence(event.dateMillis, event.annual, today)
-                EventUi(
-                    id = event.id,
-                    pairId = event.pairId,
-                    title = event.title,
-                    date = date,
-                    dateMillis = event.dateMillis,
-                    annual = event.annual,
-                    daysLeft = Dates.daysUntil(date, today)
-                )
-            }
-        )
+        val all = events.map { event ->
+            val date = Dates.nextOccurrence(event.dateMillis, event.annual, today)
+            EventUi(
+                id = event.id,
+                pairId = event.pairId,
+                title = event.title,
+                date = date,
+                dateMillis = event.dateMillis,
+                annual = event.annual,
+                daysLeft = Dates.daysUntil(date, today)
+            )
+        }
+        val byNearest = sortEvents(all)
+        val visible = all.filter { it.matches(selected, today) }
         return CalendarUiState(
-            events = items.filter { it.matches(selected, today) },
-            totalCount = items.size,
+            events = when (order) {
+                CalendarSort.NEAREST -> sortEvents(visible)
+                CalendarSort.ALPHABET ->
+                    visible.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
+            },
+            totalCount = all.size,
             filter = selected,
-            next = items.firstOrNull { it.daysLeft >= 0 },
+            sort = order,
+            // Ближайшее событие показываем в hero независимо от выбранного порядка.
+            next = byNearest.firstOrNull { it.daysLeft >= 0 },
             loading = false
         )
     }

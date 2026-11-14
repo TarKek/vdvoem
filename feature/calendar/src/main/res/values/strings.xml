@@ -3,39 +3,49 @@
     <string name="calendar_module_title">Календарь</string>
     <string name="calendar_module_description">Общие события, годовщины и напоминания</string>
 
-    <string name="calendar_hero_title">Время вдвоём</string>
-    <string name="calendar_hero_text">Добавьте первую дату — годовщину, свидание или поездку — и увидите, сколько дней осталось.</string>
-    <string name="calendar_hero_next">Ближайшее событие</string>
+    <string name="calendar_hero_title">Общие даты и годовщины</string>
+    <string name="calendar_hero_next">%1$s · %2$s</string>
+    <string name="calendar_hero_empty">Пока пусто — добавьте ближайшую дату, и покажем, сколько дней осталось</string>
+    <string name="calendar_add">Добавить событие</string>
     <string name="calendar_today">Сегодня</string>
+    <string name="calendar_passed">Уже прошло</string>
+    <string name="calendar_in_days">Через %1$s</string>
 
     <string name="calendar_section_events">События</string>
-    <string name="calendar_action_add">Добавить</string>
-    <string name="calendar_fab">Событие</string>
-    <string name="calendar_delete">Удалить событие</string>
-    <string name="calendar_annual">каждый год</string>
-    <string name="calendar_card_meta_annual">%1$s · каждый год</string>
+    <string name="calendar_show_all">Показать все</string>
+    <string name="calendar_loading">Загружаем даты…</string>
 
     <string name="calendar_filter_all">Все</string>
     <string name="calendar_filter_today">Сегодня</string>
     <string name="calendar_filter_week">7 дней</string>
-    <string name="calendar_filter_month">Месяц</string>
+    <string name="calendar_filter_month">Этот месяц</string>
 
-    <string name="calendar_filter_empty_title">В этом периоде пусто</string>
-    <string name="calendar_filter_empty_message">По выбранному фильтру событий нет. Покажите все — там точно что-то есть.</string>
+    <string name="calendar_sort_label">Сортировка: %1$s</string>
+    <string name="calendar_sort_nearest">Сначала ближайшие</string>
+    <string name="calendar_sort_alphabet">По названию</string>
+
+    <string name="calendar_filter_empty_title">На этот период дат нет</string>
+    <string name="calendar_filter_empty_message">События никуда не делись — просто выберите другой период.</string>
     <string name="calendar_filter_reset">Показать все</string>
 
-    <string name="calendar_empty_title">Пока нет событий</string>
-    <string name="calendar_empty_message">Добавьте первое событие — годовщину, свидание или поездку, — и оно появится в общем календаре.</string>
-    <string name="calendar_empty_action">Добавить событие</string>
+    <string name="calendar_empty_title">Здесь появятся ваши даты</string>
+    <string name="calendar_empty_message">Добавьте годовщину, свидание или поездку — покажем, сколько дней осталось.</string>
+
+    <string name="calendar_card_meta">%1$s · %2$s</string>
+    <string name="calendar_card_meta_annual">%1$s · %2$s · каждый год</string>
+    <string name="calendar_card_edit_hint">Изменить: %1$s</string>
 
     <string name="calendar_dialog_title">Новое событие</string>
     <string name="calendar_dialog_edit_title">Изменить событие</string>
-    <string name="calendar_action_delete">Удалить</string>
+    <string name="calendar_action_delete">Удалить событие</string>
     <string name="calendar_delete_title">Удалить событие?</string>
-    <string name="calendar_delete_message">«%1$s» исчезнет из общего календаря у обоих партнёров.</string>
+    <string name="calendar_delete_message">«%1$s» исчезнет из календаря у обоих. Это нельзя отменить.</string>
     <string name="calendar_delete_confirm">Удалить</string>
     <string name="calendar_field_title">Название</string>
     <string name="calendar_field_title_hint">Например, годовщина</string>
+    <string name="calendar_field_date">Дата: %1$s</string>
+    <string name="calendar_annual">Каждый год</string>
+    <string name="calendar_annual_hint">Повторять в этот день ежегодно</string>
     <string name="calendar_save">Сохранить</string>
     <string name="calendar_cancel">Отмена</string>
     <string name="calendar_ok">ОК</string>

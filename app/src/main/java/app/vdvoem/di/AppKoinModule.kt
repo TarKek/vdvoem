@@ -3,17 +3,17 @@ package app.vdvoem.di
 import app.vdvoem.core.domain.module.ModuleRegistry
 import app.vdvoem.feature.calendar.CalendarModule
 import app.vdvoem.feature.calendar.CalendarViewModel
-import app.vdvoem.feature.gifts.GiftsModule
 import app.vdvoem.feature.gifts.GiftsViewModel
 import app.vdvoem.feature.quizzes.QuizzesModule
 import app.vdvoem.feature.settings.SettingsModule
 import app.vdvoem.feature.settings.SettingsViewModel
 import app.vdvoem.feature.store.StoreModule
-import app.vdvoem.feature.wishes.WishesModule
 import app.vdvoem.feature.wishes.WishesViewModel
 import app.vdvoem.data.HomePreferences
 import app.vdvoem.ui.ModulesViewModel
 import app.vdvoem.ui.dashboard.DashboardViewModel
+import app.vdvoem.ui.presents.PresentsModule
+import app.vdvoem.ui.presents.PresentsTabController
 import app.vdvoem.ui.sync.BackupViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -24,12 +24,13 @@ import org.koin.android.ext.koin.androidContext
  * Список явный, чтобы не зависеть от порядка разрешения DI и сразу видеть состав APK.
  */
 val appKoinModule = module {
+    single { PresentsModule() }
+    single { PresentsTabController() }
     single {
         ModuleRegistry(
             modules = listOf(
                 get<CalendarModule>(),
-                get<WishesModule>(),
-                get<GiftsModule>(),
+                get<PresentsModule>(),
                 get<SettingsModule>(),
                 get<QuizzesModule>(),
                 get<StoreModule>()

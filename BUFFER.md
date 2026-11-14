@@ -11,6 +11,16 @@
 
 ## Журнал
 
+[ux-app-shell] app/ui — готово: вкладка «Ещё» с иконкой Menu, меню бэкапа убрано из шапки (экспорт/импорт в MoreScreen), круглая кнопка пары 36dp в шапке, единый openTab (popUpTo(HOME)+saveState+restoreState), PresentsTabController (Koin single) для вкладки «Подарки», сетка виджетов 2 колонки с фильтром по включённым модулям, PairCard с аватарами A/B и сердечком, секция «Данные» в «Ещё»; :app:assembleDebug — BUILD SUCCESSFUL; NEED: —
+
+[ux-presents] feature/wishes+gifts+settings — готово: убраны hero-карточки (одна компактная строка сводки), главные действия — ExtendedFAB «+ Желание» / «+ Подарок», карточка подарка в 3 строки (заголовок+InfoPill, заметка+бюджет, кнопка смены статуса), нижние отступы списков listBottom (96dp); :feature:wishes/gifts/settings:compileDebugKotlin — BUILD SUCCESSFUL; NEED: —
+
+[ux-calendar-quizzes] — готово: тесты — иконка модуля Star (не Favorite), hero в 2 строки, QuizCard кликабельна через VdvoemCard с шевроном и пилюлей статуса (кнопка убрана), нижний отступ listBottom; календарь — компактный hero (ближайшее событие или призыв), ExtendedFAB внизу справа, чипы периода одной прокручиваемой строкой, сортировка иконкой в trailing SectionHeader, EventCard без внешнего clickable; :feature:calendar/quizzes:compileDebugKotlin — BUILD SUCCESSFUL; NEED: —
+
+[ux-gifts-quizzes-settings] — готово: подарки (hero с пояснением и подписанной кнопкой «Добавить подарок», секции с подписями и пустыми состояниями, подписанные смены статуса + возврат, шеврон «Изменить», удаление с подтверждением), тесты (2 строки «что и зачем», «N вопросов · ~M минут» + «Начать», «Выйти»/«Назад»/«Далее», итог с объяснением процента), настройки (строки с подзаголовками, Material You с пояснением, блок «Данные», «О приложении», без дублей); :feature:gifts/quizzes/settings:compileDebugKotlin — BUILD SUCCESSFUL; NEED: —
+
+[ux-calendar-wishes] feature/calendar+feature/wishes — готово: hero с назначением и подписанной CTA, шевроны на карточках, сортировка текстовой кнопкой с меню и галочкой, поиск «по названию или заметке» с очисткой, «Сохранить»/«Удалить» с подтверждением, EmptyState с подписанной кнопкой; NEED: —
+
 [settings] feature/settings — готово: SettingsModule (`core.settings`, route `settings`, CORE, order 95), SettingsViewModel, экран (тема, Material You, данные пары, о приложении, @Preview); NEED: app/build.gradle.kts dependency + регистрация SettingsViewModel + применение темы в MainActivity + ModuleRegistry.
 
 [tests] core/domain+app — JVM-тесты DatesTest (15) и PairBackupTest (7) в src/test, только testImplementation (junit 4.13.2, kotlin-test 2.0.21, org.json 20240303 в app); :core:domain:testDebugUnitTest :app:testDebugUnitTest — зелёные; NEED: —

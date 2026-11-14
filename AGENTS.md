@@ -1,7 +1,8 @@
 # AGENTS.md — правила работы над «Вдвоём»
 
 > Читается автоматически в каждой сессии. Держать коротко и по делу.
-> Продуктовые детали — в [ROADMAP.md](ROADMAP.md), история и окружение — в [NOTES.md](NOTES.md).
+> Продуктовые детали — в [ROADMAP.md](ROADMAP.md), история и окружение — в [NOTES.md](NOTES.md),
+> правила дизайна и чек-лист ревью — в [DESIGN.md](DESIGN.md).
 
 ## Проект
 
@@ -40,8 +41,8 @@ MVP: календарь, желания, подарки, магазин моду
 - **`JAVA_HOME` в системе битый** (`Zulu\zulu-11-jre`, падает с `lib/ext`). В каждой сессии:
   `$env:JAVA_HOME="C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot"`.
   В `gradle.properties` также прописать `org.gradle.java.home=...` (с прямыми слэшами).
-- Gradle 8.9 (wrapper нет): `C:\Users\Administrator\AppData\Local\Temp\opencode\gradle-8.9\bin\gradle.bat`.
-  Если папки нет — скачать `https://services.gradle.org/distributions/gradle-8.9-bin.zip` (136 МБ).
+- Gradle 8.9 (wrapper есть в репозитории): локальный `C:\Users\Administrator\AppData\Local\Temp\opencode\gradle-8.9\bin\gradle.bat`,
+  но temp иногда чистится. Если файла нет — используй `.\gradlew.bat` (скачает дистрибутив ~136 МБ) или перекачай zip.
 - Android SDK: `C:\Users\Administrator\AppData\Local\Android\Sdk`. **Не переносить, не чистить.**
   Есть: `platforms/android-35`, `build-tools/36.0.0` и `34.0.0`, `cmdline-tools/latest`, `platform-tools`, NDK, CMake.
 - `local.properties`: `sdk.dir=C\:\\Users\\Administrator\\AppData\\Local\\Android\\Sdk`.

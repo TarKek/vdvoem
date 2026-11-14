@@ -1,6 +1,5 @@
 package app.vdvoem.feature.quizzes
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,7 +15,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -28,12 +29,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import app.vdvoem.core.ui.components.InfoPill
 import app.vdvoem.core.ui.components.SectionHeader
@@ -50,6 +51,7 @@ import java.util.Locale
  * Один экран на три состояния: список тестов, прохождение и результат.
  *
  * Навигации внутри модуля нет — состоянием управляет [QuizzesViewModel].
+ * Все переходы — только явными кнопками, без свайпов.
  */
 @Composable
 fun QuizzesScreen(
@@ -85,6 +87,7 @@ fun QuizzesScreen(
             onSelectOption = onSelectOption,
             onBack = onBack,
             onNext = onNext,
+            onExit = onClose,
             modifier = modifier
         )
     }
@@ -113,7 +116,7 @@ private fun QuizList(
         item(key = "header") {
             SectionHeader(
                 title = stringResource(R.string.quizzes_section_list),
-                modifier = Modifier.padding(top = VdvoemSpacing.xs)
+                modifier = Modifier.padding(top = VdvoemSpacing.sm)
             )
         }
 
@@ -131,26 +134,32 @@ private fun QuizList(
     }
 }
 
+/** Две компактные строки: что это и где остаётся результат. */
 @Composable
 private fun QuizzesHero() {
     VdvoemCard(containerColor = MaterialTheme.colorScheme.tertiaryContainer) {
-        Icon(
-            imageVector = Icons.Filled.Favorite,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onTertiaryContainer,
-            modifier = Modifier.size(VdvoemSizes.iconLg)
-        )
-        Spacer(modifier = Modifier.height(VdvoemSpacing.sm))
-        Text(
-            text = stringResource(R.string.quizzes_module_title),
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onTertiaryContainer
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Filled.Star,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                modifier = Modifier.size(VdvoemSizes.iconLg)
+            )
+            Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+            Text(
+                text = stringResource(R.string.quizzes_hero_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+        }
         Spacer(modifier = Modifier.height(VdvoemSpacing.xs))
         Text(
             text = stringResource(R.string.quizzes_hero_text),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onTertiaryContainer
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onTertiaryContainer,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
@@ -161,47 +170,58 @@ private fun QuizCard(
     result: QuizResult?,
     onStart: () -> Unit
 ) {
-    VdvoemCard(
-        modifier = Modifier
-            .clip(MaterialTheme.shapes.large)
-            .clickable(onClick = onStart)
-    ) {
-        Text(
-            text = quiz.title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(modifier = Modifier.height(VdvoemSpacing.xxs))
-        Text(
-            text = quiz.description,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(VdvoemSpacing.md))
-        Column(verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.xs)) {
-            InfoPill(
-                text = pluralStringResource(
-                    R.plurals.quizzes_questions_count,
-                    quiz.questions.size,
-                    quiz.questions.size
+    val minutes = quiz.estimatedMinutes()
+    VdvoemCard(onClick = onStart) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = quiz.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
                 )
-            )
-            InfoPill(
-                text = if (result != null) {
-                    stringResource(
-                        R.string.quizzes_passed_on,
-                        formatPassedAt(result.passedAt),
-                        result.percent
-                    )
-                } else {
-                    stringResource(R.string.quizzes_not_passed)
-                }
+                Spacer(modifier = Modifier.height(VdvoemSpacing.xs))
+                Text(
+                    text = quiz.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(VdvoemSpacing.xs))
+                Text(
+                    text = stringResource(
+                        R.string.quizzes_quiz_meta,
+                        pluralStringResource(
+                            R.plurals.quizzes_questions_count,
+                            quiz.questions.size,
+                            quiz.questions.size
+                        ),
+                        pluralStringResource(R.plurals.quizzes_minutes, minutes, minutes)
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Spacer(modifier = Modifier.size(VdvoemSpacing.md))
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(VdvoemSizes.iconLg)
             )
         }
         Spacer(modifier = Modifier.height(VdvoemSpacing.sm))
-        TextButton(onClick = onStart) {
-            Text(stringResource(R.string.quizzes_action_start))
-        }
+        InfoPill(
+            text = if (result != null) {
+                stringResource(
+                    R.string.quizzes_passed_on,
+                    formatPassedAt(result.passedAt),
+                    result.percent
+                )
+            } else {
+                stringResource(R.string.quizzes_not_passed)
+            }
+        )
     }
 }
 
@@ -213,11 +233,13 @@ private fun QuizQuestionView(
     onSelectOption: (Int) -> Unit,
     onBack: () -> Unit,
     onNext: () -> Unit,
+    onExit: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val question = quiz.questions.getOrNull(questionIndex) ?: return
     val selected = answers.getOrNull(questionIndex) ?: -1
     val isLast = questionIndex == quiz.questions.lastIndex
+    val isFirst = questionIndex == 0
 
     Column(
         modifier = modifier
@@ -231,11 +253,26 @@ private fun QuizQuestionView(
             ),
         verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)
     ) {
-        Text(
-            text = quiz.title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = quiz.title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f)
+            )
+            TextButton(onClick = onExit) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = null,
+                    modifier = Modifier.size(VdvoemSizes.iconMd)
+                )
+                Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
+                Text(stringResource(R.string.quizzes_action_exit))
+            }
+        }
         Text(
             text = stringResource(
                 R.string.quizzes_question_progress,
@@ -254,6 +291,11 @@ private fun QuizQuestionView(
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(top = VdvoemSpacing.sm)
         )
+        Text(
+            text = stringResource(R.string.quizzes_question_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
         question.options.forEachIndexed { index, option ->
             QuizOptionRow(
@@ -269,10 +311,14 @@ private fun QuizQuestionView(
             horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)
         ) {
             OutlinedButton(
-                onClick = onBack,
+                onClick = if (isFirst) onExit else onBack,
                 modifier = Modifier.weight(1f)
             ) {
-                Text(stringResource(R.string.quizzes_action_prev))
+                Text(
+                    stringResource(
+                        if (isFirst) R.string.quizzes_action_back_to_list else R.string.quizzes_action_prev
+                    )
+                )
             }
             Button(
                 onClick = onNext,
@@ -296,13 +342,11 @@ private fun QuizOptionRow(
     onClick: () -> Unit
 ) {
     VdvoemCard(
-        modifier = Modifier
-            .clip(MaterialTheme.shapes.large)
-            .selectable(
-                selected = selected,
-                role = Role.RadioButton,
-                onClick = onClick
-            ),
+        modifier = Modifier.selectable(
+            selected = selected,
+            role = Role.RadioButton,
+            onClick = onClick
+        ),
         containerColor = if (selected) {
             MaterialTheme.colorScheme.secondaryContainer
         } else {
@@ -381,14 +425,28 @@ private fun QuizResultView(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
+                Spacer(modifier = Modifier.height(VdvoemSpacing.md))
+                Text(
+                    text = stringResource(R.string.quizzes_result_explainer),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    textAlign = TextAlign.Center
+                )
             }
         }
 
         VdvoemCard {
-            Text(
-                text = outcome.interpretation,
-                style = MaterialTheme.typography.bodyLarge
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.xs)) {
+                Text(
+                    text = stringResource(R.string.quizzes_result_meaning),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = outcome.interpretation,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
         }
 
         Text(
@@ -412,6 +470,10 @@ private fun QuizResultView(
         }
     }
 }
+
+/** Около 30 секунд на вопрос — так подпись «~4 минуты» не обманывает. */
+private fun Quiz.estimatedMinutes(): Int =
+    ((questions.size + 1) / 2).coerceAtLeast(1)
 
 private val passedAtFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("d MMMM", Locale("ru"))
@@ -450,7 +512,8 @@ private fun QuizQuestionPreview() {
             answers = listOf(0, 1),
             onSelectOption = {},
             onBack = {},
-            onNext = {}
+            onNext = {},
+            onExit = {}
         )
     }
 }

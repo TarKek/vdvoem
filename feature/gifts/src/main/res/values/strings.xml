@@ -3,28 +3,31 @@
     <string name="gifts_module_title">Подарки</string>
     <string name="gifts_module_description">Идеи, бюджет и статус подарков</string>
 
-    <string name="gifts_hero_title">Подарки без стресса</string>
     <string name="gifts_hero_total">Идей на %1$s</string>
+    <string name="gifts_fab">Подарок</string>
 
     <string name="gifts_section_ideas">Идеи</string>
+    <string name="gifts_section_ideas_caption">Что можно подарить. Отметьте «Куплено», когда купите.</string>
+    <string name="gifts_section_ideas_empty">Идей пока нет — добавьте первую кнопкой «+ Подарок».</string>
     <string name="gifts_section_bought">Куплено</string>
+    <string name="gifts_section_bought_caption">Уже куплено — ждёт праздника.</string>
+    <string name="gifts_section_bought_empty">Здесь появятся подарки, которые вы отметите купленными.</string>
     <string name="gifts_section_given">Подарено</string>
-    <string name="gifts_section_empty">Пока пусто</string>
+    <string name="gifts_section_given_caption">История: что уже вручили.</string>
+    <string name="gifts_section_given_empty">Здесь появятся подарки, которые уже вручили.</string>
 
     <string name="gifts_status_idea">Идея</string>
     <string name="gifts_status_bought">Куплено</string>
     <string name="gifts_status_given">Подарено</string>
 
-    <string name="gifts_budget_value">Бюджет: %1$s</string>
-
-    <string name="gifts_action_bought">Куплено</string>
-    <string name="gifts_action_given">Подарено</string>
+    <string name="gifts_action_bought">Отметить купленным</string>
+    <string name="gifts_action_given">Отметить подаренным</string>
+    <string name="gifts_action_to_bought">Вернуть в купленные</string>
     <string name="gifts_delete">Удалить подарок</string>
-    <string name="gifts_fab">Подарок</string>
 
     <string name="gifts_empty_title">Идей пока нет</string>
     <string name="gifts_empty_message">Добавьте первую идею подарка — с бюджетом и заметкой. К празднику будет из чего выбрать.</string>
-    <string name="gifts_empty_action">Добавить идею</string>
+    <string name="gifts_empty_action">Добавить подарок</string>
 
     <string name="gifts_search_label">Поиск</string>
     <string name="gifts_search_hint">Название или заметка</string>
@@ -34,6 +37,7 @@
     <string name="gifts_search_empty_action">Сбросить поиск</string>
 
     <string name="gifts_sort">Сортировка</string>
+    <string name="gifts_sort_selected">Выбрано сейчас</string>
     <string name="gifts_sort_newest">Сначала новые</string>
     <string name="gifts_sort_budget">По бюджету</string>
     <string name="gifts_sort_alphabet">По алфавиту</string>
@@ -43,7 +47,9 @@
     <string name="gifts_field_title">Название</string>
     <string name="gifts_field_note">Заметка</string>
     <string name="gifts_field_budget">Бюджет, ₽</string>
-    <string name="gifts_field_status">Статус</string>
+    <string name="gifts_field_budget_hint">Можно не указывать</string>
+    <string name="gifts_field_status">Статус подарка</string>
+    <string name="gifts_field_status_hint">Идея — ещё выбираете, куплено — уже есть, подарено — вручили.</string>
     <string name="gifts_save">Сохранить</string>
     <string name="gifts_cancel">Отмена</string>
 

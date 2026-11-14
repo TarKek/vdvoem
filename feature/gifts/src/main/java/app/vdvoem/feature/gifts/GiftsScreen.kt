@@ -1,6 +1,5 @@
 package app.vdvoem.feature.gifts
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,7 +15,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -30,13 +28,13 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -47,14 +45,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import app.vdvoem.core.domain.model.Gift
 import app.vdvoem.core.domain.model.GiftStatus
 import app.vdvoem.core.ui.components.EmptyState
+import app.vdvoem.core.ui.components.InfoPill
 import app.vdvoem.core.ui.components.SectionHeader
 import app.vdvoem.core.ui.components.VdvoemCard
 import app.vdvoem.core.ui.theme.VdvoemSizes
@@ -79,8 +78,14 @@ fun GiftsScreen(
     var editingGift by remember { mutableStateOf<Gift?>(null) }
     var deletingGift by remember { mutableStateOf<Gift?>(null) }
     val ideasTitle = stringResource(R.string.gifts_section_ideas)
+    val ideasCaption = stringResource(R.string.gifts_section_ideas_caption)
+    val ideasEmpty = stringResource(R.string.gifts_section_ideas_empty)
     val boughtTitle = stringResource(R.string.gifts_section_bought)
+    val boughtCaption = stringResource(R.string.gifts_section_bought_caption)
+    val boughtEmpty = stringResource(R.string.gifts_section_bought_empty)
     val givenTitle = stringResource(R.string.gifts_section_given)
+    val givenCaption = stringResource(R.string.gifts_section_given_caption)
+    val givenEmpty = stringResource(R.string.gifts_section_given_empty)
 
     Box(modifier = modifier.fillMaxSize()) {
         LazyColumn(
@@ -93,7 +98,18 @@ fun GiftsScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)
         ) {
-            item(key = "hero") { GiftsHero(total = state.ideaBudget) }
+            if (state.hasGifts && state.ideaBudget > 0) {
+                item(key = "summary") {
+                    Text(
+                        text = stringResource(
+                            R.string.gifts_hero_total,
+                            formatRubles(state.ideaBudget)
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
 
             if (state.hasGifts) {
                 item(key = "search") {
@@ -112,9 +128,7 @@ fun GiftsScreen(
                     EmptyState(
                         icon = Icons.Filled.ShoppingCart,
                         title = stringResource(R.string.gifts_empty_title),
-                        message = stringResource(R.string.gifts_empty_message),
-                        actionLabel = stringResource(R.string.gifts_empty_action),
-                        onAction = { showAddDialog = true }
+                        message = stringResource(R.string.gifts_empty_message)
                     )
                 }
 
@@ -133,21 +147,30 @@ fun GiftsScreen(
 
                 else -> {
                     giftSection(
+                        key = "ideas",
                         title = ideasTitle,
+                        caption = ideasCaption,
+                        emptyText = ideasEmpty,
                         gifts = state.ideas,
                         onEdit = { editingGift = it },
                         onSetStatus = onSetStatus,
                         onDeleteRequest = { deletingGift = it }
                     )
                     giftSection(
+                        key = "bought",
                         title = boughtTitle,
+                        caption = boughtCaption,
+                        emptyText = boughtEmpty,
                         gifts = state.bought,
                         onEdit = { editingGift = it },
                         onSetStatus = onSetStatus,
                         onDeleteRequest = { deletingGift = it }
                     )
                     giftSection(
+                        key = "given",
                         title = givenTitle,
+                        caption = givenCaption,
+                        emptyText = givenEmpty,
                         gifts = state.given,
                         onEdit = { editingGift = it },
                         onSetStatus = onSetStatus,
@@ -159,11 +182,20 @@ fun GiftsScreen(
 
         ExtendedFloatingActionButton(
             onClick = { showAddDialog = true },
-            icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+            icon = {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(VdvoemSizes.iconMd)
+                )
+            },
             text = { Text(stringResource(R.string.gifts_fab)) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = VdvoemSpacing.screenHorizontal, bottom = VdvoemSpacing.xxl)
+                .padding(
+                    end = VdvoemSpacing.screenHorizontal,
+                    bottom = VdvoemSpacing.xl
+                )
         )
     }
 
@@ -208,40 +240,6 @@ fun GiftsScreen(
                 }
             }
         )
-    }
-}
-
-@Composable
-private fun GiftsHero(total: Long) {
-    VdvoemCard(containerColor = MaterialTheme.colorScheme.secondaryContainer) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
-                modifier = Modifier.size(VdvoemSizes.heroBadge)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.ShoppingCart,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.padding(VdvoemSpacing.md)
-                )
-            }
-            Spacer(modifier = Modifier.size(VdvoemSpacing.md))
-            Column {
-                Text(
-                    text = stringResource(R.string.gifts_hero_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-                Text(
-                    text = stringResource(R.string.gifts_hero_total, formatRubles(total)),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            }
-        }
     }
 }
 
@@ -312,7 +310,7 @@ private fun SearchAndSortRow(
                             if (item == sort) {
                                 Icon(
                                     imageVector = Icons.Filled.Check,
-                                    contentDescription = null,
+                                    contentDescription = stringResource(R.string.gifts_sort_selected),
                                     modifier = Modifier.size(VdvoemSizes.iconMd)
                                 )
                             }
@@ -325,19 +323,35 @@ private fun SearchAndSortRow(
 }
 
 private fun LazyListScope.giftSection(
+    key: String,
     title: String,
+    caption: String,
+    emptyText: String,
     gifts: List<Gift>,
     onEdit: (Gift) -> Unit,
     onSetStatus: (String, GiftStatus) -> Unit,
     onDeleteRequest: (Gift) -> Unit
 ) {
-    item(key = "header_$title") {
-        SectionHeader(title = title, modifier = Modifier.padding(top = VdvoemSpacing.sm))
+    item(key = "header_$key") {
+        Column(
+            modifier = Modifier.padding(top = VdvoemSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.xxs)
+        ) {
+            SectionHeader(
+                title = title,
+                trailing = { InfoPill(text = gifts.size.toString()) }
+            )
+            Text(
+                text = caption,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
     if (gifts.isEmpty()) {
-        item(key = "empty_$title") {
+        item(key = "empty_$key") {
             Text(
-                text = stringResource(R.string.gifts_section_empty),
+                text = emptyText,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = VdvoemSpacing.xs)
@@ -363,62 +377,74 @@ private fun GiftCard(
     onDeleteRequest: () -> Unit
 ) {
     val budget = gift.budget
-    VdvoemCard(
-        modifier = Modifier
-            .clip(MaterialTheme.shapes.large)
-            .clickable(onClick = onEdit)
-    ) {
+    VdvoemCard(onClick = onEdit) {
         Row(verticalAlignment = Alignment.Top) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = gift.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
+            Text(
+                text = gift.title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = VdvoemSpacing.sm)
+            )
+            InfoPill(text = stringResource(gift.status.labelRes))
+        }
+
+        if (gift.note.isNotBlank() || budget != null) {
+            Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 if (gift.note.isNotBlank()) {
-                    Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
                     Text(
                         text = gift.note,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
                 }
                 if (budget != null) {
-                    Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
                     Text(
-                        text = stringResource(R.string.gifts_budget_value, formatRubles(budget)),
+                        text = formatRubles(budget),
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.padding(start = VdvoemSpacing.sm)
                     )
                 }
             }
+        }
+
+        Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val (actionLabel, nextStatus) = when (gift.status) {
+                GiftStatus.IDEA -> R.string.gifts_action_bought to GiftStatus.BOUGHT
+                GiftStatus.BOUGHT -> R.string.gifts_action_given to GiftStatus.GIVEN
+                GiftStatus.GIVEN -> R.string.gifts_action_to_bought to GiftStatus.BOUGHT
+            }
+            FilledTonalButton(
+                onClick = { onSetStatus(gift.id, nextStatus) },
+                contentPadding = PaddingValues(
+                    horizontal = VdvoemSpacing.md,
+                    vertical = VdvoemSpacing.sm
+                )
+            ) {
+                Text(
+                    text = stringResource(actionLabel),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
             IconButton(onClick = onDeleteRequest) {
                 Icon(
                     imageVector = Icons.Filled.Delete,
-                    contentDescription = stringResource(R.string.gifts_delete)
+                    contentDescription = stringResource(R.string.gifts_delete),
+                    modifier = Modifier.size(VdvoemSizes.iconMd)
                 )
-            }
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(gift.status.labelRes),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f)
-            )
-            when (gift.status) {
-                GiftStatus.IDEA -> OutlinedButton(onClick = { onSetStatus(gift.id, GiftStatus.BOUGHT) }) {
-                    Text(stringResource(R.string.gifts_action_bought))
-                }
-                GiftStatus.BOUGHT -> OutlinedButton(onClick = { onSetStatus(gift.id, GiftStatus.GIVEN) }) {
-                    Text(stringResource(R.string.gifts_action_given))
-                }
-                GiftStatus.GIVEN -> Unit
             }
         }
     }
@@ -480,6 +506,7 @@ private fun GiftDialog(
                     value = budgetText,
                     onValueChange = { if (it.isEmpty() || it.all(Char::isDigit)) budgetText = it },
                     label = { Text(stringResource(R.string.gifts_field_budget)) },
+                    supportingText = { Text(stringResource(R.string.gifts_field_budget_hint)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -512,6 +539,11 @@ private fun GiftDialog(
                         )
                     }
                 }
+                Text(
+                    text = stringResource(R.string.gifts_field_status_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         },
         confirmButton = {
@@ -536,6 +568,7 @@ private fun GiftsScreenPreview() {
         GiftsScreen(
             state = GiftsUiState(
                 ideas = listOf(Gift("1", "local", "Книга", "Любимый автор", 12000)),
+                bought = listOf(Gift("2", "local", "Свеча", "", 1500, GiftStatus.BOUGHT)),
                 ideaBudget = 12000,
                 hasGifts = true
             ),
@@ -546,6 +579,19 @@ private fun GiftsScreenPreview() {
             onQueryChange = {},
             onResetQuery = {},
             onSortChange = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun GiftCardPreview() {
+    VdvoemTheme {
+        GiftCard(
+            gift = Gift("1", "local", "Сертификат в спа", "На годовщину", 8000),
+            onEdit = {},
+            onSetStatus = { _, _ -> },
+            onDeleteRequest = {}
         )
     }
 }

@@ -3,23 +3,32 @@
     <string name="settings_module_title">Настройки</string>
     <string name="settings_module_description">Тема, цвета, данные и о приложении</string>
 
-    <string name="settings_hero_title">Оформление и данные</string>
-    <string name="settings_hero_text">Внешний вид приложения и сведения о нём — в одном месте. Изменения применяются сразу.</string>
-
     <string name="settings_section_appearance">Оформление</string>
-    <string name="settings_section_appearance_hint">Тема применяется ко всему приложению сразу после выбора.</string>
+    <string name="settings_section_appearance_hint">Тема применяется сразу после выбора.</string>
     <string name="settings_theme_system">Как в системе</string>
+    <string name="settings_theme_system_hint">Телефон сам переключает светлое и тёмное оформление</string>
     <string name="settings_theme_light">Светлая</string>
+    <string name="settings_theme_light_hint">Всегда светлое оформление</string>
     <string name="settings_theme_dark">Тёмная</string>
+    <string name="settings_theme_dark_hint">Всегда тёмное оформление — легче для глаз вечером</string>
 
     <string name="settings_dynamic_title">Цвета системы (Material You)</string>
-    <string name="settings_dynamic_subtitle">Доступно с Android 12</string>
+    <string name="settings_dynamic_subtitle">Приложение возьмёт цвета с ваших обоев. Работает на Android 12 и новее.</string>
+    <string name="settings_dynamic_subtitle_unavailable">Недоступно: нужен Android 12 или новее. Сейчас используется фирменная палитра.</string>
 
-    <string name="settings_section_pair_data">Данные пары</string>
-    <string name="settings_section_pair_data_text">Перенос и резервная копия — в меню «⋮» на главном экране: «Сохранить данные в файл» и «Загрузить данные из файла». Общие записи пары при этом не теряются.</string>
+    <string name="settings_section_data">Данные</string>
+    <string name="settings_section_data_hint">Всё хранится только на этом телефоне.</string>
+    <string name="settings_data_backup_title">Резервная копия</string>
+    <string name="settings_data_backup_text">Сохраняет календарь, желания и подарки в файл — пригодится при смене телефона. Открывается в меню «⋮» на главном экране → «Сохранить данные в файл».</string>
+    <string name="settings_data_restore_title">Восстановление</string>
+    <string name="settings_data_restore_text">Загружает данные из файла: «⋮» → «Загрузить данные из файла». Общие записи пары при этом не теряются.</string>
+    <string name="settings_data_storage_title">Где хранятся данные</string>
+    <string name="settings_data_storage_text">Только на этом устройстве. Аккаунт и интернет не нужны.</string>
 
     <string name="settings_section_about">О приложении</string>
+    <string name="settings_section_about_hint">Версия и чем это приложение полезно.</string>
     <string name="settings_app_name">Вдвоём</string>
     <string name="settings_version">Версия %1$s</string>
+    <string name="settings_about_text">Календарь, желания, подарки и тесты для пары. Всё работает офлайн и хранится на телефоне.</string>
     <string name="settings_copyright">© 2026 «Вдвоём» · сделано для двоих</string>
 </resources>

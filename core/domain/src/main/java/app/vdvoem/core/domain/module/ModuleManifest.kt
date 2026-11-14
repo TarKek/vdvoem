@@ -23,5 +23,7 @@ data class ModuleManifest(
     val order: Int,
     val defaultEnabled: Boolean = false,
     val requiresNetwork: Boolean = false,
-    val comingSoon: Boolean = false
+    val comingSoon: Boolean = false,
+    /** Короткое имя для нижней навигации; 0 — использовать [titleRes]. */
+    @StringRes val shortTitleRes: Int = 0
 )

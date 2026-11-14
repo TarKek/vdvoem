@@ -32,5 +32,13 @@ object VdvoemSizes {
     val avatarMd = 40.dp
     val avatarLg = 56.dp
     val avatarXl = 76.dp
+
+    /** Круглая кнопка аккаунта пары в шапке главного экрана. */
+    val avatarAccount = 36.dp
+
+    /** Тонкая обводка: аватары, разделители. */
+    val borderThin = 1.dp
+    val widgetWidth = 168.dp
+    val widgetHeight = 112.dp
     val heroBadge = 44.dp
 }

@@ -35,6 +35,10 @@ import app.vdvoem.core.ui.components.VdvoemCard
 import app.vdvoem.core.ui.theme.VdvoemSpacing
 import app.vdvoem.core.ui.theme.VdvoemTheme
 
+/**
+ * Настройки: каждая строка — заголовок и пояснение простыми словами.
+ * Заголовок экрана даёт верхняя панель, поэтому hero-карточку не дублируем.
+ */
 @Composable
 fun SettingsScreen(
     state: AppSettings,
@@ -54,36 +58,24 @@ fun SettingsScreen(
         ),
         verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)
     ) {
-        item(key = "hero") {
-            SettingsHero()
-        }
-
         item(key = "appearance_header") {
-            SectionHeader(
+            SettingsSectionHeader(
                 title = stringResource(R.string.settings_section_appearance),
-                modifier = Modifier.padding(top = VdvoemSpacing.sm)
+                caption = stringResource(R.string.settings_section_appearance_hint)
             )
         }
 
         item(key = "appearance") {
             VdvoemCard {
-                Text(
-                    text = stringResource(R.string.settings_section_appearance_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(VdvoemSpacing.sm))
                 ThemeMode.entries.forEachIndexed { index, mode ->
-                    if (index > 0) {
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = VdvoemSpacing.xs))
-                    }
+                    if (index > 0) RowDivider()
                     ThemeOptionRow(
                         mode = mode,
                         selected = state.themeMode == mode,
                         onClick = { onThemeModeChange(mode) }
                     )
                 }
-                HorizontalDivider(modifier = Modifier.padding(horizontal = VdvoemSpacing.xs))
+                RowDivider()
                 DynamicColorRow(
                     checked = state.dynamicColor && dynamicColorSupported,
                     enabled = dynamicColorSupported,
@@ -92,27 +84,36 @@ fun SettingsScreen(
             }
         }
 
-        item(key = "pair_header") {
-            SectionHeader(
-                title = stringResource(R.string.settings_section_pair_data),
-                modifier = Modifier.padding(top = VdvoemSpacing.sm)
+        item(key = "data_header") {
+            SettingsSectionHeader(
+                title = stringResource(R.string.settings_section_data),
+                caption = stringResource(R.string.settings_section_data_hint)
             )
         }
 
-        item(key = "pair_data") {
+        item(key = "data") {
             VdvoemCard {
-                Text(
-                    text = stringResource(R.string.settings_section_pair_data_text),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                InfoRow(
+                    title = stringResource(R.string.settings_data_backup_title),
+                    text = stringResource(R.string.settings_data_backup_text)
+                )
+                RowDivider()
+                InfoRow(
+                    title = stringResource(R.string.settings_data_restore_title),
+                    text = stringResource(R.string.settings_data_restore_text)
+                )
+                RowDivider()
+                InfoRow(
+                    title = stringResource(R.string.settings_data_storage_title),
+                    text = stringResource(R.string.settings_data_storage_text)
                 )
             }
         }
 
         item(key = "about_header") {
-            SectionHeader(
+            SettingsSectionHeader(
                 title = stringResource(R.string.settings_section_about),
-                modifier = Modifier.padding(top = VdvoemSpacing.sm)
+                caption = stringResource(R.string.settings_section_about_hint)
             )
         }
 
@@ -123,22 +124,21 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun SettingsHero() {
-    VdvoemCard(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh) {
+private fun SettingsSectionHeader(title: String, caption: String) {
+    Column(
+        modifier = Modifier.padding(top = VdvoemSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.xxs)
+    ) {
+        SectionHeader(title = title)
         Text(
-            text = stringResource(R.string.settings_hero_title),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(modifier = Modifier.height(VdvoemSpacing.sm))
-        Text(
-            text = stringResource(R.string.settings_hero_text),
-            style = MaterialTheme.typography.bodyMedium,
+            text = caption,
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
 
+/** Строка выбора темы: название и что именно она делает. */
 @Composable
 private fun ThemeOptionRow(
     mode: ThemeMode,
@@ -153,18 +153,29 @@ private fun ThemeOptionRow(
                 role = Role.RadioButton,
                 onClick = onClick
             )
-            .padding(vertical = VdvoemSpacing.xs),
+            .padding(vertical = VdvoemSpacing.sm),
         verticalAlignment = Alignment.CenterVertically
     ) {
         RadioButton(selected = selected, onClick = null)
-        Text(
-            text = stringResource(mode.labelRes()),
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(start = VdvoemSpacing.sm)
-        )
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = VdvoemSpacing.sm)
+        ) {
+            Text(
+                text = stringResource(mode.labelRes()),
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Text(
+                text = stringResource(mode.hintRes()),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
+/** Material You: переключатель с объяснением, что он делает и когда доступен. */
 @Composable
 private fun DynamicColorRow(
     checked: Boolean,
@@ -178,7 +189,11 @@ private fun DynamicColorRow(
             .padding(vertical = VdvoemSpacing.sm),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = VdvoemSpacing.sm)
+        ) {
             Text(
                 text = stringResource(R.string.settings_dynamic_title),
                 style = MaterialTheme.typography.bodyLarge,
@@ -189,7 +204,13 @@ private fun DynamicColorRow(
                 }
             )
             Text(
-                text = stringResource(R.string.settings_dynamic_subtitle),
+                text = stringResource(
+                    if (enabled) {
+                        R.string.settings_dynamic_subtitle
+                    } else {
+                        R.string.settings_dynamic_subtitle_unavailable
+                    }
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -200,6 +221,33 @@ private fun DynamicColorRow(
             enabled = enabled
         )
     }
+}
+
+/** Информационная строка блока «Данные»: что за действие и зачем оно нужно. */
+@Composable
+private fun InfoRow(title: String, text: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = VdvoemSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.xxs)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun RowDivider() {
+    HorizontalDivider(modifier = Modifier.padding(vertical = VdvoemSpacing.xs))
 }
 
 @Composable
@@ -214,6 +262,12 @@ private fun AboutCard() {
         Spacer(modifier = Modifier.height(VdvoemSpacing.xs))
         Text(
             text = stringResource(R.string.settings_version, version),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(VdvoemSpacing.sm))
+        Text(
+            text = stringResource(R.string.settings_about_text),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -241,6 +295,12 @@ private fun ThemeMode.labelRes(): Int = when (this) {
     ThemeMode.SYSTEM -> R.string.settings_theme_system
     ThemeMode.LIGHT -> R.string.settings_theme_light
     ThemeMode.DARK -> R.string.settings_theme_dark
+}
+
+private fun ThemeMode.hintRes(): Int = when (this) {
+    ThemeMode.SYSTEM -> R.string.settings_theme_system_hint
+    ThemeMode.LIGHT -> R.string.settings_theme_light_hint
+    ThemeMode.DARK -> R.string.settings_theme_dark_hint
 }
 
 @Preview(showBackground = true, backgroundColor = 0xFFFFF8F8)

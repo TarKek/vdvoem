@@ -32,6 +32,7 @@ class CalendarModule : AppModule {
         CalendarScreen(
             state = state,
             onFilterChange = viewModel::setFilter,
+            onSortChange = viewModel::setSort,
             onSaveEvent = viewModel::saveEvent,
             onDeleteEvent = viewModel::deleteEvent,
             modifier = modifier

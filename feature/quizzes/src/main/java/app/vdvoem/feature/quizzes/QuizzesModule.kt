@@ -1,7 +1,7 @@
 package app.vdvoem.feature.quizzes
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -27,7 +27,7 @@ class QuizzesModule : AppModule {
     )
 
     override val route = "quizzes"
-    override val icon: ImageVector = Icons.Filled.Favorite
+    override val icon: ImageVector = Icons.Filled.Star
 
     @Composable
     override fun Screen(modifier: Modifier) {

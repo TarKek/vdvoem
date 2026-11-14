@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -26,6 +27,8 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,6 +37,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -50,11 +54,11 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import app.vdvoem.core.domain.model.Wish
 import app.vdvoem.core.domain.model.WishStatus
 import app.vdvoem.core.ui.components.EmptyState
-import app.vdvoem.core.ui.components.SectionHeader
 import app.vdvoem.core.ui.components.VdvoemCard
 import app.vdvoem.core.ui.theme.VdvoemSizes
 import app.vdvoem.core.ui.theme.VdvoemSpacing
@@ -112,77 +116,80 @@ fun WishesScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)
         ) {
-            item(key = "hero") {
-                WishesHero(count = state.wishes.size)
+            if (!state.loading && state.wishes.isNotEmpty()) {
+                item(key = "summary") {
+                    val doneCount = state.wishes.count { it.status == WishStatus.DONE }
+                    Text(
+                        text = stringResource(
+                            R.string.wishes_summary,
+                            pluralStringResource(
+                                R.plurals.wishes_count,
+                                state.wishes.size,
+                                state.wishes.size
+                            ),
+                            stringResource(R.string.wishes_summary_done, doneCount)
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             item(key = "search") {
-                SearchAndSortRow(
+                SearchField(
                     query = query,
                     onQueryChange = onQueryChange,
-                    onResetQuery = onResetQuery,
-                    sort = sort,
-                    onSortChange = onSortChange,
-                    modifier = Modifier.padding(top = VdvoemSpacing.sm)
+                    onResetQuery = onResetQuery
                 )
             }
 
             item(key = "filters") {
-                FilterChipsRow(
+                WishesControls(
                     filter = filter,
-                    onFilterChange = onFilterChange
+                    onFilterChange = onFilterChange,
+                    sort = sort,
+                    onSortChange = onSortChange
                 )
             }
 
-            item(key = "header") {
-                SectionHeader(
-                    title = stringResource(R.string.wishes_section_list),
-                    modifier = Modifier.padding(top = VdvoemSpacing.xs),
-                    trailing = {
-                        TextButton(onClick = { showAddDialog = true }) {
-                            Text(stringResource(R.string.wishes_action_add))
-                        }
-                    }
-                )
-            }
+            when {
+                state.loading -> item(key = "loading") {
+                    HintText(stringResource(R.string.wishes_loading))
+                }
 
-            if (state.wishes.isEmpty()) {
-                item(key = "empty") {
+                state.wishes.isEmpty() -> item(key = "empty") {
                     EmptyState(
                         icon = Icons.Filled.Favorite,
                         title = stringResource(R.string.wishes_empty_title),
-                        message = stringResource(R.string.wishes_empty_message),
-                        actionLabel = stringResource(R.string.wishes_empty_action),
-                        onAction = { showAddDialog = true }
+                        message = stringResource(R.string.wishes_empty_message)
                     )
                 }
-            } else if (visible.isEmpty()) {
-                if (query.isNotBlank()) {
-                    item(key = "empty_search") {
-                        EmptyState(
-                            icon = Icons.Filled.Search,
-                            title = stringResource(R.string.wishes_search_empty_title),
-                            message = stringResource(R.string.wishes_search_empty_message),
-                            actionLabel = stringResource(R.string.wishes_search_reset),
-                            onAction = onResetQuery
-                        )
-                    }
-                } else {
-                    item(key = "empty_filter") {
-                        EmptyState(
-                            icon = Icons.Filled.Favorite,
-                            title = stringResource(R.string.wishes_filter_empty_title),
-                            message = stringResource(R.string.wishes_filter_empty_message)
-                        )
-                    }
+
+                visible.isEmpty() && query.isNotBlank() -> item(key = "empty_search") {
+                    EmptyState(
+                        icon = Icons.Filled.Search,
+                        title = stringResource(R.string.wishes_search_empty_title),
+                        message = stringResource(R.string.wishes_search_empty_message),
+                        actionLabel = stringResource(R.string.wishes_search_reset),
+                        onAction = onResetQuery
+                    )
                 }
-            } else {
-                items(visible, key = { it.id }) { wish ->
+
+                visible.isEmpty() -> item(key = "empty_filter") {
+                    EmptyState(
+                        icon = Icons.Filled.Favorite,
+                        title = stringResource(R.string.wishes_filter_empty_title),
+                        message = stringResource(R.string.wishes_filter_empty_message),
+                        actionLabel = stringResource(R.string.wishes_filter_reset),
+                        onAction = { onFilterChange(WishFilter.ALL) }
+                    )
+                }
+
+                else -> items(visible, key = { it.id }) { wish ->
                     WishCard(
                         wish = wish,
                         onEdit = { editingWish = wish },
-                        onMarkDone = { onSetStatus(wish.id, WishStatus.DONE) },
-                        onDelete = { pendingDelete = wish }
+                        onMarkDone = { onSetStatus(wish.id, WishStatus.DONE) }
                     )
                 }
             }
@@ -190,13 +197,19 @@ fun WishesScreen(
 
         ExtendedFloatingActionButton(
             onClick = { showAddDialog = true },
-            icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+            icon = {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(VdvoemSizes.iconMd)
+                )
+            },
             text = { Text(stringResource(R.string.wishes_fab)) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(
                     end = VdvoemSpacing.screenHorizontal,
-                    bottom = VdvoemSpacing.xxl
+                    bottom = VdvoemSpacing.xl
                 )
         )
     }
@@ -208,7 +221,8 @@ fun WishesScreen(
             onConfirm = { title, note, price ->
                 onAddWish(title, note, price)
                 showAddDialog = false
-            }
+            },
+            onDelete = null
         )
     }
 
@@ -219,6 +233,10 @@ fun WishesScreen(
             onConfirm = { title, note, price ->
                 onUpdateWish(wish.id, title, note, price)
                 editingWish = null
+            },
+            onDelete = {
+                editingWish = null
+                pendingDelete = wish
             }
         )
     }
@@ -236,127 +254,136 @@ fun WishesScreen(
 }
 
 @Composable
-private fun WishesHero(count: Int) {
-    VdvoemCard(containerColor = MaterialTheme.colorScheme.tertiaryContainer) {
-        Icon(
-            imageVector = Icons.Filled.Favorite,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onTertiaryContainer,
-            modifier = Modifier.size(VdvoemSizes.iconLg)
-        )
-        Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
-        Text(
-            text = pluralStringResource(R.plurals.wishes_count, count, count),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onTertiaryContainer
-        )
-        Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
-        Text(
-            text = stringResource(R.string.wishes_hero_text),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onTertiaryContainer
-        )
-    }
+private fun HintText(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = VdvoemSpacing.xl)
+    )
 }
 
 @Composable
-private fun SearchAndSortRow(
+private fun SearchField(
     query: String,
     onQueryChange: (String) -> Unit,
-    onResetQuery: () -> Unit,
-    sort: WishSort,
-    onSortChange: (WishSort) -> Unit,
-    modifier: Modifier = Modifier
+    onResetQuery: () -> Unit
 ) {
-    var showSortMenu by remember { mutableStateOf(false) }
-
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)
-    ) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = onQueryChange,
-            singleLine = true,
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Filled.Search,
-                    contentDescription = null,
-                    modifier = Modifier.size(VdvoemSizes.iconMd)
-                )
-            },
-            trailingIcon = {
-                if (query.isNotEmpty()) {
-                    IconButton(onClick = onResetQuery) {
-                        Icon(
-                            imageVector = Icons.Filled.Close,
-                            contentDescription = stringResource(R.string.wishes_search_reset),
-                            modifier = Modifier.size(VdvoemSizes.iconMd)
-                        )
-                    }
-                }
-            },
-            label = { Text(stringResource(R.string.wishes_search_label)) },
-            placeholder = { Text(stringResource(R.string.wishes_search_hint)) },
-            textStyle = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f)
-        )
-
-        Box {
-            IconButton(onClick = { showSortMenu = true }) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.List,
-                    contentDescription = stringResource(R.string.wishes_sort),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            DropdownMenu(
-                expanded = showSortMenu,
-                onDismissRequest = { showSortMenu = false }
-            ) {
-                WishSort.entries.forEach { item ->
-                    DropdownMenuItem(
-                        text = { Text(stringResource(item.labelRes())) },
-                        onClick = {
-                            onSortChange(item)
-                            showSortMenu = false
-                        },
-                        trailingIcon = {
-                            if (item == sort) {
-                                Icon(
-                                    imageVector = Icons.Filled.Check,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(VdvoemSizes.iconMd)
-                                )
-                            }
-                        }
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        singleLine = true,
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Filled.Search,
+                contentDescription = null,
+                modifier = Modifier.size(VdvoemSizes.iconMd)
+            )
+        },
+        trailingIcon = {
+            if (query.isNotEmpty()) {
+                IconButton(onClick = onResetQuery) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = stringResource(R.string.wishes_search_reset),
+                        modifier = Modifier.size(VdvoemSizes.iconMd)
                     )
                 }
             }
-        }
-    }
+        },
+        label = { Text(stringResource(R.string.wishes_search_label)) },
+        placeholder = { Text(stringResource(R.string.wishes_search_hint)) },
+        textStyle = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.fillMaxWidth()
+    )
 }
 
 @Composable
-private fun FilterChipsRow(
+private fun WishesControls(
     filter: WishFilter,
     onFilterChange: (WishFilter) -> Unit,
-    modifier: Modifier = Modifier
+    sort: WishSort,
+    onSortChange: (WishSort) -> Unit
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)
-    ) {
-        WishFilter.entries.forEach { item ->
-            FilterChip(
-                selected = item == filter,
-                onClick = { onFilterChange(item) },
-                label = { Text(stringResource(item.labelRes())) }
+    Column(verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)) {
+        Text(
+            text = stringResource(R.string.wishes_filter_label),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)
+        ) {
+            WishFilter.entries.forEach { item ->
+                FilterChip(
+                    selected = item == filter,
+                    onClick = { onFilterChange(item) },
+                    label = { Text(stringResource(item.labelRes())) },
+                    leadingIcon = if (item == filter) {
+                        {
+                            Icon(
+                                imageVector = Icons.Filled.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(VdvoemSizes.iconSm)
+                            )
+                        }
+                    } else {
+                        null
+                    }
+                )
+            }
+        }
+        SortMenuButton(sort = sort, onSortChange = onSortChange)
+    }
+}
+
+/** Сортировка подписана текстом и открывает меню с пунктами и галочкой. */
+@Composable
+private fun SortMenuButton(
+    sort: WishSort,
+    onSortChange: (WishSort) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        OutlinedButton(onClick = { expanded = true }) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.List,
+                contentDescription = null,
+                modifier = Modifier.size(VdvoemSizes.iconMd)
             )
+            Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+            Text(
+                text = stringResource(
+                    R.string.wishes_sort_button,
+                    stringResource(sort.labelRes())
+                )
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            WishSort.entries.forEach { item ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(item.labelRes())) },
+                    onClick = {
+                        onSortChange(item)
+                        expanded = false
+                    },
+                    trailingIcon = {
+                        if (item == sort) {
+                            Icon(
+                                imageVector = Icons.Filled.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(VdvoemSizes.iconMd)
+                            )
+                        }
+                    }
+                )
+            }
         }
     }
 }
@@ -365,30 +392,37 @@ private fun FilterChipsRow(
 private fun WishCard(
     wish: Wish,
     onEdit: () -> Unit,
-    onMarkDone: () -> Unit,
-    onDelete: () -> Unit
+    onMarkDone: () -> Unit
 ) {
+    val editHint = stringResource(R.string.wishes_card_edit_hint, wish.title)
     VdvoemCard(
         modifier = Modifier
             .clip(MaterialTheme.shapes.large)
-            .clickable(onClick = onEdit)
+            .clickable(
+                onClickLabel = stringResource(R.string.wishes_card_edit_label),
+                onClick = onEdit
+            )
     ) {
         Row(verticalAlignment = Alignment.Top) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = wish.title,
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
                 if (wish.note.isNotBlank()) {
                     Spacer(modifier = Modifier.size(VdvoemSpacing.xxs))
                     Text(
                         text = wish.note,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
-                Spacer(modifier = Modifier.size(VdvoemSpacing.md))
+                Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)
@@ -403,17 +437,18 @@ private fun WishCard(
                     StatusPill(status = wish.status)
                 }
             }
-            IconButton(onClick = onDelete) {
-                Icon(
-                    imageVector = Icons.Filled.Delete,
-                    contentDescription = stringResource(R.string.wishes_delete),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = editHint,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .padding(top = VdvoemSpacing.xxs)
+                    .size(VdvoemSizes.iconLg)
+            )
         }
 
         if (wish.status != WishStatus.DONE) {
-            Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+            Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
             TextButton(onClick = onMarkDone) {
                 Icon(
                     imageVector = Icons.Filled.Check,
@@ -460,7 +495,8 @@ private fun StatusPill(status: WishStatus) {
 private fun WishDialog(
     wish: Wish?,
     onDismiss: () -> Unit,
-    onConfirm: (title: String, note: String, price: Long?) -> Unit
+    onConfirm: (title: String, note: String, price: Long?) -> Unit,
+    onDelete: (() -> Unit)?
 ) {
     val editing = wish != null
     var title by remember(wish?.id) { mutableStateOf(wish?.title.orEmpty()) }
@@ -508,10 +544,28 @@ private fun WishDialog(
                     placeholder = { Text(stringResource(R.string.wishes_field_price_hint)) },
                     modifier = Modifier.fillMaxWidth()
                 )
+                if (onDelete != null) {
+                    Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
+                    OutlinedButton(
+                        onClick = onDelete,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Delete,
+                            contentDescription = null,
+                            modifier = Modifier.size(VdvoemSizes.iconMd)
+                        )
+                        Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+                        Text(stringResource(R.string.wishes_action_delete))
+                    }
+                }
             }
         },
         confirmButton = {
-            TextButton(
+            Button(
                 onClick = { onConfirm(title, note, price.toLongOrNull()) },
                 enabled = canSave
             ) {
@@ -539,7 +593,13 @@ private fun DeleteWishDialog(
             Text(stringResource(R.string.wishes_delete_message, wish.title))
         },
         confirmButton = {
-            TextButton(onClick = onConfirm) {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
+                )
+            ) {
                 Text(stringResource(R.string.wishes_delete_confirm))
             }
         },
@@ -606,6 +666,28 @@ private fun WishesScreenPreview() {
                 ),
                 loading = false
             ),
+            filter = WishFilter.ALL,
+            sort = WishSort.NEWEST,
+            query = "",
+            onFilterChange = {},
+            onSortChange = {},
+            onQueryChange = {},
+            onResetQuery = {},
+            onAddWish = { _, _, _ -> },
+            onUpdateWish = { _, _, _, _ -> },
+            onSetStatus = { _, _ -> },
+            onDeleteWish = {},
+            modifier = Modifier
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WishesScreenEmptyPreview() {
+    VdvoemTheme {
+        WishesScreen(
+            state = WishesUiState(loading = false),
             filter = WishFilter.ALL,
             sort = WishSort.NEWEST,
             query = "",

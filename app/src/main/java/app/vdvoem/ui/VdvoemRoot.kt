@@ -2,23 +2,29 @@ package app.vdvoem.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -29,8 +35,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -38,11 +47,16 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import app.vdvoem.R
 import app.vdvoem.core.domain.module.ModuleRegistry
+import app.vdvoem.core.ui.theme.VdvoemSizes
 import app.vdvoem.data.HomePreferences
 import app.vdvoem.feature.store.StoreModule
 import app.vdvoem.feature.store.StoreScreen
 import app.vdvoem.ui.dashboard.DashboardScreen
 import app.vdvoem.ui.dashboard.DashboardViewModel
+import app.vdvoem.ui.dashboard.PairDialog
+import app.vdvoem.ui.more.MoreScreen
+import app.vdvoem.ui.presents.PresentsModule
+import app.vdvoem.ui.presents.PresentsTabController
 import app.vdvoem.ui.sync.BackupViewModel
 import app.vdvoem.ui.sync.ImportResult
 import kotlinx.coroutines.launch
@@ -52,6 +66,7 @@ import org.koin.compose.koinInject
 private object Routes {
     const val HOME = "home"
     const val STORE = "store"
+    const val MORE = "more"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,6 +80,7 @@ fun VdvoemRoot(
     val enabledIds by viewModel.enabledIds.collectAsStateWithLifecycle()
     val dashboardState by dashboardViewModel.state.collectAsStateWithLifecycle()
     val homePreferences: HomePreferences = koinInject()
+    val presentsTabController: PresentsTabController = koinInject()
     val widgetIds by homePreferences.widgetIds
         .collectAsStateWithLifecycle(initialValue = HomePreferences.DEFAULT_WIDGETS)
     val lastPoke by homePreferences.lastPoke
@@ -74,7 +90,7 @@ fun VdvoemRoot(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    var menuExpanded by remember { mutableStateOf(false) }
+    var pairDialogOpen by remember { mutableStateOf(false) }
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
@@ -127,12 +143,34 @@ fun VdvoemRoot(
                 !it.manifest.comingSoon
         }
     }
+    // Material 3: в нижней навигации не больше пяти пунктов — поэтому «Ещё».
+    val bottomModules = remember(enabledModules) { enabledModules.take(3) }
+    val overflowModules = remember(enabledModules) { enabledModules.drop(3) }
+    val enabledRoutes = remember(enabledModules) { enabledModules.map { it.route }.toSet() }
+
+    /**
+     * Единый переход к вкладке/модулю: не новый уровень, а переключение вкладки.
+     * Модуль выключен — ведём в магазин дополнений, чтобы его можно было включить.
+     */
+    fun openTab(route: String) {
+        val target = when {
+            route == Routes.HOME || route == Routes.MORE || route == Routes.STORE -> route
+            route in enabledRoutes -> route
+            else -> Routes.STORE
+        }
+        navController.navigate(target) {
+            popUpTo(Routes.HOME) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
     val title = when (currentRoute) {
         Routes.STORE -> stringResource(R.string.title_store)
+        Routes.MORE -> stringResource(R.string.more_title)
         Routes.HOME, null -> stringResource(R.string.title_home)
         else -> registry.byRoute(currentRoute)
             ?.let { stringResource(it.manifest.titleRes) }
@@ -156,47 +194,43 @@ fun VdvoemRoot(
             TopAppBar(
                 title = { Text(text = title) },
                 navigationIcon = {
-                    if (currentRoute == Routes.STORE) {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.action_back)
-                            )
+                    when (currentRoute) {
+                        Routes.STORE -> {
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(R.string.action_back)
+                                )
+                            }
                         }
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { menuExpanded = true }) {
-                        Icon(
-                            imageVector = Icons.Filled.MoreVert,
-                            contentDescription = stringResource(R.string.action_more)
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.backup_export)) },
-                            onClick = {
-                                menuExpanded = false
-                                exportLauncher.launch("vdvoem-backup.json")
+                        Routes.HOME -> {
+                            val pairAction = stringResource(R.string.pair_account_action)
+                            val initials = listOfNotNull(
+                                dashboardState.pair?.nameA?.firstOrNull(),
+                                dashboardState.pair?.nameB?.firstOrNull()
+                            ).joinToString("").uppercase().ifEmpty { "?" }
+                            IconButton(
+                                onClick = { pairDialogOpen = true },
+                                modifier = Modifier.semantics { contentDescription = pairAction }
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    border = BorderStroke(
+                                        width = VdvoemSizes.borderThin,
+                                        color = MaterialTheme.colorScheme.outline
+                                    ),
+                                    modifier = Modifier.size(VdvoemSizes.avatarAccount)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text(
+                                            text = initials.take(2),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                    }
+                                }
                             }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.backup_import)) },
-                            onClick = {
-                                menuExpanded = false
-                                importLauncher.launch(arrayOf("*/*"))
-                            }
-                        )
-                    }
-                    if (currentRoute != Routes.STORE) {
-                        IconButton(onClick = { navController.navigate(Routes.STORE) }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.List,
-                                contentDescription = stringResource(R.string.action_store)
-                            )
                         }
                     }
                 }
@@ -206,40 +240,48 @@ fun VdvoemRoot(
             NavigationBar {
                 NavigationBarItem(
                     selected = currentRoute == Routes.HOME,
-                    onClick = {
-                        navController.navigate(Routes.HOME) {
-                            popUpTo(Routes.HOME) { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    },
+                    onClick = { openTab(Routes.HOME) },
                     icon = { Icon(Icons.Filled.Home, contentDescription = stringResource(R.string.title_home)) },
                     label = { Text(stringResource(R.string.title_home), maxLines = 1) },
-                    alwaysShowLabel = false
+                    alwaysShowLabel = true
                 )
-                enabledModules.forEach { module ->
+                bottomModules.forEach { module ->
+                    val selected = currentRoute == module.route
                     NavigationBarItem(
-                        selected = currentRoute == module.route,
-                        onClick = {
-                            navController.navigate(module.route) {
-                                popUpTo(Routes.HOME) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
+                        selected = selected,
+                        onClick = { openTab(module.route) },
                         icon = { Icon(module.icon, contentDescription = stringResource(module.manifest.titleRes)) },
                         label = {
-                            Text(stringResource(module.manifest.titleRes), maxLines = 1)
+                            val labelRes = module.manifest.shortTitleRes
+                                .takeIf { it != 0 } ?: module.manifest.titleRes
+                            Text(stringResource(labelRes), maxLines = 1)
                         },
-                        alwaysShowLabel = false
+                        alwaysShowLabel = true
                     )
                 }
+                val moreSelected = currentRoute == Routes.MORE ||
+                    overflowModules.any { it.route == currentRoute }
+                NavigationBarItem(
+                    selected = moreSelected,
+                    onClick = { openTab(Routes.MORE) },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Filled.Menu,
+                            contentDescription = stringResource(R.string.more_title)
+                        )
+                    },
+                    label = { Text(stringResource(R.string.more_title), maxLines = 1) },
+                    alwaysShowLabel = true
+                )
             }
         }
     ) { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = Routes.HOME,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+            enterTransition = { fadeIn(animationSpec = tween(180)) },
+            exitTransition = { fadeOut(animationSpec = tween(120)) }
         ) {
             composable(Routes.HOME) {
                 DashboardScreen(
@@ -249,10 +291,18 @@ fun VdvoemRoot(
                     eventCount = dashboardState.eventCount,
                     wishCount = dashboardState.wishCount,
                     giftCount = dashboardState.giftCount,
-                    onOpenModule = { module -> navController.navigate(module.route) },
-                    onOpenStore = { navController.navigate(Routes.STORE) },
-                    onOpenWishes = { navController.navigate("wishes") },
-                    onOpenQuizzes = { navController.navigate("quizzes") },
+                    onOpenModule = { module -> openTab(module.route) },
+                    onOpenStore = { openTab(Routes.STORE) },
+                    onOpenWishes = {
+                        presentsTabController.select(PresentsTabController.TAB_WISHES)
+                        openTab(PresentsModule.ROUTE)
+                    },
+                    onOpenGifts = {
+                        presentsTabController.select(PresentsTabController.TAB_GIFTS)
+                        openTab(PresentsModule.ROUTE)
+                    },
+                    onOpenQuizzes = { openTab("quizzes") },
+                    onOpenPairEditor = { pairDialogOpen = true },
                     widgetIds = widgetIds,
                     lastPoke = lastPoke,
                     onWidgetIdsChange = { ids ->
@@ -266,8 +316,7 @@ fun VdvoemRoot(
                             )
                         }
                     },
-                    onSavePair = dashboardViewModel::savePair,
-                    onOpenCalendar = { navController.navigate("calendar") }
+                    onOpenCalendar = { openTab("calendar") }
                 )
             }
             composable(Routes.STORE) {
@@ -277,11 +326,31 @@ fun VdvoemRoot(
                     onToggle = viewModel::setEnabled
                 )
             }
+            composable(Routes.MORE) {
+                MoreScreen(
+                    overflowModules = overflowModules,
+                    onOpenModule = { module -> openTab(module.route) },
+                    onOpenStore = { openTab(Routes.STORE) },
+                    onExport = { exportLauncher.launch("vdvoem-backup.json") },
+                    onImport = { importLauncher.launch(arrayOf("*/*")) }
+                )
+            }
             enabledModules.forEach { module ->
                 composable(module.route) {
                     module.Screen(Modifier.fillMaxSize())
                 }
             }
         }
+    }
+
+    if (pairDialogOpen) {
+        PairDialog(
+            pair = dashboardState.pair,
+            onDismiss = { pairDialogOpen = false },
+            onConfirm = { nameA, nameB, sinceMillis, birthdayA, birthdayB ->
+                dashboardViewModel.savePair(nameA, nameB, sinceMillis, birthdayA, birthdayB)
+                pairDialogOpen = false
+            }
+        )
     }
 }
