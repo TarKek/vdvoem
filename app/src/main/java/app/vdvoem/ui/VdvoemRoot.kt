@@ -38,6 +38,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import app.vdvoem.R
 import app.vdvoem.core.domain.module.ModuleRegistry
+import app.vdvoem.data.HomePreferences
 import app.vdvoem.feature.store.StoreModule
 import app.vdvoem.feature.store.StoreScreen
 import app.vdvoem.ui.dashboard.DashboardScreen
@@ -63,6 +64,11 @@ fun VdvoemRoot(
 ) {
     val enabledIds by viewModel.enabledIds.collectAsStateWithLifecycle()
     val dashboardState by dashboardViewModel.state.collectAsStateWithLifecycle()
+    val homePreferences: HomePreferences = koinInject()
+    val widgetIds by homePreferences.widgetIds
+        .collectAsStateWithLifecycle(initialValue = HomePreferences.DEFAULT_WIDGETS)
+    val lastPoke by homePreferences.lastPoke
+        .collectAsStateWithLifecycle(initialValue = null)
     val navController = rememberNavController()
 
     val context = LocalContext.current
@@ -202,9 +208,8 @@ fun VdvoemRoot(
                     selected = currentRoute == Routes.HOME,
                     onClick = {
                         navController.navigate(Routes.HOME) {
-                            popUpTo(Routes.HOME) { saveState = true }
+                            popUpTo(Routes.HOME) { inclusive = true }
                             launchSingleTop = true
-                            restoreState = true
                         }
                     },
                     icon = { Icon(Icons.Filled.Home, contentDescription = stringResource(R.string.title_home)) },
@@ -248,8 +253,14 @@ fun VdvoemRoot(
                     onOpenStore = { navController.navigate(Routes.STORE) },
                     onOpenWishes = { navController.navigate("wishes") },
                     onOpenQuizzes = { navController.navigate("quizzes") },
-                    onPoke = {
+                    widgetIds = widgetIds,
+                    lastPoke = lastPoke,
+                    onWidgetIdsChange = { ids ->
+                        scope.launch { homePreferences.setWidgetIds(ids) }
+                    },
+                    onSendPoke = { text ->
                         scope.launch {
+                            homePreferences.saveLastPoke(text)
                             snackbarHostState.showSnackbar(
                                 context.getString(R.string.dashboard_poke_sent)
                             )

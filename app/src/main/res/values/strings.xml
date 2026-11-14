@@ -68,6 +68,29 @@
     <string name="pair_birthday_b">День рождения: партнёр</string>
     <string name="pair_birthday_b_value">День рождения партнёра: %1$s</string>
 
+    <string name="dashboard_poke_last">Отправлено: %1$s</string>
+
+    <string name="widget_countdown_title">Отсчёт</string>
+    <string name="widget_countdown_description">Большой счётчик до ближайшего события</string>
+    <string name="widget_event_title">События</string>
+    <string name="widget_event_description">Сколько дат уже сохранено</string>
+    <string name="widget_wishes_description">Сколько желаний в списке</string>
+    <string name="widget_gifts_description">Сколько подарков запланировано</string>
+    <string name="widget_tests_description">Быстрый вход в тесты для двоих</string>
+    <string name="widget_modules_description">Сколько модулей включено</string>
+    <string name="widget_picker_title">Виджеты на главной</string>
+    <string name="widget_picker_text">Включайте то, что хотите видеть. Состав и порядок можно менять в любой момент.</string>
+    <string name="widget_picker_done">Готово</string>
+
+    <string name="poke_dialog_title">Сердечко</string>
+    <string name="poke_dialog_text">Партнёр получит сообщение в уведомлениях, когда появится синхронизация.</string>
+    <string name="poke_field">Своё сообщение</string>
+    <string name="poke_send">Отправить</string>
+    <string name="poke_quick_love">Люблю тебя</string>
+    <string name="poke_quick_miss">Скучаю</string>
+    <string name="poke_quick_hug">Обнимаю</string>
+    <string name="poke_quick_thinking">Думаю о тебе</string>
+
     <string name="dashboard_modules_title">Ваши модули</string>
     <string name="dashboard_modules_all">Все</string>
     <string name="dashboard_modules_empty_title">Пока пусто</string>

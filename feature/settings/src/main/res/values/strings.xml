@@ -3,7 +3,7 @@
     <string name="settings_module_title">Настройки</string>
     <string name="settings_module_description">Тема, цвета, данные и о приложении</string>
 
-    <string name="settings_hero_title">Настройки</string>
+    <string name="settings_hero_title">Оформление и данные</string>
     <string name="settings_hero_text">Внешний вид приложения и сведения о нём — в одном месте. Изменения применяются сразу.</string>
 
     <string name="settings_section_appearance">Оформление</string>

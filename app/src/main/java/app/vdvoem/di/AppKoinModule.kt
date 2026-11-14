@@ -11,11 +11,13 @@ import app.vdvoem.feature.settings.SettingsViewModel
 import app.vdvoem.feature.store.StoreModule
 import app.vdvoem.feature.wishes.WishesModule
 import app.vdvoem.feature.wishes.WishesViewModel
+import app.vdvoem.data.HomePreferences
 import app.vdvoem.ui.ModulesViewModel
 import app.vdvoem.ui.dashboard.DashboardViewModel
 import app.vdvoem.ui.sync.BackupViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
+import org.koin.android.ext.koin.androidContext
 
 /**
  * Точка сборки приложения: здесь перечислены все модули, которые попадут в реестр.
@@ -47,6 +49,7 @@ val appKoinModule = module {
     viewModel { WishesViewModel(wishRepository = get(), pairRepository = get()) }
     viewModel { GiftsViewModel(giftRepository = get(), pairRepository = get()) }
     viewModel { SettingsViewModel(repository = get()) }
+    single { HomePreferences(context = androidContext()) }
     viewModel {
         BackupViewModel(
             pairRepository = get(),

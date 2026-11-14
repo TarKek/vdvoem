@@ -34,9 +34,11 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -66,6 +68,7 @@ import app.vdvoem.core.ui.components.SectionHeader
 import app.vdvoem.core.ui.components.VdvoemCard
 import app.vdvoem.core.ui.theme.VdvoemSizes
 import app.vdvoem.core.ui.theme.VdvoemSpacing
+import app.vdvoem.data.HomePreferences
 
 @Composable
 fun DashboardScreen(
@@ -75,16 +78,21 @@ fun DashboardScreen(
     eventCount: Int,
     wishCount: Int,
     giftCount: Int,
+    widgetIds: List<String>,
+    lastPoke: String?,
+    onWidgetIdsChange: (List<String>) -> Unit,
+    onSendPoke: (String) -> Unit,
     onOpenModule: (AppModule) -> Unit,
     onOpenStore: () -> Unit,
     onOpenWishes: () -> Unit,
     onOpenQuizzes: () -> Unit,
-    onPoke: () -> Unit,
     onSavePair: (nameA: String, nameB: String, sinceMillis: Long, birthdayA: Long?, birthdayB: Long?) -> Unit,
     onOpenCalendar: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showPairDialog by rememberSaveable { mutableStateOf(false) }
+    var showPokeDialog by rememberSaveable { mutableStateOf(false) }
+    var showWidgetPicker by rememberSaveable { mutableStateOf(false) }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -99,8 +107,9 @@ fun DashboardScreen(
         item(key = "pair") {
             PairCard(
                 pair = pair,
+                lastPoke = lastPoke,
                 onEditPair = { showPairDialog = true },
-                onPoke = onPoke
+                onPoke = { showPokeDialog = true }
             )
         }
 
@@ -136,7 +145,7 @@ fun DashboardScreen(
                 title = stringResource(R.string.dashboard_widgets_title),
                 modifier = Modifier.padding(top = VdvoemSpacing.sm),
                 trailing = {
-                    IconButton(onClick = onOpenStore) {
+                    IconButton(onClick = { showWidgetPicker = true }) {
                         Icon(
                             imageVector = Icons.Filled.Add,
                             contentDescription = stringResource(R.string.dashboard_widget_add)
@@ -148,6 +157,7 @@ fun DashboardScreen(
 
         item(key = "widgets") {
             WidgetsRow(
+                widgetIds = widgetIds,
                 nextEvent = nextEvent,
                 eventCount = eventCount,
                 wishCount = wishCount,
@@ -155,10 +165,32 @@ fun DashboardScreen(
                 enabledModules = modules.size,
                 onOpenCalendar = onOpenCalendar,
                 onOpenWishes = onOpenWishes,
+                onOpenQuizzes = onOpenQuizzes,
                 onOpenModule = { module -> onOpenModule(module) },
                 onOpenStore = onOpenStore
             )
         }
+    }
+
+    if (showWidgetPicker) {
+        WidgetPickerSheet(
+            selected = widgetIds,
+            onToggle = { id, enabled ->
+                val next = if (enabled) widgetIds + id else widgetIds - id
+                onWidgetIdsChange(next)
+            },
+            onDismiss = { showWidgetPicker = false }
+        )
+    }
+
+    if (showPokeDialog) {
+        PokeDialog(
+            onDismiss = { showPokeDialog = false },
+            onSend = { text ->
+                onSendPoke(text)
+                showPokeDialog = false
+            }
+        )
     }
 
     if (showPairDialog) {
@@ -177,6 +209,7 @@ fun DashboardScreen(
 @Composable
 private fun PairCard(
     pair: Pair?,
+    lastPoke: String?,
     onEditPair: () -> Unit,
     onPoke: () -> Unit
 ) {
@@ -263,6 +296,14 @@ private fun PairCard(
                     name = pair.nameB,
                     birthday = birthday,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                )
+            }
+            if (!lastPoke.isNullOrBlank()) {
+                Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+                Text(
+                    text = stringResource(R.string.dashboard_poke_last, lastPoke),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                 )
             }
         }
@@ -352,9 +393,10 @@ private fun QuickCard(
     }
 }
 
-/** Горизонтальная лента виджетов: то, что пользователь хочет видеть на главной. */
+/** Горизонтальная лента виджетов: состав и порядок задаёт пользователь. */
 @Composable
 private fun WidgetsRow(
+    widgetIds: List<String>,
     nextEvent: CalendarEvent?,
     eventCount: Int,
     wishCount: Int,
@@ -362,44 +404,62 @@ private fun WidgetsRow(
     enabledModules: Int,
     onOpenCalendar: () -> Unit,
     onOpenWishes: () -> Unit,
+    onOpenQuizzes: () -> Unit,
     onOpenModule: (AppModule) -> Unit,
     onOpenStore: () -> Unit
 ) {
+    val daysToEvent = nextEvent?.let {
+        Dates.daysUntil(Dates.nextOccurrence(it.dateMillis, it.annual))
+    }
     LazyRow(horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)) {
-        item(key = "widget_event") {
-            WidgetCard(
-                icon = Icons.Filled.DateRange,
-                title = nextEvent?.title ?: stringResource(R.string.dashboard_upcoming_empty_title),
-                value = nextEvent?.let {
-                    val days = Dates.daysUntil(Dates.nextOccurrence(it.dateMillis, it.annual))
-                    pluralStringResource(R.plurals.dashboard_days_short, days.toInt(), days)
-                } ?: stringResource(R.string.dashboard_widget_empty),
-                onClick = onOpenCalendar
-            )
-        }
-        item(key = "widget_wishes") {
-            WidgetCard(
-                icon = Icons.Filled.Favorite,
-                title = stringResource(R.string.dashboard_wishes_card),
-                value = wishCount.toString(),
-                onClick = onOpenWishes
-            )
-        }
-        item(key = "widget_gifts") {
-            WidgetCard(
-                icon = Icons.Filled.ShoppingCart,
-                title = stringResource(R.string.dashboard_gifts_card),
-                value = giftCount.toString(),
-                onClick = onOpenStore
-            )
-        }
-        item(key = "widget_modules") {
-            WidgetCard(
-                icon = Icons.Filled.Star,
-                title = stringResource(R.string.dashboard_modules_title),
-                value = eventCount.toString() + " / " + enabledModules,
-                onClick = onOpenStore
-            )
+        items(widgetIds, key = { it }) { id ->
+            when (id) {
+                HomePreferences.WIDGET_COUNTDOWN -> WidgetCard(
+                    icon = Icons.Filled.DateRange,
+                    title = nextEvent?.title
+                        ?: stringResource(R.string.widget_countdown_title),
+                    value = daysToEvent?.let {
+                        pluralStringResource(R.plurals.dashboard_days_short, it.toInt(), it)
+                    } ?: stringResource(R.string.dashboard_widget_empty),
+                    onClick = onOpenCalendar,
+                    highlight = true
+                )
+
+                HomePreferences.WIDGET_EVENT -> WidgetCard(
+                    icon = Icons.Filled.DateRange,
+                    title = stringResource(R.string.dashboard_upcoming_title),
+                    value = pluralStringResource(R.plurals.dashboard_events_count, eventCount, eventCount),
+                    onClick = onOpenCalendar
+                )
+
+                HomePreferences.WIDGET_WISHES -> WidgetCard(
+                    icon = Icons.Filled.Favorite,
+                    title = stringResource(R.string.dashboard_wishes_card),
+                    value = wishCount.toString(),
+                    onClick = onOpenWishes
+                )
+
+                HomePreferences.WIDGET_GIFTS -> WidgetCard(
+                    icon = Icons.Filled.ShoppingCart,
+                    title = stringResource(R.string.dashboard_gifts_card),
+                    value = giftCount.toString(),
+                    onClick = onOpenStore
+                )
+
+                HomePreferences.WIDGET_TESTS -> WidgetCard(
+                    icon = Icons.Filled.Star,
+                    title = stringResource(R.string.dashboard_tests_card),
+                    value = stringResource(R.string.dashboard_tests_card_subtitle),
+                    onClick = onOpenQuizzes
+                )
+
+                HomePreferences.WIDGET_MODULES -> WidgetCard(
+                    icon = Icons.Filled.Star,
+                    title = stringResource(R.string.dashboard_modules_title),
+                    value = enabledModules.toString(),
+                    onClick = onOpenStore
+                )
+            }
         }
         item(key = "widget_add") {
             WidgetCard(
@@ -419,13 +479,14 @@ private fun WidgetCard(
     title: String,
     value: String,
     onClick: () -> Unit,
-    dashed: Boolean = false
+    dashed: Boolean = false,
+    highlight: Boolean = false
 ) {
     VdvoemCard(
-        containerColor = if (dashed) {
-            MaterialTheme.colorScheme.surfaceContainerLow
-        } else {
-            MaterialTheme.colorScheme.surfaceContainer
+        containerColor = when {
+            highlight -> MaterialTheme.colorScheme.tertiaryContainer
+            dashed -> MaterialTheme.colorScheme.surfaceContainerLow
+            else -> MaterialTheme.colorScheme.surfaceContainer
         },
         modifier = Modifier
             .width(168.dp)
@@ -435,14 +496,22 @@ private fun WidgetCard(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = if (highlight) {
+                MaterialTheme.colorScheme.onTertiaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
             modifier = Modifier.size(VdvoemSizes.iconMd)
         )
         Spacer(modifier = Modifier.weight(1f))
         Text(
             text = title,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (highlight) {
+                MaterialTheme.colorScheme.onTertiaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
             maxLines = 1
         )
         if (value.isNotEmpty()) {
@@ -450,10 +519,182 @@ private fun WidgetCard(
                 text = value,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Start
+                textAlign = TextAlign.Start,
+                color = if (highlight) {
+                    MaterialTheme.colorScheme.onTertiaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                }
             )
         }
     }
+}
+
+private data class WidgetEntry(
+    val id: String,
+    val titleRes: Int,
+    val descriptionRes: Int,
+    val icon: ImageVector
+)
+
+private val widgetCatalog = listOf(
+    WidgetEntry(
+        HomePreferences.WIDGET_COUNTDOWN,
+        R.string.widget_countdown_title,
+        R.string.widget_countdown_description,
+        Icons.Filled.DateRange
+    ),
+    WidgetEntry(
+        HomePreferences.WIDGET_EVENT,
+        R.string.widget_event_title,
+        R.string.widget_event_description,
+        Icons.Filled.DateRange
+    ),
+    WidgetEntry(
+        HomePreferences.WIDGET_WISHES,
+        R.string.dashboard_wishes_card,
+        R.string.widget_wishes_description,
+        Icons.Filled.Favorite
+    ),
+    WidgetEntry(
+        HomePreferences.WIDGET_GIFTS,
+        R.string.dashboard_gifts_card,
+        R.string.widget_gifts_description,
+        Icons.Filled.ShoppingCart
+    ),
+    WidgetEntry(
+        HomePreferences.WIDGET_TESTS,
+        R.string.dashboard_tests_card,
+        R.string.widget_tests_description,
+        Icons.Filled.Star
+    ),
+    WidgetEntry(
+        HomePreferences.WIDGET_MODULES,
+        R.string.dashboard_modules_title,
+        R.string.widget_modules_description,
+        Icons.Filled.Star
+    )
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WidgetPickerSheet(
+    selected: List<String>,
+    onToggle: (String, Boolean) -> Unit,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = VdvoemSpacing.screenHorizontal)
+                .padding(bottom = VdvoemSpacing.xxl),
+            verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)
+        ) {
+            Text(
+                text = stringResource(R.string.widget_picker_title),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = stringResource(R.string.widget_picker_text),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            widgetCatalog.forEach { entry ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = entry.icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(VdvoemSizes.iconMd)
+                    )
+                    Spacer(modifier = Modifier.width(VdvoemSpacing.md))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(entry.titleRes),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = stringResource(entry.descriptionRes),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = entry.id in selected,
+                        onCheckedChange = { onToggle(entry.id, it) }
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+            FilledTonalButton(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.widget_picker_done))
+            }
+        }
+    }
+}
+
+@Composable
+private fun PokeDialog(
+    onDismiss: () -> Unit,
+    onSend: (String) -> Unit
+) {
+    var text by remember { mutableStateOf("") }
+    val quickMessages = listOf(
+        stringResource(R.string.poke_quick_love),
+        stringResource(R.string.poke_quick_miss),
+        stringResource(R.string.poke_quick_hug),
+        stringResource(R.string.poke_quick_thinking)
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.poke_dialog_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)) {
+                Text(
+                    text = stringResource(R.string.poke_dialog_text),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                quickMessages.forEach { message ->
+                    OutlinedButton(
+                        onClick = { text = message },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(message)
+                    }
+                }
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    label = { Text(stringResource(R.string.poke_field)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onSend(text.trim()) },
+                enabled = text.isNotBlank()
+            ) {
+                Text(stringResource(R.string.poke_send))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.pair_cancel))
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
