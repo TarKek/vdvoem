@@ -47,7 +47,7 @@ val appKoinModule = module {
         )
     }
     viewModel { CalendarViewModel(calendarRepository = get(), pairRepository = get()) }
-    viewModel { WishesViewModel(wishRepository = get(), pairRepository = get()) }
+    viewModel { WishesViewModel(wishRepository = get(), pairRepository = get(), giftRepository = get()) }
     viewModel { GiftsViewModel(giftRepository = get(), pairRepository = get()) }
     viewModel { SettingsViewModel(repository = get()) }
     single { HomePreferences(context = androidContext()) }

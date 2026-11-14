@@ -72,11 +72,15 @@ object QuizCatalog {
     const val COMPATIBILITY_ID = "compatibility"
     const val LOVE_LANGUAGE_ID = "love_language"
     const val WHO_IS_WHO_ID = "who_is_who"
+    const val HOME_MONEY_ID = "home_money"
+    const val FUTURE_PLANS_ID = "future_plans"
 
     val quizzes: List<Quiz> = listOf(
         compatibilityQuiz(),
         loveLanguageQuiz(),
-        whoIsWhoQuiz()
+        whoIsWhoQuiz(),
+        homeMoneyQuiz(),
+        futurePlansQuiz()
     )
 
     fun byId(id: String): Quiz? = quizzes.firstOrNull { it.id == id }
@@ -302,6 +306,158 @@ object QuizCatalog {
                     QuizOption("Я", 2),
                     QuizOption("Партнёр", 2),
                     QuizOption("Планы приходят сами", 1)
+                )
+            )
+        )
+    )
+
+    private fun homeMoneyQuiz() = Quiz(
+        id = HOME_MONEY_ID,
+        title = "Быт и деньги",
+        description = "Дела по дому, общий бюджет, накопления и покупки — как устроена ваша повседневность.",
+        interpretations = listOf(
+            "Быт и деньги у вас пока идут сами по себе, и это утомляет обоих. Начните с одного шага: раз в неделю пять минут на «кто что делает» и «сколько потратили».",
+            "Основа у вас есть, но договорённости держатся на памяти, а не на правилах. Запишите распределение дел и лимит крупных трат — станет спокойнее.",
+            "Вы ведёте быт и бюджет как команда: обсуждаете, планируете и не копите обид. Это самая прочная часть пары — берегите её."
+        ),
+        questions = listOf(
+            QuizQuestion(
+                text = "Как устроен ваш общий бюджет?",
+                options = listOf(
+                    QuizOption("Общая касса и общие цели", 3),
+                    QuizOption("Свои счета, общие траты по договорённости", 2),
+                    QuizOption("Кто-то один всё контролирует", 1),
+                    QuizOption("Никто не знает, куда уходят деньги", 0)
+                )
+            ),
+            QuizQuestion(
+                text = "Крупная покупка — вы…",
+                options = listOf(
+                    QuizOption("Обсуждаем заранее и решаем вместе", 3),
+                    QuizOption("Предупреждаем, но решаем сами", 2),
+                    QuizOption("Каждый покупает на своё, без обсуждений", 1),
+                    QuizOption("Спорим о ней уже после", 0)
+                )
+            ),
+            QuizQuestion(
+                text = "Кто помнит про счета и сроки?",
+                options = listOf(
+                    QuizOption("Ведём вместе или по очереди", 3),
+                    QuizOption("Один, но второй в курсе", 2),
+                    QuizOption("Кто вспомнил, тот и заплатил", 1),
+                    QuizOption("Узнаём о долге в последний момент", 0)
+                )
+            ),
+            QuizQuestion(
+                text = "Домашние дела распределены как?",
+                options = listOf(
+                    QuizOption("У каждого свои зоны, и оба их знают", 3),
+                    QuizOption("Делаем вместе в выходной", 2),
+                    QuizOption("Кто свободен, тот и делает", 1),
+                    QuizOption("Всё держится на одном человеке", 0)
+                )
+            ),
+            QuizQuestion(
+                text = "Накопления на общую цель…",
+                options = listOf(
+                    QuizOption("Откладываем регулярно и видим прогресс", 3),
+                    QuizOption("Откладываем, когда остаётся", 2),
+                    QuizOption("Планируем начать", 1),
+                    QuizOption("Не копим", 0)
+                )
+            ),
+            QuizQuestion(
+                text = "Про деньги вы говорите…",
+                options = listOf(
+                    QuizOption("Спокойно и регулярно", 3),
+                    QuizOption("Когда что-то меняется", 2),
+                    QuizOption("Только когда возникла проблема", 1),
+                    QuizOption("Стараемся не поднимать тему", 0)
+                )
+            ),
+            QuizQuestion(
+                text = "Продукты и мелочи для дома покупает…",
+                options = listOf(
+                    QuizOption("Кто свободен или вместе", 3),
+                    QuizOption("В основном один, но по списку от обоих", 2),
+                    QuizOption("Всегда один и без обсуждений", 1),
+                    QuizOption("Покупаем хаотично, потом выбрасываем", 0)
+                )
+            )
+        )
+    )
+
+    private fun futurePlansQuiz() = Quiz(
+        id = FUTURE_PLANS_ID,
+        title = "Планы на будущее",
+        description = "Жильё, работа, отпуск и мечты на пять лет: смотрите ли вы в одну сторону.",
+        interpretations = listOf(
+            "О будущем вы почти не говорите, и каждый рисует его сам. Начните с одного вопроса: «Каким ты видишь наш следующий год?» — без споров и дедлайнов.",
+            "Вы знаете главное друг о друге, но планы чаще обсуждаете, чем записываете. Одна общая цель на полгода сделает разговоры конкретнее.",
+            "У вас есть общая картина будущего и привычка её сверять. Это редкое совпадение — продолжайте мечтать вслух."
+        ),
+        questions = listOf(
+            QuizQuestion(
+                text = "Каким вы видите себя через пять лет?",
+                options = listOf(
+                    QuizOption("Обсуждали и примерно представляем", 3),
+                    QuizOption("Есть идеи, но без деталей", 2),
+                    QuizOption("Каждый думает по-своему", 1),
+                    QuizOption("Не заглядываем так далеко", 0)
+                )
+            ),
+            QuizQuestion(
+                text = "Большие цели — жильё, ремонт, переезд…",
+                options = listOf(
+                    QuizOption("Записаны и разбиты на шаги", 3),
+                    QuizOption("Обсуждаем, но без плана", 2),
+                    QuizOption("Вспоминаем редко", 1),
+                    QuizOption("Не обсуждаем", 0)
+                )
+            ),
+            QuizQuestion(
+                text = "Отпуск через полгода…",
+                options = listOf(
+                    QuizOption("Уже выбрали и забронировали", 3),
+                    QuizOption("Знаем направление и копим", 2),
+                    QuizOption("Решим ближе к делу", 1),
+                    QuizOption("Планов пока нет", 0)
+                )
+            ),
+            QuizQuestion(
+                text = "Работа и карьера партнёра для вас…",
+                options = listOf(
+                    QuizOption("Обсуждаем изменения и поддерживаем", 3),
+                    QuizOption("Узнаём новости по факту", 2),
+                    QuizOption("Считаем это личным делом", 1),
+                    QuizOption("Не интересуемся", 0)
+                )
+            ),
+            QuizQuestion(
+                text = "Финансовые цели на год…",
+                options = listOf(
+                    QuizOption("Общие и конкретные", 3),
+                    QuizOption("Есть у каждого свои", 2),
+                    QuizOption("Что-то планируем", 1),
+                    QuizOption("Никаких", 0)
+                )
+            ),
+            QuizQuestion(
+                text = "Мечты друг друга — путешествия, хобби, язык…",
+                options = listOf(
+                    QuizOption("Знаем и помогаем их осуществлять", 3),
+                    QuizOption("Знаем, но редко помогаем", 2),
+                    QuizOption("Знаем только часть", 1),
+                    QuizOption("Почти не знаем", 0)
+                )
+            ),
+            QuizQuestion(
+                text = "Разговор о будущем обычно…",
+                options = listOf(
+                    QuizOption("Спокойный и конкретный", 3),
+                    QuizOption("Начинается и растворяется", 2),
+                    QuizOption("Перерастает в спор", 1),
+                    QuizOption("Не начинается", 0)
                 )
             )
         )

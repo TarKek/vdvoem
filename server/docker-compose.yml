@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vdvoem
+      POSTGRES_USER: vdvoem
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vdvoem -d vdvoem"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [internal]
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 8080
+      JDBC_URL: jdbc:postgresql://db:5432/vdvoem
+      DB_USER: vdvoem
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      DB_POOL: 8
+    ports:
+      - "127.0.0.1:8090:8080"
+    networks: [internal]
+
+volumes:
+  db_data:
+
+networks:
+  internal:
+    driver: bridge

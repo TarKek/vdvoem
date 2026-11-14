@@ -2,14 +2,18 @@ package app.vdvoem.feature.wishes
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.vdvoem.core.domain.model.Gift
+import app.vdvoem.core.domain.model.GiftStatus
 import app.vdvoem.core.domain.model.Wish
 import app.vdvoem.core.domain.model.WishStatus
+import app.vdvoem.core.domain.repository.GiftRepository
 import app.vdvoem.core.domain.repository.PairRepository
 import app.vdvoem.core.domain.repository.WishRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -28,7 +32,8 @@ data class WishesUiState(
 
 class WishesViewModel(
     private val wishRepository: WishRepository,
-    private val pairRepository: PairRepository
+    private val pairRepository: PairRepository,
+    private val giftRepository: GiftRepository
 ) : ViewModel() {
 
     val state: StateFlow<WishesUiState> = wishRepository.observeWishes()
@@ -115,7 +120,35 @@ class WishesViewModel(
         viewModelScope.launch { wishRepository.delete(id) }
     }
 
+    /**
+     * Желание сразу становится идеей подарка, а само желание помечается «уже дарят»,
+     * чтобы партнёр не купил то же самое дважды.
+     */
+    fun makeGift(wishId: String) {
+        viewModelScope.launch {
+            val wish = wishRepository.observeWishes().first()
+                .firstOrNull { it.id == wishId } ?: return@launch
+            val pairId = wish.pairId.ifBlank { pairRepository.current()?.id ?: LOCAL_PAIR_ID }
+            val now = System.currentTimeMillis()
+            giftRepository.upsert(
+                Gift(
+                    id = UUID.randomUUID().toString(),
+                    pairId = pairId,
+                    title = wish.title,
+                    note = NOTE_FROM_WISH,
+                    budget = wish.priceEstimate,
+                    status = GiftStatus.IDEA,
+                    updatedAt = now
+                )
+            )
+            wishRepository.upsert(wish.copy(status = WishStatus.RESERVED, updatedAt = now))
+        }
+    }
+
     private companion object {
         const val LOCAL_PAIR_ID = "local"
+
+        /** Метка «подарок пришёл из желаний»; её же ищет экран подарков. */
+        const val NOTE_FROM_WISH = "Из желаний"
     }
 }

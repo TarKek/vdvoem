@@ -47,6 +47,7 @@ class WishesModule : AppModule {
             onUpdateWish = viewModel::update,
             onSetStatus = viewModel::setStatus,
             onDeleteWish = viewModel::delete,
+            onMakeGift = viewModel::makeGift,
             modifier = modifier
         )
     }

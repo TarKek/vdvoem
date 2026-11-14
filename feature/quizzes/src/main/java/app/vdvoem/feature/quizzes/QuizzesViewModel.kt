@@ -17,7 +17,11 @@ data class QuizOutcome(
     val maxScore: Int,
     val percent: Int,
     val interpretation: String,
-    val passedAt: Long
+    val passedAt: Long,
+    /** Лучший результат за всё время, включая текущее прохождение. */
+    val bestPercent: Int = percent,
+    /** Текущее прохождение стало личным рекордом. */
+    val isNewRecord: Boolean = false
 )
 
 data class QuizzesUiState(
@@ -108,6 +112,7 @@ class QuizzesViewModel(
     private fun finish(quiz: Quiz, answers: List<Int>) {
         val percent = quiz.percent(answers)
         val passedAt = System.currentTimeMillis()
+        val previousBest = state.value.results[quiz.id]?.bestPercent ?: 0
         session.value = session.value.copy(
             outcome = QuizOutcome(
                 quiz = quiz,
@@ -115,7 +120,9 @@ class QuizzesViewModel(
                 maxScore = quiz.maxScore,
                 percent = percent,
                 interpretation = quiz.interpretation(percent),
-                passedAt = passedAt
+                passedAt = passedAt,
+                bestPercent = maxOf(previousBest, percent),
+                isNewRecord = previousBest > 0 && percent > previousBest
             )
         )
         viewModelScope.launch {

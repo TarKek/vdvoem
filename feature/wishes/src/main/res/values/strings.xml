@@ -7,6 +7,8 @@
     <string name="wishes_summary_done">%1$d подарено</string>
     <string name="wishes_fab">Желание</string>
     <string name="wishes_mark_done">Отметить подаренным</string>
+    <string name="wishes_action_make_gift">Подарить</string>
+    <string name="wishes_gift_added">Добавлено в подарки</string>
     <string name="wishes_price">≈ %1$s ₽</string>
     <string name="wishes_loading">Загружаем желания…</string>
 

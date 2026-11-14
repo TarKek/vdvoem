@@ -11,6 +11,12 @@
 
 ## Журнал
 
+[roadmap-b007] feature/calendar — напоминания: ReminderScheduler (WorkManager, event_<id>_week/day, 9:00, REPLACE), ReminderWorker (канал «Напоминания», проверка areNotificationsEnabled, идемпотентно по id), DataStore `calendar_prefs` + Switch «Напоминания» с запросом POST_NOTIFICATIONS и снекбаром; :feature:calendar:compileDebugKotlin — BUILD SUCCESSFUL; NEED: — (scheduler/prefs регистрируются в calendarFeatureModule, ViewModel подключает их сам; правки app/ не нужны)
+
+[roadmap-quizzes] feature/quizzes — готово: +2 теста по 7 вопросов («Быт и деньги», «Планы на будущее»), история до 5 прохождений на тест в DataStore (пары «процент|время» через `;`, старый одиночный формат читается), на карточке «Лучший: N% · последний 14 нояб.», на результате строка «Твой лучший результат» + пилюля «Новый рекорд», кнопка «Поделиться» (ACTION_SEND, chooser); :feature:quizzes:compileDebugKotlin — BUILD SUCCESSFUL; NEED: —
+
+[roadmap-b003] feature/wishes+gifts — из желания в подарки: WishesViewModel.makeGift (Gift c note «Из желаний», бюджет=цена, IDEA + желание → RESERVED), кнопка «Подарить» на карточке + снекбар «Добавлено в подарки», пилюля «Из желаний» в карточке подарка; :feature:wishes/gifts:compileDebugKotlin — BUILD SUCCESSFUL; NEED: WishesViewModel(get(), get(), get())
+
 [ux-app-shell] app/ui — готово: вкладка «Ещё» с иконкой Menu, меню бэкапа убрано из шапки (экспорт/импорт в MoreScreen), круглая кнопка пары 36dp в шапке, единый openTab (popUpTo(HOME)+saveState+restoreState), PresentsTabController (Koin single) для вкладки «Подарки», сетка виджетов 2 колонки с фильтром по включённым модулям, PairCard с аватарами A/B и сердечком, секция «Данные» в «Ещё»; :app:assembleDebug — BUILD SUCCESSFUL; NEED: —
 
 [ux-presents] feature/wishes+gifts+settings — готово: убраны hero-карточки (одна компактная строка сводки), главные действия — ExtendedFAB «+ Желание» / «+ Подарок», карточка подарка в 3 строки (заголовок+InfoPill, заметка+бюджет, кнопка смены статуса), нижние отступы списков listBottom (96dp); :feature:wishes/gifts/settings:compileDebugKotlin — BUILD SUCCESSFUL; NEED: —

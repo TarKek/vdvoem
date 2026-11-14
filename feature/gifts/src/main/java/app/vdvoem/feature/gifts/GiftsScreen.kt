@@ -377,6 +377,8 @@ private fun GiftCard(
     onDeleteRequest: () -> Unit
 ) {
     val budget = gift.budget
+    val fromWish = gift.note.contains(NOTE_FROM_WISH, ignoreCase = true)
+    val visibleNote = if (fromWish && gift.note.trim() == NOTE_FROM_WISH) "" else gift.note
     VdvoemCard(onClick = onEdit) {
         Row(verticalAlignment = Alignment.Top) {
             Text(
@@ -392,12 +394,18 @@ private fun GiftCard(
             InfoPill(text = stringResource(gift.status.labelRes))
         }
 
-        if (gift.note.isNotBlank() || budget != null) {
+        if (visibleNote.isNotBlank() || budget != null || fromWish) {
             Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (gift.note.isNotBlank()) {
+                if (fromWish) {
+                    InfoPill(
+                        text = stringResource(R.string.gifts_from_wish),
+                        modifier = Modifier.padding(end = VdvoemSpacing.sm)
+                    )
+                }
+                if (visibleNote.isNotBlank()) {
                     Text(
-                        text = gift.note,
+                        text = visibleNote,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -561,6 +569,9 @@ private fun GiftDialog(
 private fun formatRubles(value: Long): String =
     NumberFormat.getIntegerInstance(Locale("ru", "RU")).format(value) + " ₽"
 
+/** Метка, которую ставит модуль желаний, когда желание превращают в подарок. */
+private const val NOTE_FROM_WISH = "Из желаний"
+
 @Preview(showBackground = true)
 @Composable
 private fun GiftsScreenPreview() {
@@ -588,7 +599,7 @@ private fun GiftsScreenPreview() {
 private fun GiftCardPreview() {
     VdvoemTheme {
         GiftCard(
-            gift = Gift("1", "local", "Сертификат в спа", "На годовщину", 8000),
+            gift = Gift("1", "local", "Сертификат в спа", "Из желаний", 8000),
             onEdit = {},
             onSetStatus = { _, _ -> },
             onDeleteRequest = {}

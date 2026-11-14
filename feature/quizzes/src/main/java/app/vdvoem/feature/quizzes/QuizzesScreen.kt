@@ -1,5 +1,6 @@
 package app.vdvoem.feature.quizzes
 
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -17,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -29,6 +31,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -212,11 +215,11 @@ private fun QuizCard(
         }
         Spacer(modifier = Modifier.height(VdvoemSpacing.sm))
         InfoPill(
-            text = if (result != null) {
+            text = if (result != null && result.hasAttempts) {
                 stringResource(
-                    R.string.quizzes_passed_on,
-                    formatPassedAt(result.passedAt),
-                    result.percent
+                    R.string.quizzes_best_and_last,
+                    result.bestPercent,
+                    formatPassedAt(result.passedAt)
                 )
             } else {
                 stringResource(R.string.quizzes_not_passed)
@@ -380,6 +383,13 @@ private fun QuizResultView(
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val shareText = stringResource(
+        R.string.quizzes_share_text,
+        outcome.quiz.title,
+        outcome.percent
+    )
+    val shareChooserTitle = stringResource(R.string.quizzes_share_chooser)
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -425,6 +435,17 @@ private fun QuizResultView(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
+                Spacer(modifier = Modifier.height(VdvoemSpacing.xs))
+                Text(
+                    text = stringResource(R.string.quizzes_result_best, outcome.bestPercent),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                if (outcome.isNewRecord) {
+                    Spacer(modifier = Modifier.height(VdvoemSpacing.xs))
+                    InfoPill(text = stringResource(R.string.quizzes_result_record))
+                }
                 Spacer(modifier = Modifier.height(VdvoemSpacing.md))
                 Text(
                     text = stringResource(R.string.quizzes_result_explainer),
@@ -436,17 +457,16 @@ private fun QuizResultView(
         }
 
         VdvoemCard {
-            Column(verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.xs)) {
-                Text(
-                    text = stringResource(R.string.quizzes_result_meaning),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = outcome.interpretation,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
+            Text(
+                text = stringResource(R.string.quizzes_result_meaning),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(VdvoemSpacing.xs))
+            Text(
+                text = outcome.interpretation,
+                style = MaterialTheme.typography.bodyLarge
+            )
         }
 
         Text(
@@ -455,6 +475,25 @@ private fun QuizResultView(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
+
+        OutlinedButton(
+            onClick = {
+                val send = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, shareText)
+                }
+                context.startActivity(Intent.createChooser(send, shareChooserTitle))
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Share,
+                contentDescription = null,
+                modifier = Modifier.size(VdvoemSizes.iconMd)
+            )
+            Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+            Text(stringResource(R.string.quizzes_action_share))
+        }
 
         Button(
             onClick = onRetry,
@@ -476,7 +515,7 @@ private fun Quiz.estimatedMinutes(): Int =
     ((questions.size + 1) / 2).coerceAtLeast(1)
 
 private val passedAtFormatter: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("d MMMM", Locale("ru"))
+    DateTimeFormatter.ofPattern("d MMM", Locale("ru"))
 
 private fun formatPassedAt(epochMillis: Long): String =
     Instant.ofEpochMilli(epochMillis)
@@ -492,8 +531,10 @@ private fun QuizListPreview() {
             results = mapOf(
                 QuizCatalog.COMPATIBILITY_ID to QuizResult(
                     quizId = QuizCatalog.COMPATIBILITY_ID,
-                    percent = 78,
-                    passedAt = System.currentTimeMillis()
+                    attempts = listOf(
+                        QuizAttempt(percent = 64, passedAt = System.currentTimeMillis() - 6_000_000),
+                        QuizAttempt(percent = 78, passedAt = System.currentTimeMillis())
+                    )
                 )
             ),
             onStart = {}
@@ -531,7 +572,9 @@ private fun QuizResultPreview() {
                 maxScore = quiz.maxScore,
                 percent = percent,
                 interpretation = quiz.interpretation(percent),
-                passedAt = System.currentTimeMillis()
+                passedAt = System.currentTimeMillis(),
+                bestPercent = percent + 8,
+                isNewRecord = false
             ),
             onRetry = {},
             onClose = {}

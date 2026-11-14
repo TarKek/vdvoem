@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="quizzes_module_title">Тесты</string>
-    <string name="quizzes_module_description">Короткие тесты для пары: совместимость, язык любви и забавные привычки</string>
+    <string name="quizzes_module_description">Короткие тесты для пары: совместимость, язык любви, привычки, быт и планы</string>
 
     <string name="quizzes_hero_title">Тесты о вашей паре</string>
     <string name="quizzes_hero_text">Отвечайте по одному — результат остаётся на телефоне.</string>
@@ -15,11 +15,12 @@
     <string name="quizzes_action_exit">Выйти</string>
     <string name="quizzes_action_restart">Пройти ещё раз</string>
     <string name="quizzes_action_back_to_list">К списку тестов</string>
+    <string name="quizzes_action_share">Поделиться</string>
 
     <string name="quizzes_question_progress">Вопрос %1$d из %2$d</string>
     <string name="quizzes_question_hint">Выберите один ответ — он подсветится.</string>
 
-    <string name="quizzes_passed_on">Пройден %1$s · %2$d%%</string>
+    <string name="quizzes_best_and_last">Лучший: %1$d%% · последний %2$s</string>
     <string name="quizzes_not_passed">Ещё не проходили</string>
 
     <string name="quizzes_result_title">Ваш результат</string>
@@ -27,7 +28,12 @@
     <string name="quizzes_result_score">%1$d из %2$d баллов</string>
     <string name="quizzes_result_explainer">Процент — доля набранных баллов из ста. Чем выше, тем больше ваших ответов совпало с «крепкими» для пары.</string>
     <string name="quizzes_result_meaning">Что это значит</string>
+    <string name="quizzes_result_best">Твой лучший результат: %1$d%%</string>
+    <string name="quizzes_result_record">Новый рекорд</string>
     <string name="quizzes_result_saved">Результат сохранён на этом телефоне</string>
+
+    <string name="quizzes_share_chooser">Поделиться результатом</string>
+    <string name="quizzes_share_text">Мы прошли тест «%1$s» на %2$d%% в приложении «Вдвоём»</string>
 
     <plurals name="quizzes_questions_count">
         <item quantity="one">%d вопрос</item>

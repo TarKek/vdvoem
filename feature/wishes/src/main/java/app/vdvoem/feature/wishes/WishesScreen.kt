@@ -33,12 +33,15 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -46,6 +49,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,6 +69,7 @@ import app.vdvoem.core.ui.theme.VdvoemSpacing
 import app.vdvoem.core.ui.theme.VdvoemTheme
 import java.text.NumberFormat
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 @Composable
 fun WishesScreen(
@@ -80,11 +85,15 @@ fun WishesScreen(
     onUpdateWish: (id: String, title: String, note: String, price: Long?) -> Unit,
     onSetStatus: (id: String, status: WishStatus) -> Unit,
     onDeleteWish: (id: String) -> Unit,
+    onMakeGift: (id: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var editingWish by remember { mutableStateOf<Wish?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<Wish?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val giftAddedMessage = stringResource(R.string.wishes_gift_added)
 
     val visible = remember(state.wishes, filter, sort, query) {
         val needle = query.trim()
@@ -189,11 +198,22 @@ fun WishesScreen(
                     WishCard(
                         wish = wish,
                         onEdit = { editingWish = wish },
-                        onMarkDone = { onSetStatus(wish.id, WishStatus.DONE) }
+                        onMarkDone = { onSetStatus(wish.id, WishStatus.DONE) },
+                        onMakeGift = {
+                            onMakeGift(wish.id)
+                            scope.launch { snackbarHostState.showSnackbar(giftAddedMessage) }
+                        }
                     )
                 }
             }
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = VdvoemSpacing.listBottom)
+        )
 
         ExtendedFloatingActionButton(
             onClick = { showAddDialog = true },
@@ -392,7 +412,8 @@ private fun SortMenuButton(
 private fun WishCard(
     wish: Wish,
     onEdit: () -> Unit,
-    onMarkDone: () -> Unit
+    onMarkDone: () -> Unit,
+    onMakeGift: () -> Unit
 ) {
     val editHint = stringResource(R.string.wishes_card_edit_hint, wish.title)
     VdvoemCard(
@@ -449,14 +470,34 @@ private fun WishCard(
 
         if (wish.status != WishStatus.DONE) {
             Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
-            TextButton(onClick = onMarkDone) {
-                Icon(
-                    imageVector = Icons.Filled.Check,
-                    contentDescription = null,
-                    modifier = Modifier.size(VdvoemSizes.iconSm)
-                )
-                Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
-                Text(stringResource(R.string.wishes_mark_done))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (wish.status == WishStatus.WANTED) {
+                    FilledTonalButton(
+                        onClick = onMakeGift,
+                        contentPadding = PaddingValues(
+                            horizontal = VdvoemSpacing.md,
+                            vertical = VdvoemSpacing.sm
+                        )
+                    ) {
+                        Text(
+                            text = stringResource(R.string.wishes_action_make_gift),
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                TextButton(onClick = onMarkDone) {
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(VdvoemSizes.iconSm)
+                    )
+                    Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
+                    Text(stringResource(R.string.wishes_mark_done))
+                }
             }
         }
     }
@@ -677,6 +718,7 @@ private fun WishesScreenPreview() {
             onUpdateWish = { _, _, _, _ -> },
             onSetStatus = { _, _ -> },
             onDeleteWish = {},
+            onMakeGift = {},
             modifier = Modifier
         )
     }
@@ -699,6 +741,7 @@ private fun WishesScreenEmptyPreview() {
             onUpdateWish = { _, _, _, _ -> },
             onSetStatus = { _, _ -> },
             onDeleteWish = {},
+            onMakeGift = {},
             modifier = Modifier
         )
     }

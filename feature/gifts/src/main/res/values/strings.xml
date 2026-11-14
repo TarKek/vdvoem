@@ -17,6 +17,7 @@
     <string name="gifts_section_given_empty">Здесь появятся подарки, которые уже вручили.</string>
 
     <string name="gifts_status_idea">Идея</string>
+    <string name="gifts_from_wish">Из желаний</string>
     <string name="gifts_status_bought">Куплено</string>
     <string name="gifts_status_given">Подарено</string>
 
