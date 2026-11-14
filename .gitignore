@@ -32,3 +32,6 @@ secrets.properties
 
 # Логи и прочее
 *.log
+
+dist/
+screens/
