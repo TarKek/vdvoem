@@ -12,15 +12,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -33,7 +30,7 @@ import app.vdvoem.core.domain.module.ModuleRegistry
 import app.vdvoem.feature.store.StoreModule
 import app.vdvoem.feature.store.StoreScreen
 import app.vdvoem.ui.dashboard.DashboardScreen
-import kotlinx.coroutines.launch
+import app.vdvoem.ui.dashboard.DashboardViewModel
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
@@ -46,12 +43,12 @@ private object Routes {
 @Composable
 fun VdvoemRoot(
     registry: ModuleRegistry = koinInject(),
-    viewModel: ModulesViewModel = koinViewModel()
+    viewModel: ModulesViewModel = koinViewModel(),
+    dashboardViewModel: DashboardViewModel = koinViewModel()
 ) {
     val enabledIds by viewModel.enabledIds.collectAsStateWithLifecycle()
+    val dashboardState by dashboardViewModel.state.collectAsStateWithLifecycle()
     val navController = rememberNavController()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
     val enabledModules = remember(enabledIds, registry) {
         registry.modules.filter {
@@ -70,11 +67,6 @@ fun VdvoemRoot(
         else -> registry.byRoute(currentRoute)
             ?.let { stringResource(it.manifest.titleRes) }
             ?: stringResource(R.string.app_name)
-    }
-
-    val pairSoonMessage = stringResource(R.string.dashboard_pair_soon)
-    val showMessage: (String) -> Unit = { message ->
-        scope.launch { snackbarHostState.showSnackbar(message) }
     }
 
     LaunchedEffect(enabledIds) {
@@ -145,8 +137,7 @@ fun VdvoemRoot(
                     )
                 }
             }
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        }
     ) { innerPadding ->
         NavHost(
             navController = navController,
@@ -156,9 +147,12 @@ fun VdvoemRoot(
             composable(Routes.HOME) {
                 DashboardScreen(
                     modules = enabledModules,
+                    pair = dashboardState.pair,
+                    nextEvent = dashboardState.nextEvent,
                     onOpenModule = { module -> navController.navigate(module.route) },
                     onOpenStore = { navController.navigate(Routes.STORE) },
-                    onSetupPair = { showMessage(pairSoonMessage) }
+                    onSavePair = dashboardViewModel::savePair,
+                    onOpenCalendar = { navController.navigate("calendar") }
                 )
             }
             composable(Routes.STORE) {

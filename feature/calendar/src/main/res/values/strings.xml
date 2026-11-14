@@ -2,8 +2,35 @@
 <resources>
     <string name="calendar_module_title">Календарь</string>
     <string name="calendar_module_description">Общие события, годовщины и напоминания</string>
+
     <string name="calendar_hero_title">Время вдвоём</string>
-    <string name="calendar_hero_text">Здесь появятся ваши встречи, поездки и важные даты. Синхронизация с партнёром — в планах.</string>
+    <string name="calendar_hero_text">Добавьте первую дату — годовщину, свидание или поездку — и увидите, сколько дней осталось.</string>
+    <string name="calendar_hero_next">Ближайшее событие</string>
+    <string name="calendar_today">Сегодня</string>
+    <string name="calendar_date_passed">Дата уже прошла</string>
+
+    <string name="calendar_section_events">События</string>
+    <string name="calendar_action_add">Добавить</string>
+    <string name="calendar_fab">Событие</string>
+    <string name="calendar_delete">Удалить событие</string>
+    <string name="calendar_annual">каждый год</string>
+
     <string name="calendar_empty_title">Пока нет событий</string>
     <string name="calendar_empty_message">Добавьте первое событие — годовщину, свидание или поездку, — и оно появится в общем календаре.</string>
+    <string name="calendar_empty_action">Добавить событие</string>
+
+    <string name="calendar_dialog_title">Новое событие</string>
+    <string name="calendar_field_title">Название</string>
+    <string name="calendar_field_title_hint">Например, годовщина</string>
+    <string name="calendar_pick_date">Выберите дату</string>
+    <string name="calendar_save">Сохранить</string>
+    <string name="calendar_cancel">Отмена</string>
+    <string name="calendar_ok">ОК</string>
+
+    <plurals name="calendar_days_left">
+        <item quantity="one">%d день</item>
+        <item quantity="few">%d дня</item>
+        <item quantity="many">%d дней</item>
+        <item quantity="other">%d дня</item>
+    </plurals>
 </resources>

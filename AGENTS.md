@@ -47,7 +47,9 @@ MVP: календарь, желания, подарки, магазин моду
 - `local.properties`: `sdk.dir=C\:\\Users\\Administrator\\AppData\\Local\\Android\\Sdk`.
 - adb: `C:\adb\adb.exe`. Устройство: `3089b0c3` — Xiaomi 2109119DG, Android 17 (API 37), 1080×2400, arm64-v8a.
 - Проверенные версии (не менять без причины): AGP 8.7.3, Kotlin 2.0.21 + compose-плагин 2.0.21,
-  Compose BOM 2024.10.01 (material3 1.3.1), compileSdk 35, minSdk 26, JDK 21, Gradle 8.9.
+  KSP 2.0.21-1.0.28, Room 2.6.1, Compose BOM 2024.10.01 (material3 1.3.1), compileSdk 35, minSdk 26, JDK 21, Gradle 8.9.
+- CI: `.github/workflows/android.yml` — APK в артефактах на каждый push, релиз на тег `v*`.
+  `gradlew` должен иметь exec-бит (`git update-index --chmod=+x gradlew`).
 - На C: свободно ~9 ГБ: большие SDK-компоненты/эмуляторы не качать без спроса; предупреждать о загрузках >50 МБ.
 
 ## Типовые команды

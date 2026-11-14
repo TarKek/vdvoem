@@ -12,7 +12,31 @@
     <string name="dashboard_hero_title">Вы вдвоём</string>
     <string name="dashboard_hero_text">Общие планы, желания и подарки — в одном месте. Начните с настройки пары.</string>
     <string name="dashboard_setup_pair">Настроить пару</string>
-    <string name="dashboard_pair_soon">Настройка пары появится в следующей версии</string>
+    <string name="dashboard_edit_pair">Изменить пару</string>
+    <string name="dashboard_pair_names">%1$s и %2$s</string>
+    <string name="dashboard_pair_since">Вместе с %1$s</string>
+
+    <string name="pair_dialog_title">Наша пара</string>
+    <string name="pair_field_you">Твоё имя</string>
+    <string name="pair_field_partner">Имя партнёра</string>
+    <string name="pair_since_value">Вместе с %1$s</string>
+    <string name="pair_save">Сохранить</string>
+    <string name="pair_cancel">Отмена</string>
+    <string name="pair_ok">ОК</string>
+
+    <plurals name="dashboard_days_together">
+        <item quantity="one">вместе %d день</item>
+        <item quantity="few">вместе %d дня</item>
+        <item quantity="many">вместе %d дней</item>
+        <item quantity="other">вместе %d дня</item>
+    </plurals>
+
+    <plurals name="dashboard_days_short">
+        <item quantity="one">%d день</item>
+        <item quantity="few">%d дня</item>
+        <item quantity="many">%d дней</item>
+        <item quantity="other">%d дня</item>
+    </plurals>
 
     <string name="dashboard_modules_title">Ваши модули</string>
     <string name="dashboard_modules_all">Все</string>
@@ -23,4 +47,5 @@
     <string name="dashboard_upcoming_title">Ближайшее</string>
     <string name="dashboard_upcoming_empty_title">Событий пока нет</string>
     <string name="dashboard_upcoming_empty_message">Когда появятся события, здесь будет ближайшее из них.</string>
+    <string name="dashboard_upcoming_empty_action">Открыть календарь</string>
 </resources>
