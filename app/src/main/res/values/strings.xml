@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Вдвоём</string>
+
+    <string name="title_home">Главная</string>
+    <string name="title_store">Дополнения</string>
+
+    <string name="action_store">Дополнения</string>
+    <string name="action_back">Назад</string>
+    <string name="action_open">Открыть</string>
+
+    <string name="dashboard_hero_title">Вы вдвоём</string>
+    <string name="dashboard_hero_text">Общие планы, желания и подарки — в одном месте. Начните с настройки пары.</string>
+    <string name="dashboard_setup_pair">Настроить пару</string>
+    <string name="dashboard_pair_soon">Настройка пары появится в следующей версии</string>
+
+    <string name="dashboard_modules_title">Ваши модули</string>
+    <string name="dashboard_modules_all">Все</string>
+    <string name="dashboard_modules_empty_title">Пока пусто</string>
+    <string name="dashboard_modules_empty_message">Включите модули в магазине дополнений — календарь, желания или подарки.</string>
+    <string name="dashboard_open_store">Открыть дополнения</string>
+
+    <string name="dashboard_upcoming_title">Ближайшее</string>
+    <string name="dashboard_upcoming_empty_title">Событий пока нет</string>
+    <string name="dashboard_upcoming_empty_message">Когда появятся события, здесь будет ближайшее из них.</string>
+</resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calendar_module_title">Календарь</string>
+    <string name="calendar_module_description">Общие события, годовщины и напоминания</string>
+    <string name="calendar_hero_title">Время вдвоём</string>
+    <string name="calendar_hero_text">Здесь появятся ваши встречи, поездки и важные даты. Синхронизация с партнёром — в планах.</string>
+    <string name="calendar_empty_title">Пока нет событий</string>
+    <string name="calendar_empty_message">Добавьте первое событие — годовщину, свидание или поездку, — и оно появится в общем календаре.</string>
+</resources>

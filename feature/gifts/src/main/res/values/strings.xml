@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gifts_module_title">Подарки</string>
+    <string name="gifts_module_description">Идеи, бюджет и статус подарков</string>
+    <string name="gifts_hero_title">Подарки без стресса</string>
+    <string name="gifts_hero_text">Сохраняйте идеи заранее, отмечайте «куплено» и не забывайте, что уже подарено.</string>
+    <string name="gifts_empty_title">Идей пока нет</string>
+    <string name="gifts_empty_message">Добавьте первую идею подарка — с бюджетом и ссылкой. К празднику будет из чего выбрать.</string>
+</resources>

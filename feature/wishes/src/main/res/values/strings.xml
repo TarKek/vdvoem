@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wishes_module_title">Желания</string>
+    <string name="wishes_module_description">Список мечт и идей, что подарить</string>
+    <string name="wishes_hero_title">Хочу, но не знаю что</string>
+    <string name="wishes_hero_text">Собирайте желания заранее: к празднику останется только выбрать. Скрытые желания партнёр не увидит.</string>
+    <string name="wishes_empty_title">Желаний пока нет</string>
+    <string name="wishes_empty_message">Добавьте то, о чём мечтаете — от книги до поездки. Партнёр увидит только то, что вы откроете.</string>
+</resources>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="store_module_title">Дополнения</string>
+    <string name="store_module_description">Магазин модулей приложения</string>
+    <string name="store_hero_title">Соберите приложение под себя</string>
+    <string name="store_hero_text">Включайте только то, что нужно вам двоим. Настройки сохраняются, выключенный модуль можно вернуть в любой момент.</string>
+    <string name="store_enabled_count">Включено %1$d из %2$d</string>
+    <string name="store_category_core">Основа</string>
+    <string name="store_category_together">Для двоих</string>
+    <string name="store_category_personal">Личное</string>
+    <string name="store_category_fun">Развлечения</string>
+    <string name="store_soon_title">Скоро в магазине</string>
+    <string name="store_soon_badge">скоро</string>
+    <string name="store_footer">Модули появятся по мере готовности. Данные выключенного модуля сохраняются.</string>
+
+    <string name="store_music_title">Музыка</string>
+    <string name="store_music_description">Свой сервер, стрим и скачивание треков</string>
+    <string name="store_steam_title">Steam</string>
+    <string name="store_steam_description">Guard-коды и подтверждения — личный модуль</string>
+    <string name="store_countdown_title">Отсчёты</string>
+    <string name="store_countdown_description">До встречи, отпуска и важных дат</string>
+    <string name="store_notes_title">Заметки</string>
+    <string name="store_notes_description">Общий дневник пары</string>
+    <string name="store_tasks_title">Общие дела</string>
+    <string name="store_tasks_description">Чек-листы и планы на выходные</string>
+    <string name="store_mood_title">Настроение</string>
+    <string name="store_mood_description">Как прошёл день — в один тап</string>
+</resources>

@@ -73,3 +73,8 @@
   и папку проекта `E:\ai\workspace\vdvoem`.
 - **2026-11-14** — отказались от Expressive в пользу стабильного Material 3; добавлены `README.md`,
   `AGENTS.md`, `NOTES.md`. Кодовой базы пока нет.
+- **2026-11-14** — создан репозиторий `https://github.com/TarKek/vdvoem` (private), запушен `main`.
+- **2026-11-14** — Фаза 0: 8 Gradle-модулей (`:app`, `:core:ui/domain/data`, `:feature:calendar/wishes/gifts/store`),
+  брендовая тема и токены, Koin, DataStore для состояния модулей, навигация из реестра, магазин дополнений
+  с реальным вкл/выкл и разделом «скоро». `assembleDebug` и `installDebug` — успешно, cold start ~1,05 с.
+  Room отложен в Фазу 1 (не тащим мёртвый код). Dynamic color — параметр темы, по умолчанию брендовая палитра.
