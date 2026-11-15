@@ -28,6 +28,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,13 +41,19 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import app.vdvoem.R
+import app.vdvoem.core.domain.model.Poke
 import app.vdvoem.core.domain.module.ModuleRegistry
+import app.vdvoem.core.domain.repository.PokeRepository
+import app.vdvoem.core.sync.SyncController
 import app.vdvoem.core.ui.theme.VdvoemSizes
 import app.vdvoem.data.HomePreferences
 import app.vdvoem.feature.store.StoreModule
@@ -64,6 +71,7 @@ import app.vdvoem.ui.sync.ImportResult
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
+import java.util.UUID
 
 private object Routes {
     const val HOME = "home"
@@ -83,12 +91,24 @@ fun VdvoemRoot(
     val enabledIds by viewModel.enabledIds.collectAsStateWithLifecycle()
     val dashboardState by dashboardViewModel.state.collectAsStateWithLifecycle()
     val homePreferences: HomePreferences = koinInject()
+    val pokeRepository: PokeRepository = koinInject()
+    val syncController: SyncController = koinInject()
     val presentsTabController: PresentsTabController = koinInject()
     val widgets by homePreferences.widgets
         .collectAsStateWithLifecycle(initialValue = HomePreferences.DEFAULT_WIDGETS)
-    val lastPoke by homePreferences.lastPoke
-        .collectAsStateWithLifecycle(initialValue = null)
+    val lastPoke = dashboardState.lastPoke?.text
     val navController = rememberNavController()
+
+    // Каждое возвращение в приложение — повод сходить на сервер: без этого изменения
+    // партнёра ждали до ближайшего фонового прохода (15 минут) и казалось, что синка нет.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) syncController.syncInBackground()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -317,10 +337,17 @@ fun VdvoemRoot(
                     },
                     onSendPoke = { text ->
                         scope.launch {
-                            homePreferences.saveLastPoke(text)
+                            pokeRepository.save(
+                                Poke(
+                                    id = UUID.randomUUID().toString(),
+                                    pairId = dashboardState.pair?.id.orEmpty(),
+                                    text = text
+                                )
+                            )
                             snackbarHostState.showSnackbar(
                                 context.getString(R.string.dashboard_poke_sent)
                             )
+                            syncController.syncInBackground()
                         }
                     },
                     onOpenCalendar = { openTab("calendar") }
@@ -350,6 +377,8 @@ fun VdvoemRoot(
                     state = connectState,
                     onServerChange = connectViewModel::onServerChange,
                     onInviteCodeChange = connectViewModel::onInviteCodeChange,
+                    onNamesChange = connectViewModel::onNamesChange,
+                    onSinceChange = connectViewModel::onSinceChange,
                     onCreatePair = connectViewModel::createPair,
                     onJoin = { code -> connectViewModel.join(code) },
                     onCancel = { navController.popBackStack() },
@@ -371,6 +400,7 @@ fun VdvoemRoot(
             onConfirm = { nameA, nameB, sinceMillis, birthdayA, birthdayB ->
                 dashboardViewModel.savePair(nameA, nameB, sinceMillis, birthdayA, birthdayB)
                 pairDialogOpen = false
+                syncController.syncInBackground()
             }
         )
     }

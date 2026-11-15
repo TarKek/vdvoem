@@ -160,20 +160,33 @@ class Repository(private val dataSource: DataSource) {
                 buildList {
                     while (rows.next()) add(
                         GiftDto(
-                            id = rows.getString(1),
-                            title = rows.getString(2),
-                            note = rows.getString(3),
-                            budget = rows.getLong(4).takeUnless { rows.wasNull() },
-                            status = rows.getString(5),
-                            updatedAt = rows.getLong(6),
-                            deletedAt = rows.getLong(7).takeUnless { rows.wasNull() }
+                            id = rows.getString(1), title = rows.getString(2), note = rows.getString(3),
+                            budget = rows.getLong(4).takeUnless { rows.wasNull() }, status = rows.getString(5),
+                            updatedAt = rows.getLong(6), deletedAt = rows.getLong(7).takeUnless { rows.wasNull() }
                         )
                     )
                 }
             }
         }
 
-        ChangesDto(pair = pair, events = events, wishes = wishes, gifts = gifts)
+        val pokes = connection.prepareStatement(
+            "SELECT id, text, created_at, updated_at, deleted_at FROM pokes WHERE pair_id = ? AND updated_at > ? ORDER BY updated_at"
+        ).use { statement ->
+            statement.setObject(1, java.util.UUID.fromString(pairId))
+            statement.setLong(2, since)
+            statement.executeQuery().use { rows ->
+                buildList {
+                    while (rows.next()) add(
+                        PokeDto(
+                            id = rows.getString(1), text = rows.getString(2), createdAt = rows.getLong(3),
+                            updatedAt = rows.getLong(4), deletedAt = rows.getLong(5).takeUnless { rows.wasNull() }
+                        )
+                    )
+                }
+            }
+        }
+
+        ChangesDto(pair = pair, events = events, wishes = wishes, gifts = gifts, pokes = pokes)
     }
 
     fun push(pairId: String, changes: ChangesDto): Int = dataSource.connection.use { connection ->
@@ -271,6 +284,28 @@ class Repository(private val dataSource: DataSource) {
                     statement.setLong(7, gift.updatedAt)
                     if (gift.deletedAt != null) statement.setLong(8, gift.deletedAt)
                     else statement.setNull(8, java.sql.Types.BIGINT)
+                    statement.executeUpdate()
+                }
+            }
+
+            changes.pokes.forEach { poke ->
+                applied += tx.prepareStatement(
+                    """
+                    INSERT INTO pokes (id, pair_id, text, created_at, updated_at, deleted_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT (id) DO UPDATE SET text = EXCLUDED.text,
+                        created_at = EXCLUDED.created_at, updated_at = EXCLUDED.updated_at,
+                        deleted_at = EXCLUDED.deleted_at
+                    WHERE EXCLUDED.updated_at > pokes.updated_at
+                    """.trimIndent()
+                ).use { statement ->
+                    statement.setObject(1, java.util.UUID.fromString(poke.id))
+                    statement.setObject(2, java.util.UUID.fromString(pairId))
+                    statement.setString(3, poke.text)
+                    statement.setLong(4, if (poke.createdAt > 0) poke.createdAt else poke.updatedAt)
+                    statement.setLong(5, poke.updatedAt)
+                    if (poke.deletedAt != null) statement.setLong(6, poke.deletedAt)
+                    else statement.setNull(6, java.sql.Types.BIGINT)
                     statement.executeUpdate()
                 }
             }

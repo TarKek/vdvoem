@@ -50,3 +50,13 @@ data class GiftEntity(
     val updatedAt: Long,
     val deletedAt: Long? = null
 )
+
+@Entity(tableName = "pokes")
+data class PokeEntity(
+    @PrimaryKey val id: String,
+    val pairId: String,
+    val text: String,
+    val createdAt: Long,
+    val updatedAt: Long,
+    val deletedAt: Long? = null
+)

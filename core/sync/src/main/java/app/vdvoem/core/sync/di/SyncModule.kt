@@ -1,5 +1,6 @@
 package app.vdvoem.core.sync.di
 
+import app.vdvoem.core.sync.IncomingPokeHandler
 import app.vdvoem.core.sync.SyncApi
 import app.vdvoem.core.sync.SyncController
 import app.vdvoem.core.sync.SyncEngine
@@ -32,7 +33,9 @@ val syncModule: Module = module {
             calendarRepository = get(),
             wishRepository = get(),
             giftRepository = get(),
-            statusHolder = get()
+            pokeRepository = get(),
+            statusHolder = get(),
+            pokeReceiver = { pokes -> get<IncomingPokeHandler>().onIncoming(pokes) }
         )
     }
 

@@ -10,9 +10,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PairEntity::class,
         EventEntity::class,
         WishEntity::class,
-        GiftEntity::class
+        GiftEntity::class,
+        PokeEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class VdvoemDatabase : RoomDatabase() {
@@ -20,6 +21,7 @@ abstract class VdvoemDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
     abstract fun wishDao(): WishDao
     abstract fun giftDao(): GiftDao
+    abstract fun pokeDao(): PokeDao
 
     companion object {
         const val NAME = "vdvoem.db"
@@ -65,6 +67,25 @@ abstract class VdvoemDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE `pair` ADD COLUMN `birthdayA` INTEGER")
                 db.execSQL("ALTER TABLE `pair` ADD COLUMN `birthdayB` INTEGER")
+            }
+        }
+
+        /** v3 → v4: сердечки, которые теперь синхронизируются. */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `pokes` (
+                        `id` TEXT NOT NULL,
+                        `pairId` TEXT NOT NULL,
+                        `text` TEXT NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        `deletedAt` INTEGER,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
             }
         }
     }

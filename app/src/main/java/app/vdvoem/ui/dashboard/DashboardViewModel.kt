@@ -4,9 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.model.Pair
+import app.vdvoem.core.domain.model.Poke
 import app.vdvoem.core.domain.repository.CalendarRepository
 import app.vdvoem.core.domain.repository.GiftRepository
 import app.vdvoem.core.domain.repository.PairRepository
+import app.vdvoem.core.domain.repository.PokeRepository
 import app.vdvoem.core.domain.repository.WishRepository
 import app.vdvoem.core.domain.time.Dates
 import kotlinx.coroutines.flow.SharingStarted
@@ -21,22 +23,25 @@ data class DashboardUiState(
     val nextEvent: CalendarEvent? = null,
     val eventCount: Int = 0,
     val wishCount: Int = 0,
-    val giftCount: Int = 0
+    val giftCount: Int = 0,
+    val lastPoke: Poke? = null
 )
 
 class DashboardViewModel(
     private val pairRepository: PairRepository,
     private val calendarRepository: CalendarRepository,
     private val wishRepository: WishRepository,
-    private val giftRepository: GiftRepository
+    private val giftRepository: GiftRepository,
+    private val pokeRepository: PokeRepository
 ) : ViewModel() {
 
     val state = combine(
         pairRepository.observe(),
         calendarRepository.observeEvents(),
         wishRepository.observeWishes(),
-        giftRepository.observeGifts()
-    ) { pair, events, wishes, gifts ->
+        giftRepository.observeGifts(),
+        pokeRepository.observe()
+    ) { pair, events, wishes, gifts, pokes ->
         val today = Dates.today()
         val dated = events.map { event ->
             event to Dates.nextOccurrence(event.dateMillis, event.annual, today)
@@ -52,7 +57,8 @@ class DashboardViewModel(
             nextEvent = (upcoming ?: latestPast)?.first,
             eventCount = events.size,
             wishCount = wishes.size,
-            giftCount = gifts.size
+            giftCount = gifts.size,
+            lastPoke = pokes.firstOrNull()
         )
     }.stateIn(
         scope = viewModelScope,

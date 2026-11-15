@@ -269,28 +269,40 @@ private fun PairCard(
                     textAlign = TextAlign.Center
                 )
             } else {
-                val days = Dates.daysUntil(Dates.today(), Dates.toLocalDate(pair.sinceMillis))
-                Text(
-                    text = days.toString(),
-                    style = MaterialTheme.typography.displayLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Text(
-                    text = pluralStringResource(R.plurals.dashboard_days_word, days.toInt()),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
-                Text(
-                    text = stringResource(
-                        R.string.dashboard_pair_since,
-                        Dates.format(Dates.toLocalDate(pair.sinceMillis))
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                    textAlign = TextAlign.Center
-                )
+                // sinceMillis == 0 бывает у пары, созданной до появления даты начала:
+                // считать «20 772 дня вместе с 1 января 1970» нельзя.
+                val hasSince = pair.sinceMillis > 0
+                if (hasSince) {
+                    val days = Dates.daysUntil(Dates.today(), Dates.toLocalDate(pair.sinceMillis))
+                    Text(
+                        text = days.toString(),
+                        style = MaterialTheme.typography.displayLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Text(
+                        text = pluralStringResource(R.plurals.dashboard_days_word, days.toInt()),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+                    Text(
+                        text = stringResource(
+                            R.string.dashboard_pair_since,
+                            Dates.format(Dates.toLocalDate(pair.sinceMillis))
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                        textAlign = TextAlign.Center
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.dashboard_pair_since_missing),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                        textAlign = TextAlign.Center
+                    )
+                }
                 pair.birthdayA?.let { birthday ->
                     BirthdayLine(
                         name = pair.nameA,

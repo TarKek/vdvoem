@@ -20,12 +20,17 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,6 +49,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import app.vdvoem.R
+import app.vdvoem.core.domain.time.Dates
 import app.vdvoem.core.ui.components.SectionHeader
 import app.vdvoem.core.ui.components.VdvoemCard
 import app.vdvoem.core.ui.theme.VdvoemSizes
@@ -65,6 +71,8 @@ fun ConnectPairScreen(
     state: ConnectState,
     onServerChange: (String) -> Unit,
     onInviteCodeChange: (String) -> Unit,
+    onNamesChange: (String, String) -> Unit,
+    onSinceChange: (Long) -> Unit,
     onCreatePair: () -> Unit,
     onJoin: (String) -> Unit,
     onCancel: () -> Unit,
@@ -89,6 +97,8 @@ fun ConnectPairScreen(
                 state = state,
                 onServerChange = onServerChange,
                 onInviteCodeChange = onInviteCodeChange,
+                onNamesChange = onNamesChange,
+                onSinceChange = onSinceChange,
                 onCreatePair = onCreatePair,
                 onJoin = onJoin,
                 onCancel = onCancel
@@ -128,17 +138,21 @@ private fun HeroCard() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FormContent(
     state: ConnectState.Form,
     onServerChange: (String) -> Unit,
     onInviteCodeChange: (String) -> Unit,
+    onNamesChange: (String, String) -> Unit,
+    onSinceChange: (Long) -> Unit,
     onCreatePair: () -> Unit,
     onJoin: (String) -> Unit,
     onCancel: () -> Unit
 ) {
     val canJoin = !state.busy &&
         state.inviteCode.length == ConnectState.INVITE_CODE_LENGTH
+    var showDatePicker by rememberSaveable { mutableStateOf(false) }
 
     VdvoemCard {
         Text(
@@ -166,6 +180,41 @@ private fun FormContent(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+        Spacer(modifier = Modifier.height(VdvoemSpacing.md))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)
+        ) {
+            OutlinedTextField(
+                value = state.nameA,
+                onValueChange = { onNamesChange(it, state.nameB) },
+                modifier = Modifier.weight(1f),
+                enabled = !state.busy,
+                singleLine = true,
+                label = { Text(stringResource(R.string.pair_field_you)) }
+            )
+            OutlinedTextField(
+                value = state.nameB,
+                onValueChange = { onNamesChange(state.nameA, it) },
+                modifier = Modifier.weight(1f),
+                enabled = !state.busy,
+                singleLine = true,
+                label = { Text(stringResource(R.string.pair_field_partner)) }
+            )
+        }
+        Spacer(modifier = Modifier.height(VdvoemSpacing.sm))
+        OutlinedButton(
+            onClick = { showDatePicker = true },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !state.busy
+        ) {
+            Text(
+                text = stringResource(
+                    R.string.pair_since_value,
+                    Dates.format(Dates.toLocalDate(state.sinceMillis))
+                )
+            )
+        }
         Spacer(modifier = Modifier.height(VdvoemSpacing.lg))
         Button(
             onClick = onCreatePair,
@@ -262,6 +311,34 @@ private fun FormContent(
     ) {
         Text(stringResource(R.string.pair_cancel))
     }
+
+    if (showDatePicker) {
+        val pickerState = rememberDatePickerState(
+            initialSelectedDateMillis = Dates.toPickerMillis(state.sinceMillis)
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pickerState.selectedDateMillis?.let { picked ->
+                            onSinceChange(Dates.fromPickerMillis(picked))
+                        }
+                        showDatePicker = false
+                    }
+                ) {
+                    Text(stringResource(R.string.pair_ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text(stringResource(R.string.pair_cancel))
+                }
+            }
+        ) {
+            DatePicker(state = pickerState)
+        }
+    }
 }
 
 /** Пара создана: крупный код, копирование и пояснение, что делать дальше. */
@@ -355,6 +432,8 @@ private fun ConnectPairFormPreview() {
             ),
             onServerChange = {},
             onInviteCodeChange = {},
+            onNamesChange = { _, _ -> },
+            onSinceChange = {},
             onCreatePair = {},
             onJoin = {},
             onCancel = {}
@@ -374,6 +453,8 @@ private fun ConnectPairBusyPreview() {
             ),
             onServerChange = {},
             onInviteCodeChange = {},
+            onNamesChange = { _, _ -> },
+            onSinceChange = {},
             onCreatePair = {},
             onJoin = {},
             onCancel = {}
@@ -392,6 +473,8 @@ private fun ConnectPairCreatedPreview() {
             ),
             onServerChange = {},
             onInviteCodeChange = {},
+            onNamesChange = { _, _ -> },
+            onSinceChange = {},
             onCreatePair = {},
             onJoin = {},
             onCancel = {}

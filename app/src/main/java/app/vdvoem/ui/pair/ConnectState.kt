@@ -1,5 +1,7 @@
 package app.vdvoem.ui.pair
 
+import app.vdvoem.core.domain.time.Dates
+
 /**
  * Состояние экрана подключения пары.
  *
@@ -13,7 +15,12 @@ sealed interface ConnectState {
         val serverUrl: String = "",
         val inviteCode: String = "",
         val busy: Boolean = false,
-        val error: String? = null
+        val error: String? = null,
+        /** Кто ты и как зовут партнёра — уезжает на сервер при создании пары. */
+        val nameA: String = "",
+        val nameB: String = "",
+        /** Дата начала отношений; 0 — «сегодня», подставляется при создании. */
+        val sinceMillis: Long = Dates.startOfDay(Dates.today())
     ) : ConnectState
 
     /** Пара создана: показываем код, который нужно передать партнёру. */

@@ -47,11 +47,21 @@ data class GiftDto(
 )
 
 @Serializable
+data class PokeDto(
+    val id: String,
+    val text: String,
+    @SerialName("createdAt") val createdAt: Long = 0L,
+    @SerialName("updatedAt") val updatedAt: Long,
+    @SerialName("deletedAt") val deletedAt: Long? = null
+)
+
+@Serializable
 data class ChangesDto(
     val pair: PairDto? = null,
     val events: List<EventDto> = emptyList(),
     val wishes: List<WishDto> = emptyList(),
-    val gifts: List<GiftDto> = emptyList()
+    val gifts: List<GiftDto> = emptyList(),
+    val pokes: List<PokeDto> = emptyList()
 )
 
 @Serializable

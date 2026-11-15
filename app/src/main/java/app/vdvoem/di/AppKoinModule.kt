@@ -1,6 +1,7 @@
 package app.vdvoem.di
 
 import app.vdvoem.core.domain.module.ModuleRegistry
+import app.vdvoem.core.sync.IncomingPokeHandler
 import app.vdvoem.feature.calendar.CalendarModule
 import app.vdvoem.feature.calendar.CalendarViewModel
 import app.vdvoem.feature.gifts.GiftsViewModel
@@ -10,6 +11,7 @@ import app.vdvoem.feature.settings.SettingsViewModel
 import app.vdvoem.feature.store.StoreModule
 import app.vdvoem.feature.wishes.WishesViewModel
 import app.vdvoem.data.HomePreferences
+import app.vdvoem.notify.PokeNotifier
 import app.vdvoem.ui.ModulesViewModel
 import app.vdvoem.ui.dashboard.DashboardViewModel
 import app.vdvoem.ui.presents.PresentsModule
@@ -44,7 +46,8 @@ val appKoinModule = module {
             pairRepository = get(),
             calendarRepository = get(),
             wishRepository = get(),
-            giftRepository = get()
+            giftRepository = get(),
+            pokeRepository = get()
         )
     }
     viewModel { CalendarViewModel(calendarRepository = get(), pairRepository = get()) }
@@ -52,6 +55,7 @@ val appKoinModule = module {
     viewModel { GiftsViewModel(giftRepository = get(), pairRepository = get()) }
     viewModel { SettingsViewModel(repository = get()) }
     single { HomePreferences(context = androidContext()) }
+    single<IncomingPokeHandler> { PokeNotifier(context = androidContext()) }
     viewModel { ConnectPairViewModel(controller = get(), pairRepository = get()) }
     viewModel {
         BackupViewModel(

@@ -52,3 +52,12 @@ interface GiftDao {
     @Query("UPDATE gifts SET deletedAt = :now, updatedAt = :now WHERE id = :id")
     suspend fun softDelete(id: String, now: Long)
 }
+
+@Dao
+interface PokeDao {
+    @Query("SELECT * FROM pokes WHERE deletedAt IS NULL ORDER BY createdAt DESC")
+    fun observeAll(): Flow<List<PokeEntity>>
+
+    @Upsert
+    suspend fun upsert(poke: PokeEntity)
+}

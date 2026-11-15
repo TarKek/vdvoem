@@ -3,10 +3,12 @@ package app.vdvoem.core.sync
 import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.model.Gift
 import app.vdvoem.core.domain.model.Pair
+import app.vdvoem.core.domain.model.Poke
 import app.vdvoem.core.domain.model.Wish
 import app.vdvoem.core.domain.repository.CalendarRepository
 import app.vdvoem.core.domain.repository.GiftRepository
 import app.vdvoem.core.domain.repository.PairRepository
+import app.vdvoem.core.domain.repository.PokeRepository
 import app.vdvoem.core.domain.repository.WishRepository
 import app.vdvoem.core.sync.SyncMappers.toDomain
 import app.vdvoem.core.sync.SyncMappers.toDto
@@ -37,7 +39,10 @@ class SyncEngine(
     private val calendarRepository: CalendarRepository,
     private val wishRepository: WishRepository,
     private val giftRepository: GiftRepository,
-    private val statusHolder: SyncStatusHolder
+    private val pokeRepository: PokeRepository,
+    private val statusHolder: SyncStatusHolder,
+    /** Колбэк «пришло новое сердечко от партнёра»: уведомление рисует слой приложения. */
+    private val pokeReceiver: suspend (List<Poke>) -> Unit = {}
 ) {
 
     private val mutex = Mutex()
@@ -66,11 +71,16 @@ class SyncEngine(
             // Снимок локальных изменений до применения серверных: так только что
             // применённые записи не уезжают обратно на сервер «эхом».
             val outgoing = collectLocalChanges(since)
+            val incomingPokes = mutableListOf<Poke>()
 
             applied += applyPair(remote.pair)
             applied += applyEvents(remote.events, pairId)
             applied += applyWishes(remote.wishes, pairId)
             applied += applyGifts(remote.gifts, pairId)
+            remote.pokes.forEach { poke ->
+                if (applyPoke(poke, pairId)) incomingPokes += poke.toDomain(fallbackPairId = pairId)
+            }
+            if (incomingPokes.isNotEmpty()) pokeReceiver(incomingPokes)
 
             var pushed = 0
             if (!outgoing.isEmpty) {
@@ -81,6 +91,10 @@ class SyncEngine(
                 applied += applyEvents(response.events, pairId)
                 applied += applyWishes(response.wishes, pairId)
                 applied += applyGifts(response.gifts, pairId)
+                response.pokes.forEach { poke ->
+                    if (applyPoke(poke, pairId)) incomingPokes += poke.toDomain(fallbackPairId = pairId)
+                }
+                if (incomingPokes.isNotEmpty()) pokeReceiver(incomingPokes)
             }
 
             val serverTime = maxOf(remote.serverTime, settings.lastServerTime)
@@ -158,6 +172,15 @@ class SyncEngine(
         return applied
     }
 
+    /** true — сердечко реально новое (нужно показать уведомление). */
+    private suspend fun applyPoke(remote: PokeDto, pairId: String): Boolean {
+        val localById = pokeRepository.observe().first().associateBy { it.id }
+        val local = localById[remote.id]
+        if (local != null && remote.updatedAt <= local.updatedAt) return false
+        pokeRepository.save(remote.toDomain(fallbackPairId = pairId))
+        return true
+    }
+
     // --- сбор локальных изменений ---
 
     private suspend fun collectLocalChanges(since: Long): ChangesDto {
@@ -168,12 +191,15 @@ class SyncEngine(
             .filter { it.updatedAt > since }
         val gifts: List<Gift> = giftRepository.observeGifts().first()
             .filter { it.updatedAt > since }
+        val pokes: List<Poke> = pokeRepository.observe().first()
+            .filter { it.updatedAt > since }
 
         return ChangesDto(
             pair = localPair?.toDto(),
             events = events.map { it.toDto() },
             wishes = wishes.map { it.toDto() },
-            gifts = gifts.map { it.toDto() }
+            gifts = gifts.map { it.toDto() },
+            pokes = pokes.map { it.toDto() }
         )
     }
 

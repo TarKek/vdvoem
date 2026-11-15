@@ -22,6 +22,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestInternetPermissionIfNeeded()
+        requestNotificationsPermissionIfNeeded()
         enableEdgeToEdge()
         setContent {
             val settingsRepository: AppSettingsRepository = koinInject()
@@ -55,7 +56,18 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Android 13+ показывает уведомления только с явного разрешения. */
+    private fun requestNotificationsPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        val granted = checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        if (!granted) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), NOTIFICATIONS_REQUEST)
+        }
+    }
+
     private companion object {
         const val INTERNET_REQUEST = 1001
+        const val NOTIFICATIONS_REQUEST = 1002
     }
 }

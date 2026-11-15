@@ -55,6 +55,16 @@ CREATE INDEX IF NOT EXISTS idx_events_pair_updated ON events (pair_id, updated_a
 CREATE INDEX IF NOT EXISTS idx_wishes_pair_updated ON wishes (pair_id, updated_at);
 CREATE INDEX IF NOT EXISTS idx_gifts_pair_updated ON gifts (pair_id, updated_at);
 
+CREATE TABLE IF NOT EXISTS pokes (
+    id         UUID PRIMARY KEY,
+    pair_id    UUID NOT NULL REFERENCES pairs (id) ON DELETE CASCADE,
+    text       TEXT NOT NULL,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT NOT NULL,
+    deleted_at BIGINT
+);
+CREATE INDEX IF NOT EXISTS idx_pokes_pair_updated ON pokes (pair_id, updated_at);
+
 -- Вложения (фото, видео, голосовые): метаданные синкаются, файл лежит на диске по storage_key.
 CREATE TABLE IF NOT EXISTS attachments (
     id          UUID PRIMARY KEY,

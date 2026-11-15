@@ -23,6 +23,7 @@
     <string name="dashboard_edit_pair">Изменить пару</string>
     <string name="dashboard_pair_names">%1$s и %2$s</string>
     <string name="dashboard_pair_since">Вместе с %1$s</string>
+    <string name="dashboard_pair_since_missing">Дата начала не указана — нажми на карточку пары</string>
 
     <string name="pair_dialog_title">Наша пара</string>
     <string name="pair_field_you">Твоё имя</string>
@@ -76,7 +77,10 @@
     <string name="pair_birthday_b">День рождения: партнёр</string>
     <string name="pair_birthday_b_value">День рождения партнёра: %1$s</string>
 
-    <string name="dashboard_poke_last">Отправлено: %1$s</string>
+    <string name="dashboard_poke_last">Последнее сердечко: %1$s</string>
+    <string name="poke_notification_title">Тебе сердечко</string>
+    <string name="poke_notification_channel">Сердечки</string>
+    <string name="poke_notification_channel_text">Сообщения от партнёра</string>
 
     <string name="widget_countdown_title">Отсчёт</string>
     <string name="widget_countdown_description">Счётчик до или после выбранной даты</string>

@@ -2,7 +2,9 @@ package app.vdvoem.ui.pair
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.vdvoem.core.domain.model.Pair
 import app.vdvoem.core.domain.repository.PairRepository
+import app.vdvoem.core.domain.time.Dates
 import app.vdvoem.core.sync.SyncController
 import app.vdvoem.core.sync.SyncResult
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +21,20 @@ class ConnectPairViewModel(
     private val _state = MutableStateFlow<ConnectState>(ConnectState.Form())
     val state: StateFlow<ConnectState> = _state.asStateFlow()
 
-    private val names = MutableStateFlow("" to "")
+    init {
+        // Уже настроенная локально пара — подсказка для полей создания.
+        viewModelScope.launch {
+            val local = runCatching { pairRepository.current() }.getOrNull() ?: return@launch
+            _state.update { current ->
+                if (current !is ConnectState.Form) return@update current
+                current.copy(
+                    nameA = local.nameA.takeUnless { it == DEFAULT_NAME_A }.orEmpty(),
+                    nameB = local.nameB.takeUnless { it == DEFAULT_NAME_B }.orEmpty(),
+                    sinceMillis = local.sinceMillis.takeIf { it > 0 } ?: current.sinceMillis
+                )
+            }
+        }
+    }
 
     fun onServerChange(value: String) {
         _state.update { current ->
@@ -38,7 +53,15 @@ class ConnectPairViewModel(
     }
 
     fun onNamesChange(nameA: String, nameB: String) {
-        names.value = nameA to nameB
+        _state.update { current ->
+            if (current is ConnectState.Form) current.copy(nameA = nameA, nameB = nameB, error = null) else current
+        }
+    }
+
+    fun onSinceChange(value: Long) {
+        _state.update { current ->
+            if (current is ConnectState.Form) current.copy(sinceMillis = value, error = null) else current
+        }
     }
 
     fun createPair() {
@@ -48,12 +71,10 @@ class ConnectPairViewModel(
         viewModelScope.launch {
             controller.setServerUrl(form.serverUrl)
             val localPair = runCatching { pairRepository.current() }.getOrNull()
-            val nameA = names.value.first.ifBlank { localPair?.nameA ?: "Я" }
-            val nameB = names.value.second.ifBlank { localPair?.nameB ?: "Партнёр" }
             val res = controller.createPair(
-                nameA = nameA,
-                nameB = nameB,
-                sinceMillis = localPair?.sinceMillis ?: 0L,
+                nameA = form.nameA.trim().ifBlank { localPair?.nameA ?: DEFAULT_NAME_A },
+                nameB = form.nameB.trim().ifBlank { localPair?.nameB ?: DEFAULT_NAME_B },
+                sinceMillis = validSince(form, localPair),
                 birthdayA = localPair?.birthdayA,
                 birthdayB = localPair?.birthdayB
             )
@@ -94,5 +115,20 @@ class ConnectPairViewModel(
                     form.copy(busy = false, error = "Проверьте адрес сервера")
             }
         }
+    }
+
+    /**
+     * Дата начала никогда не должна остаться нулём: сервер отдал бы её как
+     * «1 января 1970» и отсчёт в 20 000 дней. Если своей даты нет — берём сегодня.
+     */
+    private fun validSince(form: ConnectState.Form, local: Pair?): Long = when {
+        form.sinceMillis > 0 -> form.sinceMillis
+        (local?.sinceMillis ?: 0L) > 0 -> local!!.sinceMillis
+        else -> Dates.startOfDay(Dates.today())
+    }
+
+    private companion object {
+        const val DEFAULT_NAME_A = "Я"
+        const val DEFAULT_NAME_B = "Партнёр"
     }
 }

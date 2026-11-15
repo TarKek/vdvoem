@@ -4,6 +4,7 @@ import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.model.Gift
 import app.vdvoem.core.domain.model.GiftStatus
 import app.vdvoem.core.domain.model.Pair
+import app.vdvoem.core.domain.model.Poke
 import app.vdvoem.core.domain.model.Wish
 import app.vdvoem.core.domain.model.WishStatus
 
@@ -89,5 +90,23 @@ object SyncMappers {
         budget = budget,
         status = runCatching { GiftStatus.valueOf(status) }.getOrDefault(GiftStatus.IDEA),
         updatedAt = updatedAt
+    )
+
+    fun Poke.toDto(): PokeDto = PokeDto(
+        id = id,
+        text = text,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+        deletedAt = deletedAt,
+        pairId = pairId
+    )
+
+    fun PokeDto.toDomain(fallbackPairId: String = ""): Poke = Poke(
+        id = id,
+        pairId = pairId?.takeIf { it.isNotBlank() } ?: fallbackPairId,
+        text = text,
+        createdAt = if (createdAt > 0) createdAt else updatedAt,
+        updatedAt = updatedAt,
+        deletedAt = deletedAt
     )
 }
