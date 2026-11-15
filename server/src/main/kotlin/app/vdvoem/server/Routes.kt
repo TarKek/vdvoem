@@ -16,13 +16,16 @@ import kotlinx.serialization.json.Json
 
 private const val TOKEN_PREFIX = "Bearer "
 
-fun Application.configureRouting(repository: Repository) {
+fun Application.configureRouting(repository: Repository, mediaRepository: MediaRepository) {
     routing {
         get("/health") {
             call.respond(HealthResponse(status = "ok", time = System.currentTimeMillis()))
         }
 
         route("/v1") {
+            attachmentRoutes(repository, mediaRepository)
+            pluginRoutes(mediaRepository)
+
             post("/pairs") {
                 val request = call.receive<CreatePairRequest>()
                 if (request.nameA.isBlank() || request.nameB.isBlank()) {
@@ -67,6 +70,8 @@ fun Application.configureRouting(repository: Repository) {
                 call.respond(PushResponse(now, applied))
             }
         }
+
+        adminRoutes(mediaRepository)
     }
 }
 
@@ -83,6 +88,17 @@ private fun Application.installJson() {
 fun io.ktor.server.application.ApplicationCall.bearerToken(): String? {
     val header = request.headers["Authorization"] ?: return null
     return header.removePrefix(TOKEN_PREFIX).takeIf { it.isNotBlank() }
+}
+
+/** Возвращает pair_id из токена; при отсутствии/невалидности отвечает 401 и возвращает null. */
+suspend fun io.ktor.server.application.ApplicationCall.requirePair(
+    repository: Repository
+): String? {
+    val pairId = bearerToken()?.let(repository::authenticate)
+    if (pairId == null) {
+        respond(HttpStatusCode.Unauthorized, ErrorResponse("unauthorized"))
+    }
+    return pairId
 }
 
 fun Application.configureSerialization() = installJson()

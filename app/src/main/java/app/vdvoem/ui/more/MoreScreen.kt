@@ -38,6 +38,7 @@ fun MoreScreen(
     overflowModules: List<AppModule>,
     onOpenModule: (AppModule) -> Unit,
     onOpenStore: () -> Unit,
+    onOpenConnect: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
     modifier: Modifier = Modifier
@@ -90,6 +91,29 @@ fun MoreScreen(
                 title = stringResource(R.string.more_store_title),
                 description = stringResource(R.string.more_store_text),
                 onClick = onOpenStore,
+                icon = {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.List,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(VdvoemSizes.iconMd)
+                    )
+                }
+            )
+        }
+
+        item(key = "more_sync_header") {
+            SectionHeader(
+                title = stringResource(R.string.more_sync_section),
+                modifier = Modifier.padding(top = VdvoemSpacing.sm)
+            )
+        }
+
+        item(key = "more_sync") {
+            ModuleRow(
+                title = stringResource(R.string.more_sync_title),
+                description = stringResource(R.string.more_sync_text),
+                onClick = onOpenConnect,
                 icon = {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.List,

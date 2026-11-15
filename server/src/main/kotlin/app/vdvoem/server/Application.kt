@@ -12,15 +12,17 @@ import io.ktor.server.response.respond
 
 fun main() {
     val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
+    Storage.ensure()
     val dataSource = Db.connect()
     val repository = Repository(dataSource)
+    val mediaRepository = MediaRepository(dataSource)
 
     embeddedServer(Netty, port = port, host = "0.0.0.0") {
-        configureServer(repository)
+        configureServer(repository, mediaRepository)
     }.start(wait = true)
 }
 
-fun Application.configureServer(repository: Repository) {
+fun Application.configureServer(repository: Repository, mediaRepository: MediaRepository) {
     install(CallLogging)
     configureSerialization()
     install(StatusPages) {
@@ -35,5 +37,5 @@ fun Application.configureServer(repository: Repository) {
             call.respond(HttpStatusCode.InternalServerError, ErrorResponse("internal error"))
         }
     }
-    configureRouting(repository)
+    configureRouting(repository, mediaRepository)
 }

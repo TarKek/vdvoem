@@ -101,3 +101,40 @@ data class HealthResponse(val status: String, val time: Long)
 
 @Serializable
 data class ErrorResponse(val error: String)
+
+@Serializable
+data class AttachmentDto(
+    val id: String,
+    @SerialName("entityType") val entityType: String,
+    @SerialName("entityId") val entityId: String,
+    val kind: String,
+    val mime: String,
+    val size: Long,
+    val sha256: String,
+    @SerialName("durationMs") val durationMs: Long? = null,
+    val width: Int? = null,
+    val height: Int? = null,
+    @SerialName("createdAt") val createdAt: Long,
+    @SerialName("updatedAt") val updatedAt: Long,
+    @SerialName("deletedAt") val deletedAt: Long? = null
+)
+
+@Serializable
+data class AttachmentsResponse(
+    @SerialName("serverTime") val serverTime: Long,
+    val attachments: List<AttachmentDto>
+)
+
+@Serializable
+data class PluginDto(
+    val id: String,
+    val title: String,
+    val description: String,
+    val category: String,
+    val version: String,
+    @SerialName("minAppVersion") val minAppVersion: Int,
+    @SerialName("apkSha256") val apkSha256: String,
+    @SerialName("apkSize") val apkSize: Long,
+    @SerialName("iconUrl") val iconUrl: String,
+    @SerialName("publishedAt") val publishedAt: Long
+)

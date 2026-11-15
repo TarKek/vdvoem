@@ -12,8 +12,8 @@ android {
         applicationId = "app.vdvoem"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
-        versionName = "0.6.0"
+        versionCode = 9
+        versionName = "0.7.0"
     }
 
     buildTypes {
@@ -64,6 +64,7 @@ dependencies {
     implementation(project(":core:ui"))
     implementation(project(":core:domain"))
     implementation(project(":core:data"))
+    implementation(project(":core:sync"))
     implementation(project(":feature:calendar"))
     implementation(project(":feature:wishes"))
     implementation(project(":feature:gifts"))

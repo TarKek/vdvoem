@@ -17,6 +17,7 @@ import java.util.UUID
 
 data class DashboardUiState(
     val pair: Pair? = null,
+    val events: List<CalendarEvent> = emptyList(),
     val nextEvent: CalendarEvent? = null,
     val eventCount: Int = 0,
     val wishCount: Int = 0,
@@ -36,11 +37,19 @@ class DashboardViewModel(
         wishRepository.observeWishes(),
         giftRepository.observeGifts()
     ) { pair, events, wishes, gifts ->
+        val today = Dates.today()
+        val dated = events.map { event ->
+            event to Dates.nextOccurrence(event.dateMillis, event.annual, today)
+        }
+        // Сначала ближайшее сегодняшнее/будущее; если таких нет — самое свежее прошедшее,
+        // чтобы виджет не показывал отрицательные дни вроде «-1 день».
+        val upcoming = dated.filter { (_, date) -> !date.isBefore(today) }
+            .minByOrNull { (_, date) -> date }
+        val latestPast = dated.maxByOrNull { (_, date) -> date }
         DashboardUiState(
             pair = pair,
-            nextEvent = events.minByOrNull {
-                Dates.nextOccurrence(it.dateMillis, it.annual)
-            },
+            events = events.sortedBy { it.dateMillis },
+            nextEvent = (upcoming ?: latestPast)?.first,
             eventCount = events.size,
             wishCount = wishes.size,
             giftCount = gifts.size

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -11,37 +12,96 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import java.io.IOException
+import java.util.UUID
 
 private val Context.homeDataStore: DataStore<Preferences> by preferencesDataStore("home_prefs")
 
 /**
- * Настройки главного экрана: какие виджеты подключены и последнее отправленное сердечко.
- * Позже сюда же приедет порядок виджетов и их персональные настройки.
+ * Настройки главного экрана: какие виджеты подключены, их порядок и настройки,
+ * плюс последнее отправленное сердечко.
  */
 class HomePreferences(private val context: Context) {
 
-    private val widgetIdsKey = stringSetPreferencesKey("widget_ids")
+    private val widgetsKey = stringPreferencesKey("widgets_json")
+    private val legacyWidgetIdsKey = stringSetPreferencesKey("widget_ids")
     private val lastPokeKey = stringPreferencesKey("last_poke")
 
     /** Если пользователь ещё ничего не настраивал — показываем набор по умолчанию. */
-    val widgetIds: Flow<List<String>> = context.homeDataStore.data
-        .catch { e -> if (e is IOException) emit(androidx.datastore.preferences.core.emptyPreferences()) else throw e }
-        .map { prefs -> prefs[widgetIdsKey]?.toList() ?: DEFAULT_WIDGETS }
-        .map { ids -> ids.filter { it in ALL_WIDGETS } }
+    val widgets: Flow<List<HomeWidget>> = context.homeDataStore.data
+        .catch { e ->
+            if (e is IOException) emit(emptyPreferences()) else throw e
+        }
+        .map { prefs -> readWidgets(prefs) }
 
     val lastPoke: Flow<String?> = context.homeDataStore.data
-        .catch { e -> if (e is IOException) emit(androidx.datastore.preferences.core.emptyPreferences()) else throw e }
+        .catch { e ->
+            if (e is IOException) emit(emptyPreferences()) else throw e
+        }
         .map { prefs -> prefs[lastPokeKey] }
 
-    suspend fun setWidgetIds(ids: List<String>) {
+    suspend fun setWidgets(widgets: List<HomeWidget>) {
         context.homeDataStore.edit { prefs ->
-            prefs[widgetIdsKey] = ids.filter { it in ALL_WIDGETS }.toSet()
+            prefs[widgetsKey] = HomeWidgetCodec.encode(widgets.filter { it.type in ALL_WIDGETS })
+        }
+    }
+
+    suspend fun addWidget(type: String) {
+        if (type !in ALL_WIDGETS) return
+        context.homeDataStore.edit { prefs ->
+            val current = readWidgets(prefs)
+            prefs[widgetsKey] = HomeWidgetCodec.encode(
+                current + HomeWidget(id = newId(type), type = type)
+            )
+        }
+    }
+
+    suspend fun updateWidget(widget: HomeWidget) {
+        context.homeDataStore.edit { prefs ->
+            val current = readWidgets(prefs)
+            prefs[widgetsKey] = HomeWidgetCodec.encode(
+                current.map { if (it.id == widget.id) widget else it }
+            )
+        }
+    }
+
+    suspend fun removeWidget(id: String) {
+        context.homeDataStore.edit { prefs ->
+            val current = readWidgets(prefs)
+            prefs[widgetsKey] = HomeWidgetCodec.encode(current.filterNot { it.id == id })
+        }
+    }
+
+    /** Сдвиг виджета на одну позицию: -1 вверх, +1 вниз. */
+    suspend fun moveWidget(id: String, delta: Int) {
+        context.homeDataStore.edit { prefs ->
+            val current = readWidgets(prefs).toMutableList()
+            val from = current.indexOfFirst { it.id == id }
+            if (from < 0) return@edit
+            val to = (from + delta).coerceIn(0, current.lastIndex)
+            if (to == from) return@edit
+            val item = current.removeAt(from)
+            current.add(to, item)
+            prefs[widgetsKey] = HomeWidgetCodec.encode(current)
         }
     }
 
     suspend fun saveLastPoke(text: String) {
         context.homeDataStore.edit { prefs -> prefs[lastPokeKey] = text }
     }
+
+    private fun readWidgets(prefs: Preferences): List<HomeWidget> {
+        val stored = prefs[widgetsKey]?.let { HomeWidgetCodec.decode(it) }
+        val widgets = when {
+            stored != null -> stored
+            else -> prefs[legacyWidgetIdsKey]
+                ?.let { HomeWidgetCodec.fromTypes(it, ALL_WIDGETS) }
+                ?: DEFAULT_WIDGETS
+        }
+        return widgets.filter { it.type in ALL_WIDGETS }
+    }
+
+    private fun newId(type: String): String =
+        "$type-${UUID.randomUUID().toString().take(8)}"
 
     companion object {
         const val WIDGET_COUNTDOWN = "countdown"
@@ -61,10 +121,10 @@ class HomePreferences(private val context: Context) {
         )
 
         val DEFAULT_WIDGETS = listOf(
-            WIDGET_COUNTDOWN,
-            WIDGET_EVENT,
-            WIDGET_WISHES,
-            WIDGET_GIFTS
+            HomeWidget(id = WIDGET_COUNTDOWN, type = WIDGET_COUNTDOWN),
+            HomeWidget(id = WIDGET_EVENT, type = WIDGET_EVENT),
+            HomeWidget(id = WIDGET_WISHES, type = WIDGET_WISHES),
+            HomeWidget(id = WIDGET_GIFTS, type = WIDGET_GIFTS)
         )
     }
 }

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- HTTP-сервер пары доступен по IP без TLS; HTTPS остаётся обязательным для остальных хостов. -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">185.213.240.43</domain>
+    </domain-config>
+</network-security-config>

@@ -15,12 +15,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
@@ -29,14 +35,15 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -67,20 +74,24 @@ import app.vdvoem.core.ui.components.SectionHeader
 import app.vdvoem.core.ui.components.VdvoemCard
 import app.vdvoem.core.ui.theme.VdvoemSizes
 import app.vdvoem.core.ui.theme.VdvoemSpacing
+import app.vdvoem.data.CountdownConfig
 import app.vdvoem.data.HomePreferences
+import app.vdvoem.data.HomeWidget
+import kotlin.math.absoluteValue
 import app.vdvoem.ui.presents.PresentsModule
 
 @Composable
 fun DashboardScreen(
     modules: List<AppModule>,
     pair: Pair?,
-    nextEvent: CalendarEvent?,
+    events: List<CalendarEvent>,
     eventCount: Int,
     wishCount: Int,
     giftCount: Int,
-    widgetIds: List<String>,
+    widgets: List<HomeWidget>,
     lastPoke: String?,
-    onWidgetIdsChange: (List<String>) -> Unit,
+    onWidgetsChange: (List<HomeWidget>) -> Unit,
+    onAddWidget: (String) -> Unit,
     onSendPoke: (String) -> Unit,
     onOpenModule: (AppModule) -> Unit,
     onOpenStore: () -> Unit,
@@ -93,9 +104,10 @@ fun DashboardScreen(
 ) {
     var showPokeDialog by rememberSaveable { mutableStateOf(false) }
     var showWidgetPicker by rememberSaveable { mutableStateOf(false) }
+    var configWidgetId by rememberSaveable { mutableStateOf<String?>(null) }
     val enabledRoutes = remember(modules) { modules.map { it.route }.toSet() }
-    val visibleWidgetIds = remember(widgetIds, enabledRoutes) {
-        widgetIds.filter { widgetAvailable(it, enabledRoutes) }
+    val visibleWidgets = remember(widgets, enabledRoutes) {
+        widgets.filter { widgetAvailable(it.type, enabledRoutes) }
     }
 
     LazyColumn(
@@ -134,8 +146,9 @@ fun DashboardScreen(
 
         item(key = "widgets") {
             WidgetGrid(
-                widgetIds = visibleWidgetIds,
-                nextEvent = nextEvent,
+                widgets = visibleWidgets,
+                events = events,
+                pair = pair,
                 eventCount = eventCount,
                 wishCount = wishCount,
                 giftCount = giftCount,
@@ -146,19 +159,42 @@ fun DashboardScreen(
                 onOpenQuizzes = onOpenQuizzes,
                 onOpenModule = { module -> onOpenModule(module) },
                 onOpenStore = onOpenStore,
-                onAddWidget = { showWidgetPicker = true }
+                onAddWidget = { showWidgetPicker = true },
+                onConfigure = { id -> configWidgetId = id }
             )
         }
     }
 
     if (showWidgetPicker) {
         WidgetPickerSheet(
-            selected = widgetIds,
-            onToggle = { id, enabled ->
-                val next = if (enabled) widgetIds + id else widgetIds - id
-                onWidgetIdsChange(next)
+            widgets = widgets,
+            enabledRoutes = enabledRoutes,
+            events = events,
+            pair = pair,
+            onAdd = { type -> onAddWidget(type) },
+            onChange = onWidgetsChange,
+            onConfigure = { id ->
+                configWidgetId = id
+                showWidgetPicker = false
             },
             onDismiss = { showWidgetPicker = false }
+        )
+    }
+
+    val configTarget = widgets.firstOrNull { it.id == configWidgetId }
+    if (configTarget != null) {
+        CountdownSettingsSheet(
+            widget = configTarget,
+            events = events,
+            pair = pair,
+            onChange = { updated ->
+                onWidgetsChange(widgets.map { if (it.id == updated.id) updated else it })
+            },
+            onDelete = {
+                onWidgetsChange(widgets.filterNot { it.id == configTarget.id })
+                configWidgetId = null
+            },
+            onDismiss = { configWidgetId = null }
         )
     }
 
@@ -382,8 +418,9 @@ private fun QuickCard(
 /** Сетка виджетов 2 колонки: состав задаёт пользователь, порядок — порядок в списке. */
 @Composable
 private fun WidgetGrid(
-    widgetIds: List<String>,
-    nextEvent: CalendarEvent?,
+    widgets: List<HomeWidget>,
+    events: List<CalendarEvent>,
+    pair: Pair?,
     eventCount: Int,
     wishCount: Int,
     giftCount: Int,
@@ -394,94 +431,111 @@ private fun WidgetGrid(
     onOpenQuizzes: () -> Unit,
     onOpenModule: (AppModule) -> Unit,
     onOpenStore: () -> Unit,
-    onAddWidget: () -> Unit
+    onAddWidget: () -> Unit,
+    onConfigure: (String) -> Unit
 ) {
-    val daysToEvent = nextEvent?.let {
-        Dates.daysUntil(Dates.nextOccurrence(it.dateMillis, it.annual))
-    }
-    val tiles: List<String?> = widgetIds.map { it as String? } + listOf(null)
-
     Column(verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)) {
-        tiles.chunked(2).forEach { row ->
+        widgets.chunked(2).forEach { row ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)
             ) {
-                row.forEach { id ->
-                    if (id == null) {
-                        WidgetCard(
-                            icon = Icons.Filled.Add,
-                            title = stringResource(R.string.dashboard_widget_add),
-                            titleLines = 2,
-                            value = "",
-                            onClick = onAddWidget,
-                            dashed = true,
-                            modifier = Modifier.weight(1f)
-                        )
-                    } else {
-                        when (id) {
-                            HomePreferences.WIDGET_COUNTDOWN -> WidgetCard(
+                row.forEach { widget ->
+                    when (widget.type) {
+                        HomePreferences.WIDGET_COUNTDOWN -> {
+                            val result = resolveCountdown(widget.config, events, pair)
+                            val autoTitle = when (widget.config.target) {
+                                CountdownConfig.TARGET_PAIR ->
+                                    stringResource(R.string.countdown_target_pair)
+                                CountdownConfig.TARGET_BIRTHDAY_A ->
+                                    if (pair != null) stringResource(R.string.countdown_target_birthday, pair.nameA) else null
+                                CountdownConfig.TARGET_BIRTHDAY_B ->
+                                    if (pair != null) stringResource(R.string.countdown_target_birthday, pair.nameB) else null
+                                CountdownConfig.TARGET_EVENT ->
+                                    events.firstOrNull { it.id == widget.config.eventId }?.title
+                                else -> null
+                            }
+                            val title = widget.config.title
+                                ?: result?.eventTitle
+                                ?: autoTitle
+                                ?: stringResource(R.string.widget_countdown_title)
+                            val days = result?.days
+                            WidgetCard(
                                 icon = Icons.Filled.DateRange,
-                                title = nextEvent?.title
-                                    ?: stringResource(R.string.widget_countdown_title),
-                                value = daysToEvent?.let {
-                                    pluralStringResource(R.plurals.dashboard_days_short, it.toInt(), it)
-                                } ?: stringResource(R.string.dashboard_widget_empty),
-                                onClick = onOpenCalendar,
+                                title = title,
+                                value = when {
+                                    days == null -> stringResource(R.string.dashboard_widget_empty)
+                                    days == 0L -> stringResource(R.string.dashboard_today)
+                                    widget.config.isSince -> pluralStringResource(
+                                        R.plurals.dashboard_days_short,
+                                        days.absoluteValue.toInt(),
+                                        days.absoluteValue
+                                    )
+                                    days < 0L -> pluralStringResource(
+                                        R.plurals.widget_days_passed,
+                                        (-days).toInt(),
+                                        -days
+                                    )
+                                    else -> pluralStringResource(
+                                        R.plurals.dashboard_days_short, days.toInt(), days
+                                    )
+                                },
+                                onClick = { onConfigure(widget.id) },
                                 highlight = true,
                                 modifier = Modifier.weight(1f)
                             )
-
-                            HomePreferences.WIDGET_EVENT -> WidgetCard(
-                                icon = Icons.Filled.DateRange,
-                                title = stringResource(R.string.dashboard_upcoming_title),
-                                value = pluralStringResource(
-                                    R.plurals.dashboard_events_count,
-                                    eventCount,
-                                    eventCount
-                                ),
-                                onClick = onOpenCalendar,
-                                modifier = Modifier.weight(1f)
-                            )
-
-                            HomePreferences.WIDGET_WISHES -> WidgetCard(
-                                icon = Icons.Filled.Favorite,
-                                title = stringResource(R.string.dashboard_wishes_card),
-                                value = wishCount.toString(),
-                                onClick = onOpenWishes,
-                                modifier = Modifier.weight(1f)
-                            )
-
-                            HomePreferences.WIDGET_GIFTS -> WidgetCard(
-                                icon = Icons.Filled.ShoppingCart,
-                                title = stringResource(R.string.dashboard_gifts_card),
-                                value = giftCount.toString(),
-                                onClick = onOpenGifts,
-                                modifier = Modifier.weight(1f)
-                            )
-
-                            HomePreferences.WIDGET_TESTS -> WidgetCard(
-                                icon = Icons.Filled.Star,
-                                title = stringResource(R.string.dashboard_tests_card),
-                                value = stringResource(R.string.dashboard_tests_card_subtitle),
-                                onClick = onOpenQuizzes,
-                                modifier = Modifier.weight(1f)
-                            )
-
-                            HomePreferences.WIDGET_MODULES -> WidgetCard(
-                                icon = Icons.Filled.Star,
-                                title = stringResource(R.string.dashboard_modules_title),
-                                value = enabledModules.toString(),
-                                onClick = onOpenStore,
-                                modifier = Modifier.weight(1f)
-                            )
                         }
+                        HomePreferences.WIDGET_EVENT -> WidgetCard(
+                            icon = Icons.Filled.DateRange,
+                            title = stringResource(R.string.dashboard_upcoming_title),
+                            value = pluralStringResource(R.plurals.dashboard_events_count, eventCount, eventCount),
+                            onClick = onOpenCalendar,
+                            modifier = Modifier.weight(1f)
+                        )
+                        HomePreferences.WIDGET_WISHES -> WidgetCard(
+                            icon = Icons.Filled.Favorite,
+                            title = stringResource(R.string.dashboard_wishes_card),
+                            value = wishCount.toString(),
+                            onClick = onOpenWishes,
+                            modifier = Modifier.weight(1f)
+                        )
+                        HomePreferences.WIDGET_GIFTS -> WidgetCard(
+                            icon = Icons.Filled.ShoppingCart,
+                            title = stringResource(R.string.dashboard_gifts_card),
+                            value = giftCount.toString(),
+                            onClick = onOpenGifts,
+                            modifier = Modifier.weight(1f)
+                        )
+                        HomePreferences.WIDGET_TESTS -> WidgetCard(
+                            icon = Icons.Filled.Star,
+                            title = stringResource(R.string.dashboard_tests_card),
+                            value = stringResource(R.string.dashboard_tests_card_subtitle),
+                            onClick = onOpenQuizzes,
+                            modifier = Modifier.weight(1f)
+                        )
+                        HomePreferences.WIDGET_MODULES -> WidgetCard(
+                            icon = Icons.Filled.Star,
+                            title = stringResource(R.string.dashboard_modules_title),
+                            value = enabledModules.toString(),
+                            onClick = onOpenStore,
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
-                if (row.size == 1) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
+                if (row.size == 1) Spacer(modifier = Modifier.weight(1f))
             }
+        }
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)) {
+            WidgetCard(
+                icon = Icons.Filled.Add,
+                title = stringResource(R.string.dashboard_widget_add),
+                titleLines = 2,
+                value = "",
+                onClick = onAddWidget,
+                dashed = true,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }
@@ -533,6 +587,7 @@ private fun WidgetCard(
             maxLines = titleLines,
             overflow = TextOverflow.Ellipsis
         )
+
         if (value.isNotEmpty()) {
             Text(
                 text = value,
@@ -551,8 +606,7 @@ private fun WidgetCard(
     }
 }
 
-/** Сопоставление виджета с модулем: виджеты выключенных модулей не показываем. */
-private fun widgetAvailable(id: String, enabledRoutes: Set<String>): Boolean = when (id) {
+private fun widgetAvailable(type: String, enabledRoutes: Set<String>): Boolean = when (type) {
     HomePreferences.WIDGET_EVENT -> "calendar" in enabledRoutes
     HomePreferences.WIDGET_WISHES, HomePreferences.WIDGET_GIFTS ->
         PresentsModule.ROUTE in enabledRoutes
@@ -609,14 +663,20 @@ private val widgetCatalog = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WidgetPickerSheet(
-    selected: List<String>,
-    onToggle: (String, Boolean) -> Unit,
+    widgets: List<HomeWidget>,
+    enabledRoutes: Set<String>,
+    events: List<CalendarEvent>,
+    pair: Pair?,
+    onAdd: (String) -> Unit,
+    onChange: (List<HomeWidget>) -> Unit,
+    onConfigure: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = VdvoemSpacing.screenHorizontal)
                 .padding(bottom = VdvoemSpacing.xxl),
             verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)
@@ -631,44 +691,227 @@ private fun WidgetPickerSheet(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            widgetCatalog.forEach { entry ->
+            widgets.forEachIndexed { index, widget ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = entry.icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(VdvoemSizes.iconMd)
+                    Text(
+                        text = "${index + 1}",
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.width(VdvoemSizes.iconLg)
                     )
-                    Spacer(modifier = Modifier.width(VdvoemSpacing.md))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = stringResource(entry.titleRes),
+                            text = widgetLabel(widget, events, pair),
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = stringResource(entry.descriptionRes),
+                            text = widgetDescription(widget.type),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Switch(
-                        checked = entry.id in selected,
-                        onCheckedChange = { onToggle(entry.id, it) }
-                    )
+                    IconButton(
+                        onClick = { onChange(widgets.toMutableList().apply { add(index - 1, removeAt(index)) }) },
+                        enabled = index > 0
+                    ) { Icon(Icons.Filled.KeyboardArrowUp, contentDescription = stringResource(R.string.widget_move_up)) }
+                    IconButton(
+                        onClick = { onChange(widgets.toMutableList().apply { add(index + 1, removeAt(index)) }) },
+                        enabled = index < widgets.lastIndex
+                    ) { Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.widget_move_down)) }
+                    IconButton(
+                        onClick = { onConfigure(widget.id) },
+                        enabled = widget.type == HomePreferences.WIDGET_COUNTDOWN
+                    ) { Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.widget_configure)) }
+                    IconButton(onClick = { onChange(widgets.filterNot { it.id == widget.id }) }) {
+                        Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.widget_remove))
+                    }
+                }
+            }
+            HorizontalDivider()
+            Text(stringResource(R.string.widget_add_section), style = MaterialTheme.typography.titleMedium)
+            widgetCatalog.forEach { entry ->
+                val available = widgetAvailable(entry.id, enabledRoutes)
+                if (available) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onAdd(entry.id) },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(entry.icon, contentDescription = null, modifier = Modifier.size(VdvoemSizes.iconMd))
+                        Spacer(modifier = Modifier.width(VdvoemSpacing.md))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stringResource(entry.titleRes), style = MaterialTheme.typography.bodyLarge)
+                            Text(stringResource(entry.descriptionRes), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        IconButton(onClick = { onAdd(entry.id) }) {
+                            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.dashboard_widget_add))
+                        }
+                    }
                 }
             }
             Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
-            FilledTonalButton(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            FilledTonalButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.widget_picker_done))
             }
         }
+    }
+}
+
+@Composable
+private fun widgetLabel(widget: HomeWidget, events: List<CalendarEvent>, pair: Pair?): String {
+    if (widget.type != HomePreferences.WIDGET_COUNTDOWN) {
+        val entry = widgetCatalog.firstOrNull { it.id == widget.type }
+        return entry?.let { stringResource(it.titleRes) } ?: widget.type
+    }
+    return widget.config.title
+        ?: when (widget.config.target) {
+            CountdownConfig.TARGET_EVENT -> events.firstOrNull { it.id == widget.config.eventId }?.title
+            CountdownConfig.TARGET_PAIR -> stringResource(R.string.countdown_target_pair)
+            CountdownConfig.TARGET_BIRTHDAY_A -> pair?.nameA?.let { stringResource(R.string.countdown_target_birthday, it) }
+            CountdownConfig.TARGET_BIRTHDAY_B -> pair?.nameB?.let { stringResource(R.string.countdown_target_birthday, it) }
+            else -> stringResource(R.string.widget_countdown_title)
+        }
+        ?: stringResource(R.string.widget_countdown_title)
+}
+
+@Composable
+private fun widgetDescription(type: String): String {
+    val res = widgetCatalog.firstOrNull { it.id == type }?.descriptionRes
+    return if (res != null) stringResource(res) else ""
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CountdownSettingsSheet(
+    widget: HomeWidget,
+    events: List<CalendarEvent>,
+    pair: Pair?,
+    onChange: (HomeWidget) -> Unit,
+    onDelete: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    var config by remember(widget.id) { mutableStateOf(widget.config) }
+    val customTitle = config.title.orEmpty()
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = VdvoemSpacing.screenHorizontal)
+                .padding(bottom = VdvoemSpacing.xxl),
+            verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)
+        ) {
+            Text(stringResource(R.string.countdown_settings_title), style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.countdown_target_section), style = MaterialTheme.typography.titleMedium)
+            RadioOption(
+                label = stringResource(R.string.countdown_target_nearest),
+                selected = config.target == CountdownConfig.TARGET_NEAREST,
+                onClick = { config = config.copy(target = CountdownConfig.TARGET_NEAREST, eventId = null) }
+            )
+            events.forEach { event ->
+                RadioOption(
+                    label = event.title,
+                    selected = config.target == CountdownConfig.TARGET_EVENT && config.eventId == event.id,
+                    onClick = { config = config.copy(target = CountdownConfig.TARGET_EVENT, eventId = event.id) }
+                )
+            }
+            HorizontalDivider()
+            Text(stringResource(R.string.countdown_special_targets), style = MaterialTheme.typography.titleMedium)
+            RadioOption(
+                label = stringResource(R.string.countdown_target_pair),
+                selected = config.target == CountdownConfig.TARGET_PAIR,
+                enabled = pair != null,
+                onClick = { config = config.copy(target = CountdownConfig.TARGET_PAIR, eventId = null) }
+            )
+            RadioOption(
+                label = pair?.let { stringResource(R.string.countdown_target_birthday, it.nameA) }
+                    ?: stringResource(R.string.countdown_target_birthday, "—"),
+                selected = config.target == CountdownConfig.TARGET_BIRTHDAY_A,
+                enabled = pair?.birthdayA != null,
+                onClick = { config = config.copy(target = CountdownConfig.TARGET_BIRTHDAY_A, eventId = null) }
+            )
+            RadioOption(
+                label = pair?.let { stringResource(R.string.countdown_target_birthday, it.nameB) }
+                    ?: stringResource(R.string.countdown_target_birthday, "—"),
+                selected = config.target == CountdownConfig.TARGET_BIRTHDAY_B,
+                enabled = pair?.birthdayB != null,
+                onClick = { config = config.copy(target = CountdownConfig.TARGET_BIRTHDAY_B, eventId = null) }
+            )
+            HorizontalDivider()
+            Text(stringResource(R.string.countdown_direction_section), style = MaterialTheme.typography.titleMedium)
+            RadioOption(
+                label = stringResource(R.string.countdown_direction_until),
+                selected = !config.isSince,
+                onClick = { config = config.copy(direction = CountdownConfig.DIRECTION_UNTIL) }
+            )
+            RadioOption(
+                label = stringResource(R.string.countdown_direction_since),
+                selected = config.isSince,
+                onClick = { config = config.copy(direction = CountdownConfig.DIRECTION_SINCE) }
+            )
+            OutlinedTextField(
+                value = customTitle,
+                onValueChange = { config = config.copy(title = it.takeIf(String::isNotBlank)) },
+                label = { Text(stringResource(R.string.countdown_custom_title)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            val preview = resolveCountdown(config, events, pair)
+            Text(
+                text = preview?.let { result ->
+                    val value = when {
+                        result.days == 0L -> stringResource(R.string.dashboard_today)
+                        config.isSince -> pluralStringResource(
+                            R.plurals.dashboard_days_short,
+                            result.days.absoluteValue.toInt(),
+                            result.days.absoluteValue
+                        )
+                        result.days < 0L -> stringResource(R.string.countdown_preview_passed)
+                        else -> pluralStringResource(
+                            R.plurals.dashboard_days_short,
+                            result.days.toInt(),
+                            result.days
+                        )
+                    }
+                    stringResource(R.string.countdown_preview, widgetLabel(widget.copy(config = config), events, pair), value, Dates.format(result.date))
+                } ?: stringResource(R.string.dashboard_widget_empty),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            FilledTonalButton(
+                onClick = { onChange(widget.copy(config = config)); onDismiss() },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text(stringResource(R.string.widget_picker_done)) }
+            TextButton(onClick = onDelete, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.widget_remove))
+            }
+        }
+    }
+}
+
+@Composable
+private fun RadioOption(
+    label: String,
+    selected: Boolean,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled, onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(selected = selected, enabled = enabled, onClick = onClick)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

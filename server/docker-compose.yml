@@ -27,12 +27,18 @@ services:
       DB_USER: vdvoem
       DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
       DB_POOL: 8
+      STORAGE_DIR: /data/storage
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+    volumes:
+      - storage_data:/data/storage
     ports:
       - "127.0.0.1:8090:8080"
+      - "18090:8080"
     networks: [internal]
 
 volumes:
   db_data:
+  storage_data:
 
 networks:
   internal:

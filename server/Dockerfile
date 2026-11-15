@@ -11,4 +11,5 @@ WORKDIR /app
 COPY --from=build /src/build/install/vdvoem-server ./
 EXPOSE 8080
 ENV PORT=8080
+ENV STORAGE_DIR=/data/storage
 ENTRYPOINT ["/app/bin/vdvoem-server"]

@@ -65,6 +65,8 @@
     <string name="presents_tab_gifts">Подарки</string>
     <string name="dashboard_widget_add">Добавить виджет</string>
     <string name="dashboard_widget_empty">Пусто</string>
+    <string name="dashboard_today">Сегодня</string>
+    <string name="dashboard_passed">Уже прошло</string>
     <string name="dashboard_poke">Отправить сердечко</string>
     <string name="dashboard_poke_sent">Сердечко отправлено — партнёр увидит его после синхронизации</string>
     <string name="dashboard_birthday">%1$s · %2$s</string>
@@ -77,7 +79,7 @@
     <string name="dashboard_poke_last">Отправлено: %1$s</string>
 
     <string name="widget_countdown_title">Отсчёт</string>
-    <string name="widget_countdown_description">Большой счётчик до ближайшего события</string>
+    <string name="widget_countdown_description">Счётчик до или после выбранной даты</string>
     <string name="widget_event_title">События</string>
     <string name="widget_event_description">Сколько дат уже сохранено</string>
     <string name="widget_wishes_description">Сколько желаний в списке</string>
@@ -85,8 +87,32 @@
     <string name="widget_tests_description">Быстрый вход в тесты для двоих</string>
     <string name="widget_modules_description">Сколько модулей включено</string>
     <string name="widget_picker_title">Виджеты на главной</string>
-    <string name="widget_picker_text">Включайте то, что хотите видеть. Состав и порядок можно менять в любой момент.</string>
+    <string name="widget_picker_text">Добавляйте виджеты, меняйте их порядок и настраивайте каждый счётчик отдельно.</string>
     <string name="widget_picker_done">Готово</string>
+    <string name="widget_add_section">Добавить виджет</string>
+    <string name="widget_move_up">Выше</string>
+    <string name="widget_move_down">Ниже</string>
+    <string name="widget_configure">Настроить</string>
+    <string name="widget_remove">Удалить виджет</string>
+
+    <string name="countdown_settings_title">Настройка отсчёта</string>
+    <string name="countdown_target_section">Что считать</string>
+    <string name="countdown_target_nearest">Ближайшее событие</string>
+    <string name="countdown_special_targets">Особые даты</string>
+    <string name="countdown_target_pair">Вместе с партнёром</string>
+    <string name="countdown_target_birthday">День рождения: %1$s</string>
+    <string name="countdown_direction_section">Направление</string>
+    <string name="countdown_direction_until">Сколько осталось</string>
+    <string name="countdown_direction_since">Сколько прошло</string>
+    <string name="countdown_custom_title">Своя подпись (необязательно)</string>
+    <string name="countdown_preview">%1$s · %2$s · %3$s</string>
+    <string name="countdown_preview_passed">уже прошло</string>
+    <plurals name="widget_days_passed">
+        <item quantity="one">%d день назад</item>
+        <item quantity="few">%d дня назад</item>
+        <item quantity="many">%d дней назад</item>
+        <item quantity="other">%d дня назад</item>
+    </plurals>
 
     <string name="poke_dialog_title">Сердечко</string>
     <string name="poke_dialog_text">Партнёр получит сообщение в уведомлениях, когда появится синхронизация.</string>
@@ -139,4 +165,27 @@
     <string name="dashboard_upcoming_empty_title">Событий пока нет</string>
     <string name="dashboard_upcoming_empty_message">Когда появятся события, здесь будет ближайшее из них.</string>
     <string name="dashboard_upcoming_empty_action">Открыть календарь</string>
+<string name="connect_title">Новый сервер</string>
+    <string name="connect_hero_title">Синхронизация пары</string>
+    <string name="connect_hero_text">Один сервер — общие данные на двух телефонах. Укажите адрес и создайте пару или войдите по коду.</string>
+    <string name="connect_server_label">Адрес сервера</string>
+    <string name="connect_server_hint">https://…</string>
+    <string name="connect_server_text">Адрес вашего сервера. Если он локальный — понадобится туннель или внешний IP.</string>
+    <string name="connect_create_title">Новая пара</string>
+    <string name="connect_create_text">Создайте пару и передайте код партнёру.</string>
+    <string name="connect_create">Создать пару</string>
+    <string name="connect_join_title">Вход по коду</string>
+    <string name="connect_join_text">Введите код из 8 символов, который прислал партнёр.</string>
+    <string name="connect_join">Войти</string>
+    <string name="connect_code_hint">Код приглашения</string>
+    <string name="connect_code_counter">%1$d / %2$d</string>
+    <string name="connect_busy">Подключаемся…</string>
+    <string name="connect_created_title">Пара создана</string>
+    <string name="connect_created_text">Передайте этот код партнёру — он введёт его на своём экране синхронизации.</string>
+    <string name="connect_copy">Копировать код</string>
+    <string name="connect_copied">Код скопирован</string>
+    <string name="connect_done">Готово</string>
+    <string name="more_sync_section">Синхронизация</string>
+    <string name="more_sync_title">Подключить пару</string>
+    <string name="more_sync_text">Общие данные на двух телефонах через свой сервер</string>
 </resources>

@@ -55,6 +55,8 @@ import app.vdvoem.ui.dashboard.DashboardScreen
 import app.vdvoem.ui.dashboard.DashboardViewModel
 import app.vdvoem.ui.dashboard.PairDialog
 import app.vdvoem.ui.more.MoreScreen
+import app.vdvoem.ui.pair.ConnectPairScreen
+import app.vdvoem.ui.pair.ConnectPairViewModel
 import app.vdvoem.ui.presents.PresentsModule
 import app.vdvoem.ui.presents.PresentsTabController
 import app.vdvoem.ui.sync.BackupViewModel
@@ -67,6 +69,7 @@ private object Routes {
     const val HOME = "home"
     const val STORE = "store"
     const val MORE = "more"
+    const val CONNECT = "connect"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,7 +84,7 @@ fun VdvoemRoot(
     val dashboardState by dashboardViewModel.state.collectAsStateWithLifecycle()
     val homePreferences: HomePreferences = koinInject()
     val presentsTabController: PresentsTabController = koinInject()
-    val widgetIds by homePreferences.widgetIds
+    val widgets by homePreferences.widgets
         .collectAsStateWithLifecycle(initialValue = HomePreferences.DEFAULT_WIDGETS)
     val lastPoke by homePreferences.lastPoke
         .collectAsStateWithLifecycle(initialValue = null)
@@ -171,6 +174,7 @@ fun VdvoemRoot(
     val title = when (currentRoute) {
         Routes.STORE -> stringResource(R.string.title_store)
         Routes.MORE -> stringResource(R.string.more_title)
+        Routes.CONNECT -> stringResource(R.string.connect_title)
         Routes.HOME, null -> stringResource(R.string.title_home)
         else -> registry.byRoute(currentRoute)
             ?.let { stringResource(it.manifest.titleRes) }
@@ -195,7 +199,7 @@ fun VdvoemRoot(
                 title = { Text(text = title) },
                 navigationIcon = {
                     when (currentRoute) {
-                        Routes.STORE -> {
+                        Routes.STORE, Routes.CONNECT -> {
                             IconButton(onClick = { navController.popBackStack() }) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -287,7 +291,7 @@ fun VdvoemRoot(
                 DashboardScreen(
                     modules = enabledModules,
                     pair = dashboardState.pair,
-                    nextEvent = dashboardState.nextEvent,
+                    events = dashboardState.events,
                     eventCount = dashboardState.eventCount,
                     wishCount = dashboardState.wishCount,
                     giftCount = dashboardState.giftCount,
@@ -303,10 +307,13 @@ fun VdvoemRoot(
                     },
                     onOpenQuizzes = { openTab("quizzes") },
                     onOpenPairEditor = { pairDialogOpen = true },
-                    widgetIds = widgetIds,
+                    widgets = widgets,
                     lastPoke = lastPoke,
-                    onWidgetIdsChange = { ids ->
-                        scope.launch { homePreferences.setWidgetIds(ids) }
+                    onWidgetsChange = { list ->
+                        scope.launch { homePreferences.setWidgets(list) }
+                    },
+                    onAddWidget = { type ->
+                        scope.launch { homePreferences.addWidget(type) }
                     },
                     onSendPoke = { text ->
                         scope.launch {
@@ -331,8 +338,22 @@ fun VdvoemRoot(
                     overflowModules = overflowModules,
                     onOpenModule = { module -> openTab(module.route) },
                     onOpenStore = { openTab(Routes.STORE) },
+                    onOpenConnect = { navController.navigate(Routes.CONNECT) { launchSingleTop = true } },
                     onExport = { exportLauncher.launch("vdvoem-backup.json") },
                     onImport = { importLauncher.launch(arrayOf("*/*")) }
+                )
+            }
+            composable(Routes.CONNECT) {
+                val connectViewModel: ConnectPairViewModel = koinViewModel()
+                val connectState by connectViewModel.state.collectAsStateWithLifecycle()
+                ConnectPairScreen(
+                    state = connectState,
+                    onServerChange = connectViewModel::onServerChange,
+                    onInviteCodeChange = connectViewModel::onInviteCodeChange,
+                    onCreatePair = connectViewModel::createPair,
+                    onJoin = { code -> connectViewModel.join(code) },
+                    onCancel = { navController.popBackStack() },
+                    modifier = Modifier.fillMaxSize()
                 )
             }
             enabledModules.forEach { module ->

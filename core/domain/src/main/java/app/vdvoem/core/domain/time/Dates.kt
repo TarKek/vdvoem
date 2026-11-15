@@ -33,6 +33,14 @@ object Dates {
         return if (thisYear.isBefore(today)) date.withYear(today.year + 1) else thisYear
     }
 
+    /** Прошедшее наступление события: для годовщин — этот год или предыдущий. */
+    fun previousOccurrence(epochMillis: Long, annual: Boolean, today: LocalDate = today()): LocalDate {
+        val date = toLocalDate(epochMillis)
+        if (!annual) return date
+        val thisYear = date.withYear(today.year)
+        return if (thisYear.isAfter(today)) date.withYear(today.year - 1) else thisYear
+    }
+
     fun daysUntil(target: LocalDate, from: LocalDate = today()): Long =
         ChronoUnit.DAYS.between(from, target)
 

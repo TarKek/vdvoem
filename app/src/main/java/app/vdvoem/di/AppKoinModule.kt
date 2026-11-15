@@ -14,6 +14,7 @@ import app.vdvoem.ui.ModulesViewModel
 import app.vdvoem.ui.dashboard.DashboardViewModel
 import app.vdvoem.ui.presents.PresentsModule
 import app.vdvoem.ui.presents.PresentsTabController
+import app.vdvoem.ui.pair.ConnectPairViewModel
 import app.vdvoem.ui.sync.BackupViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -51,6 +52,7 @@ val appKoinModule = module {
     viewModel { GiftsViewModel(giftRepository = get(), pairRepository = get()) }
     viewModel { SettingsViewModel(repository = get()) }
     single { HomePreferences(context = androidContext()) }
+    viewModel { ConnectPairViewModel(controller = get(), pairRepository = get()) }
     viewModel {
         BackupViewModel(
             pairRepository = get(),

@@ -1,5 +1,8 @@
 package app.vdvoem
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,6 +21,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestInternetPermissionIfNeeded()
         enableEdgeToEdge()
         setContent {
             val settingsRepository: AppSettingsRepository = koinInject()
@@ -37,5 +41,21 @@ class MainActivity : ComponentActivity() {
                 VdvoemRoot()
             }
         }
+    }
+
+    /**
+     * На части прошивок (HyperOS, VoltageOS и др.) INTERNET выдаётся как обычное
+     * чувствительное разрешение и по умолчанию не выдано — просим его явно.
+     */
+    private fun requestInternetPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
+        val granted = checkSelfPermission(Manifest.permission.INTERNET) == PackageManager.PERMISSION_GRANTED
+        if (!granted) {
+            requestPermissions(arrayOf(Manifest.permission.INTERNET), INTERNET_REQUEST)
+        }
+    }
+
+    private companion object {
+        const val INTERNET_REQUEST = 1001
     }
 }
