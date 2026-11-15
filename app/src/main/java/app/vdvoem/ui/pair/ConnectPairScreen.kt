@@ -75,6 +75,8 @@ fun ConnectPairScreen(
     onSinceChange: (Long) -> Unit,
     onCreatePair: () -> Unit,
     onJoin: (String) -> Unit,
+    onSyncNow: () -> Unit = {},
+    onLeavePair: () -> Unit = {},
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -90,7 +92,7 @@ fun ConnectPairScreen(
             ),
         verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)
     ) {
-        HeroCard()
+        if (state !is ConnectState.Connected) HeroCard()
 
         when (state) {
             is ConnectState.Form -> FormContent(
@@ -106,6 +108,13 @@ fun ConnectPairScreen(
 
             is ConnectState.Created -> CreatedContent(
                 state = state,
+                onCancel = onCancel
+            )
+
+            is ConnectState.Connected -> ConnectedContent(
+                state = state,
+                onSyncNow = onSyncNow,
+                onLeavePair = onLeavePair,
                 onCancel = onCancel
             )
         }
@@ -412,6 +421,189 @@ private fun CreatedContent(
             .heightIn(min = VdvoemSpacing.huge + VdvoemSpacing.sm)
     ) {
         Text(stringResource(R.string.connect_done))
+    }
+}
+
+/**
+ * Пара уже подключена: показываем состав пары, код для второго телефона,
+ * ручную синхронизацию и выход из пары. Раньше здесь снова была форма создания —
+ * из-за этого можно было случайно завести вторую пару и потерять данные партнёра.
+ */
+@Composable
+private fun ConnectedContent(
+    state: ConnectState.Connected,
+    onSyncNow: () -> Unit,
+    onLeavePair: () -> Unit,
+    onCancel: () -> Unit
+) {
+    val clipboard = LocalClipboardManager.current
+    var copied by rememberSaveable(state.inviteCode) { mutableStateOf(false) }
+    var confirmLeave by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(copied) {
+        if (copied) {
+            delay(COPIED_FEEDBACK_MS)
+            copied = false
+        }
+    }
+
+    VdvoemCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Filled.Check,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(VdvoemSizes.iconMd)
+            )
+            Spacer(modifier = Modifier.width(VdvoemSpacing.sm))
+            Text(
+                text = stringResource(R.string.connect_connected_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+        Spacer(modifier = Modifier.height(VdvoemSpacing.sm))
+        Text(
+            text = stringResource(
+                R.string.connect_connected_names,
+                state.nameA.ifBlank { stringResource(R.string.connect_connected_name_a) },
+                state.nameB.ifBlank { stringResource(R.string.connect_connected_name_b) }
+            ),
+            style = MaterialTheme.typography.bodyLarge
+        )
+        if (state.sinceMillis > 0) {
+            Spacer(modifier = Modifier.height(VdvoemSpacing.xxs))
+            Text(
+                text = stringResource(
+                    R.string.connect_connected_since,
+                    Dates.format(Dates.toLocalDate(state.sinceMillis))
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(modifier = Modifier.height(VdvoemSpacing.xxs))
+        Text(
+            text = state.serverUrl,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+
+    if (state.inviteCode.isNotBlank()) {
+        VdvoemCard {
+            SectionHeader(title = stringResource(R.string.connect_invite_title))
+            Spacer(modifier = Modifier.height(VdvoemSpacing.xs))
+            Text(
+                text = state.inviteCode.chunked(INVITE_CODE_GROUP).joinToString(" "),
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(VdvoemSpacing.xs))
+            Text(
+                text = stringResource(R.string.connect_invite_text),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(VdvoemSpacing.sm))
+            OutlinedButton(
+                onClick = {
+                    clipboard.setText(AnnotatedString(state.inviteCode))
+                    copied = true
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = VdvoemSpacing.huge)
+            ) {
+                Text(
+                    stringResource(if (copied) R.string.connect_copied else R.string.connect_copy)
+                )
+            }
+        }
+    }
+
+    VdvoemCard {
+        Button(
+            onClick = onSyncNow,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = VdvoemSpacing.huge + VdvoemSpacing.sm),
+            enabled = !state.syncing
+        ) {
+            if (state.syncing) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(VdvoemSizes.iconSm),
+                    strokeWidth = VdvoemSpacing.xxs
+                )
+                Spacer(modifier = Modifier.width(VdvoemSpacing.sm))
+            }
+            Text(
+                stringResource(
+                    if (state.syncing) R.string.connect_syncing else R.string.connect_sync_now
+                )
+            )
+        }
+        Spacer(modifier = Modifier.height(VdvoemSpacing.xs))
+        Text(
+            text = stringResource(R.string.connect_sync_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+
+    state.error?.let { message ->
+        if (message.isNotBlank()) {
+            Text(
+                text = message,
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+    }
+
+    TextButton(
+        onClick = onCancel,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = VdvoemSpacing.huge + VdvoemSpacing.sm)
+    ) {
+        Text(stringResource(R.string.connect_done))
+    }
+
+    TextButton(
+        onClick = { confirmLeave = true },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = stringResource(R.string.connect_leave),
+            color = MaterialTheme.colorScheme.error
+        )
+    }
+
+    if (confirmLeave) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirmLeave = false },
+            title = { Text(stringResource(R.string.connect_leave_title)) },
+            text = { Text(stringResource(R.string.connect_leave_text)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmLeave = false
+                        onLeavePair()
+                    }
+                ) {
+                    Text(stringResource(R.string.connect_leave_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmLeave = false }) {
+                    Text(stringResource(R.string.pair_cancel))
+                }
+            }
+        )
     }
 }
 

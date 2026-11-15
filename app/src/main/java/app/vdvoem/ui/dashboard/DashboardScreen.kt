@@ -47,6 +47,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -81,6 +82,7 @@ import kotlin.math.absoluteValue
 import app.vdvoem.ui.presents.PresentsModule
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun DashboardScreen(
     modules: List<AppModule>,
     pair: Pair?,
@@ -90,6 +92,8 @@ fun DashboardScreen(
     giftCount: Int,
     widgets: List<HomeWidget>,
     lastPoke: String?,
+    refreshing: Boolean = false,
+    onRefresh: () -> Unit = {},
     onWidgetsChange: (List<HomeWidget>) -> Unit,
     onAddWidget: (String) -> Unit,
     onSendPoke: (String) -> Unit,
@@ -110,8 +114,13 @@ fun DashboardScreen(
         widgets.filter { widgetAvailable(it.type, enabledRoutes) }
     }
 
+    PullToRefreshBox(
+        isRefreshing = refreshing,
+        onRefresh = onRefresh,
+        modifier = modifier.fillMaxSize()
+    ) {
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
             start = VdvoemSpacing.screenHorizontal,
             end = VdvoemSpacing.screenHorizontal,
@@ -163,6 +172,7 @@ fun DashboardScreen(
                 onConfigure = { id -> configWidgetId = id }
             )
         }
+    }
     }
 
     if (showWidgetPicker) {

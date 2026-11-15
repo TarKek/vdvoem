@@ -1,5 +1,6 @@
 package app.vdvoem.core.sync
 
+import app.vdvoem.core.data.LocalChangeSignal
 import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.model.Gift
 import app.vdvoem.core.domain.model.Pair
@@ -62,6 +63,7 @@ class SyncEngine(
         val pairId = settings.pairId
 
         try {
+            LocalChangeSignal.muted {
             var pulled = 0
             var applied = 0
 
@@ -70,7 +72,7 @@ class SyncEngine(
 
             // Снимок локальных изменений до применения серверных: так только что
             // применённые записи не уезжают обратно на сервер «эхом».
-            val outgoing = collectLocalChanges(since)
+            val outgoing = collectLocalChanges(settings.lastPushedAt)
             val incomingPokes = mutableListOf<Poke>()
 
             applied += applyPair(remote.pair)
@@ -95,6 +97,11 @@ class SyncEngine(
                     if (applyPoke(poke, pairId)) incomingPokes += poke.toDomain(fallbackPairId = pairId)
                 }
                 if (incomingPokes.isNotEmpty()) pokeReceiver(incomingPokes)
+
+                // Отмечаем, что именно уже уехало: следующая отправка считается
+                // не от серверного времени, а от локального «водяного знака».
+                val pushedMax = outgoing.maxUpdatedAt()
+                if (pushedMax > settings.lastPushedAt) settingsStore.setLastPushedAt(pushedMax)
             }
 
             val serverTime = maxOf(remote.serverTime, settings.lastServerTime)
@@ -105,6 +112,7 @@ class SyncEngine(
             statusHolder.set(SyncStatus.Success(serverTime))
             android.util.Log.d(TAG, "sync ok: pulled=$pulled applied=$applied pushed=$pushed since=$since")
             result
+            }
         } catch (cancelled: CancellationException) {
             statusHolder.set(SyncStatus.Idle)
             throw cancelled
@@ -183,16 +191,16 @@ class SyncEngine(
 
     // --- сбор локальных изменений ---
 
-    private suspend fun collectLocalChanges(since: Long): ChangesDto {
-        val localPair: Pair? = pairRepository.current()?.takeIf { it.updatedAt > since }
+    private suspend fun collectLocalChanges(pushedBefore: Long): ChangesDto {
+        val localPair: Pair? = pairRepository.current()?.takeIf { it.updatedAt > pushedBefore }
         val events: List<CalendarEvent> = calendarRepository.observeEvents().first()
-            .filter { it.updatedAt > since }
+            .filter { it.updatedAt > pushedBefore }
         val wishes: List<Wish> = wishRepository.observeWishes().first()
-            .filter { it.updatedAt > since }
+            .filter { it.updatedAt > pushedBefore }
         val gifts: List<Gift> = giftRepository.observeGifts().first()
-            .filter { it.updatedAt > since }
+            .filter { it.updatedAt > pushedBefore }
         val pokes: List<Poke> = pokeRepository.observe().first()
-            .filter { it.updatedAt > since }
+            .filter { it.updatedAt > pushedBefore }
 
         return ChangesDto(
             pair = localPair?.toDto(),
@@ -208,3 +216,12 @@ class SyncEngine(
         const val NOT_CONFIGURED = "Синхронизация не настроена"
     }
 }
+
+/** Самый свежий `updatedAt` в отправляемом наборе — водяной знак отправки. */
+private fun ChangesDto.maxUpdatedAt(): Long = (
+    listOfNotNull(pair?.updatedAt) +
+        events.map { it.updatedAt } +
+        wishes.map { it.updatedAt } +
+        gifts.map { it.updatedAt } +
+        pokes.map { it.updatedAt }
+    ).maxOrNull() ?: 0L

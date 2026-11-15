@@ -1,5 +1,6 @@
 package app.vdvoem.core.data.repository
 
+import app.vdvoem.core.data.LocalChangeSignal
 import app.vdvoem.core.data.db.EventDao
 import app.vdvoem.core.data.db.EventEntity
 import app.vdvoem.core.domain.model.CalendarEvent
@@ -16,10 +17,12 @@ class RoomCalendarRepository(
 
     override suspend fun upsert(event: CalendarEvent) {
         dao.upsert(event.toEntity())
+        LocalChangeSignal.notifyLocalWrite()
     }
 
     override suspend fun delete(id: String) {
         dao.softDelete(id = id, now = System.currentTimeMillis())
+        LocalChangeSignal.notifyLocalWrite()
     }
 }
 

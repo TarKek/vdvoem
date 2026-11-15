@@ -39,6 +39,7 @@ fun MoreScreen(
     onOpenModule: (AppModule) -> Unit,
     onOpenStore: () -> Unit,
     onOpenConnect: () -> Unit,
+    pairLabel: String? = null,
     onExport: () -> Unit,
     onImport: () -> Unit,
     modifier: Modifier = Modifier
@@ -111,8 +112,12 @@ fun MoreScreen(
 
         item(key = "more_sync") {
             ModuleRow(
-                title = stringResource(R.string.more_sync_title),
-                description = stringResource(R.string.more_sync_text),
+                title = pairLabel ?: stringResource(R.string.more_sync_title),
+                description = if (pairLabel != null) {
+                    stringResource(R.string.more_sync_connected_text)
+                } else {
+                    stringResource(R.string.more_sync_text)
+                },
                 onClick = onOpenConnect,
                 icon = {
                     Icon(

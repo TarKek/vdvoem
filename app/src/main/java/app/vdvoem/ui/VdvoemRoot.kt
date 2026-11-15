@@ -5,6 +5,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -50,10 +52,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import app.vdvoem.R
+import app.vdvoem.core.data.LocalChangeSignal
 import app.vdvoem.core.domain.model.Poke
 import app.vdvoem.core.domain.module.ModuleRegistry
 import app.vdvoem.core.domain.repository.PokeRepository
 import app.vdvoem.core.sync.SyncController
+import app.vdvoem.core.sync.SyncStatus
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import app.vdvoem.core.ui.theme.VdvoemSizes
 import app.vdvoem.data.HomePreferences
 import app.vdvoem.feature.store.StoreModule
@@ -97,7 +103,18 @@ fun VdvoemRoot(
     val widgets by homePreferences.widgets
         .collectAsStateWithLifecycle(initialValue = HomePreferences.DEFAULT_WIDGETS)
     val lastPoke = dashboardState.lastPoke?.text
+    val syncStatus by syncController.status.collectAsStateWithLifecycle(initialValue = SyncStatus.Idle)
+    val syncing = syncStatus is SyncStatus.Running
     val navController = rememberNavController()
+
+    // Любая локальная правка (событие, желание, подарок, сердечко) сразу уезжает на сервер:
+    // раньше приходилось ждать ближайший фоновый проход и казалось, что синка нет.
+    LaunchedEffect(Unit) {
+        LocalChangeSignal.changes.collectLatest {
+            delay(LOCAL_CHANGE_SYNC_DELAY_MS)
+            syncController.syncInBackground()
+        }
+    }
 
     // Каждое возвращение в приложение — повод сходить на сервер: без этого изменения
     // партнёра ждали до ближайшего фонового прохода (15 минут) и казалось, что синка нет.
@@ -304,8 +321,16 @@ fun VdvoemRoot(
             navController = navController,
             startDestination = Routes.HOME,
             modifier = Modifier.padding(innerPadding),
-            enterTransition = { fadeIn(animationSpec = tween(180)) },
-            exitTransition = { fadeOut(animationSpec = tween(120)) }
+            enterTransition = {
+                slideInHorizontally(animationSpec = tween(260)) { it / 6 } +
+                    fadeIn(animationSpec = tween(200))
+            },
+            exitTransition = { fadeOut(animationSpec = tween(140)) },
+            popEnterTransition = { fadeIn(animationSpec = tween(200)) },
+            popExitTransition = {
+                slideOutHorizontally(animationSpec = tween(240)) { it / 6 } +
+                    fadeOut(animationSpec = tween(160))
+            }
         ) {
             composable(Routes.HOME) {
                 DashboardScreen(
@@ -329,6 +354,8 @@ fun VdvoemRoot(
                     onOpenPairEditor = { pairDialogOpen = true },
                     widgets = widgets,
                     lastPoke = lastPoke,
+                    refreshing = syncing,
+                    onRefresh = { syncController.syncInBackground() },
                     onWidgetsChange = { list ->
                         scope.launch { homePreferences.setWidgets(list) }
                     },
@@ -366,6 +393,9 @@ fun VdvoemRoot(
                     onOpenModule = { module -> openTab(module.route) },
                     onOpenStore = { openTab(Routes.STORE) },
                     onOpenConnect = { navController.navigate(Routes.CONNECT) { launchSingleTop = true } },
+                    pairLabel = dashboardState.pair
+                        ?.takeIf { it.sinceMillis > 0 && it.nameA.isNotBlank() && it.nameB.isNotBlank() }
+                        ?.let { "${it.nameA} и ${it.nameB}" },
                     onExport = { exportLauncher.launch("vdvoem-backup.json") },
                     onImport = { importLauncher.launch(arrayOf("*/*")) }
                 )
@@ -381,6 +411,8 @@ fun VdvoemRoot(
                     onSinceChange = connectViewModel::onSinceChange,
                     onCreatePair = connectViewModel::createPair,
                     onJoin = { code -> connectViewModel.join(code) },
+                    onSyncNow = connectViewModel::syncNow,
+                    onLeavePair = connectViewModel::leavePair,
                     onCancel = { navController.popBackStack() },
                     modifier = Modifier.fillMaxSize()
                 )
@@ -405,3 +437,6 @@ fun VdvoemRoot(
         )
     }
 }
+
+/** Пауза перед отправкой после правки: несколько быстрых изменений уедут одним проходом. */
+private const val LOCAL_CHANGE_SYNC_DELAY_MS = 900L

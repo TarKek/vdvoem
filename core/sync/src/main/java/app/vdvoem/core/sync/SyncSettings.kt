@@ -25,6 +25,8 @@ data class SyncSettings(
     val pairId: String = "",
     val inviteCode: String = "",
     val lastServerTime: Long = 0L,
+    /** Наибольший локальный `updatedAt`, который уже успешно уехал на сервер. */
+    val lastPushedAt: Long = 0L,
     val enabled: Boolean = false
 ) {
     /** Есть сервер и токен — можно ходить в сеть. */
@@ -52,6 +54,7 @@ class SyncSettingsStore(private val context: Context) {
                 pairId = prefs[KEY_PAIR_ID].orEmpty(),
                 inviteCode = prefs[KEY_INVITE_CODE].orEmpty(),
                 lastServerTime = prefs[KEY_LAST_SERVER_TIME] ?: 0L,
+                lastPushedAt = prefs[KEY_LAST_PUSHED_AT] ?: 0L,
                 enabled = prefs[KEY_ENABLED] ?: false
             )
         }
@@ -83,6 +86,10 @@ class SyncSettingsStore(private val context: Context) {
         context.syncDataStore.edit { it[KEY_ENABLED] = enabled }
     }
 
+    suspend fun setLastPushedAt(time: Long) {
+        context.syncDataStore.edit { it[KEY_LAST_PUSHED_AT] = time }
+    }
+
     /** Сохранить всё, что вернул сервер при создании/вступлении в пару. */
     suspend fun saveCredentials(pairId: String, deviceToken: String, inviteCode: String) {
         context.syncDataStore.edit { prefs ->
@@ -90,6 +97,21 @@ class SyncSettingsStore(private val context: Context) {
             prefs[KEY_DEVICE_TOKEN] = deviceToken
             prefs[KEY_INVITE_CODE] = inviteCode
             prefs[KEY_ENABLED] = true
+        }
+    }
+
+    /**
+     * Выход из пары: забываем устройство и пару, но адрес сервера оставляем —
+     * иначе после «Выйти из пары» поле адреса пустое и войти по коду нельзя.
+     */
+    suspend fun clearCredentials() {
+        context.syncDataStore.edit { prefs ->
+            prefs.remove(KEY_DEVICE_TOKEN)
+            prefs.remove(KEY_PAIR_ID)
+            prefs.remove(KEY_INVITE_CODE)
+            prefs.remove(KEY_LAST_SERVER_TIME)
+            prefs.remove(KEY_LAST_PUSHED_AT)
+            prefs[KEY_ENABLED] = false
         }
     }
 
@@ -104,6 +126,7 @@ class SyncSettingsStore(private val context: Context) {
         val KEY_PAIR_ID = stringPreferencesKey("pair_id")
         val KEY_INVITE_CODE = stringPreferencesKey("invite_code")
         val KEY_LAST_SERVER_TIME = longPreferencesKey("last_server_time")
+        val KEY_LAST_PUSHED_AT = longPreferencesKey("last_pushed_at")
         val KEY_ENABLED = booleanPreferencesKey("enabled")
     }
 }

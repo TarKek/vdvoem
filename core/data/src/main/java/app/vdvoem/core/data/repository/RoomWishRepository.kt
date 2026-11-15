@@ -1,5 +1,6 @@
 package app.vdvoem.core.data.repository
 
+import app.vdvoem.core.data.LocalChangeSignal
 import app.vdvoem.core.data.db.WishDao
 import app.vdvoem.core.data.db.WishEntity
 import app.vdvoem.core.domain.model.Wish
@@ -17,10 +18,12 @@ class RoomWishRepository(
 
     override suspend fun upsert(wish: Wish) {
         dao.upsert(wish.toEntity())
+        LocalChangeSignal.notifyLocalWrite()
     }
 
     override suspend fun delete(id: String) {
         dao.softDelete(id = id, now = System.currentTimeMillis())
+        LocalChangeSignal.notifyLocalWrite()
     }
 }
 

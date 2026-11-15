@@ -1,5 +1,6 @@
 package app.vdvoem.core.data.repository
 
+import app.vdvoem.core.data.LocalChangeSignal
 import app.vdvoem.core.data.db.PairDao
 import app.vdvoem.core.data.db.PairEntity
 import app.vdvoem.core.domain.model.Pair
@@ -16,6 +17,7 @@ class RoomPairRepository(
     override suspend fun save(pair: Pair) {
         val existing = dao.current()
         dao.upsert(pair.copy(id = existing?.id ?: pair.id).toEntity())
+        LocalChangeSignal.notifyLocalWrite()
     }
 
     override suspend fun current(): Pair? = dao.current()?.toDomain()

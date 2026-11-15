@@ -169,7 +169,7 @@
     <string name="dashboard_upcoming_empty_title">Событий пока нет</string>
     <string name="dashboard_upcoming_empty_message">Когда появятся события, здесь будет ближайшее из них.</string>
     <string name="dashboard_upcoming_empty_action">Открыть календарь</string>
-<string name="connect_title">Новый сервер</string>
+<string name="connect_title">Синхронизация</string>
     <string name="connect_hero_title">Синхронизация пары</string>
     <string name="connect_hero_text">Один сервер — общие данные на двух телефонах. Укажите адрес и создайте пару или войдите по коду.</string>
     <string name="connect_server_label">Адрес сервера</string>
@@ -189,7 +189,22 @@
     <string name="connect_copy">Копировать код</string>
     <string name="connect_copied">Код скопирован</string>
     <string name="connect_done">Готово</string>
+    <string name="connect_connected_title">Пара подключена</string>
+    <string name="connect_connected_names">%1$s и %2$s</string>
+    <string name="connect_connected_name_a">Ты</string>
+    <string name="connect_connected_name_b">Партнёр</string>
+    <string name="connect_connected_since">Вместе с %1$s</string>
+    <string name="connect_invite_title">Код для второго телефона</string>
+    <string name="connect_invite_text">Партнёр вводит этот код у себя: «Ещё» → «Подключить пару».</string>
+    <string name="connect_sync_now">Синхронизировать сейчас</string>
+    <string name="connect_syncing">Синхронизируем…</string>
+    <string name="connect_sync_hint">Обычно всё приходит само: при открытии приложения и после каждой правки.</string>
+    <string name="connect_leave">Выйти из пары</string>
+    <string name="connect_leave_title">Выйти из пары?</string>
+    <string name="connect_leave_text">Настройки синхронизации на этом телефоне сбросятся. Данные останутся локально и на сервере.</string>
+    <string name="connect_leave_confirm">Выйти</string>
     <string name="more_sync_section">Синхронизация</string>
     <string name="more_sync_title">Подключить пару</string>
     <string name="more_sync_text">Общие данные на двух телефонах через свой сервер</string>
+    <string name="more_sync_connected_text">Пара подключена: данные общие на двух телефонах</string>
 </resources>

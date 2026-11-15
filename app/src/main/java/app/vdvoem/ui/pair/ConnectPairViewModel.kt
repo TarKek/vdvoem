@@ -7,9 +7,11 @@ import app.vdvoem.core.domain.repository.PairRepository
 import app.vdvoem.core.domain.time.Dates
 import app.vdvoem.core.sync.SyncController
 import app.vdvoem.core.sync.SyncResult
+import app.vdvoem.core.sync.SyncStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -31,6 +33,33 @@ class ConnectPairViewModel(
                     nameA = local.nameA.takeUnless { it == DEFAULT_NAME_A }.orEmpty(),
                     nameB = local.nameB.takeUnless { it == DEFAULT_NAME_B }.orEmpty(),
                     sinceMillis = local.sinceMillis.takeIf { it > 0 } ?: current.sinceMillis
+                )
+            }
+        }
+        // Пара уже подключена — сразу показываем её, а не форму создания.
+        viewModelScope.launch {
+            combine(controller.settings, pairRepository.observe(), controller.status) { settings, pair, status ->
+                Triple(settings, pair, status)
+            }.collect { (settings, pair, status) ->
+                val current = _state.value
+                if (current is ConnectState.Created) return@collect
+                if (!settings.isConfigured) {
+                    if (current is ConnectState.Connected) {
+                        _state.value = ConnectState.Form(serverUrl = current.serverUrl)
+                    }
+                    return@collect
+                }
+                val base = if (current is ConnectState.Connected) current else null
+                _state.value = ConnectState.Connected(
+                    serverUrl = settings.serverUrl,
+                    pairId = settings.pairId,
+                    inviteCode = settings.inviteCode.ifBlank { base?.inviteCode.orEmpty() },
+                    nameA = pair?.nameA?.takeUnless { it == DEFAULT_NAME_A }.orEmpty(),
+                    nameB = pair?.nameB?.takeUnless { it == DEFAULT_NAME_B }.orEmpty(),
+                    sinceMillis = pair?.sinceMillis ?: 0L,
+                    syncing = status is SyncStatus.Running,
+                    lastSyncMillis = base?.lastSyncMillis ?: 0L,
+                    error = (status as? SyncStatus.Error)?.message
                 )
             }
         }
@@ -66,7 +95,10 @@ class ConnectPairViewModel(
 
     fun createPair() {
         val form = _state.value as? ConnectState.Form ?: return
-        if (form.serverUrl.isBlank()) return
+        if (form.serverUrl.isBlank()) {
+            _state.value = form.copy(error = "Укажите адрес сервера")
+            return
+        }
         _state.value = form.copy(busy = true, error = null)
         viewModelScope.launch {
             controller.setServerUrl(form.serverUrl)
@@ -97,7 +129,11 @@ class ConnectPairViewModel(
     fun join(code: String? = null) {
         val form = _state.value as? ConnectState.Form ?: return
         val inviteCode = ConnectState.normalizeInviteCode(code ?: form.inviteCode)
-        if (form.serverUrl.isBlank() || inviteCode.length < ConnectState.INVITE_CODE_LENGTH) return
+        if (form.serverUrl.isBlank()) {
+            _state.value = form.copy(inviteCode = inviteCode, error = "Укажите адрес сервера")
+            return
+        }
+        if (inviteCode.length < ConnectState.INVITE_CODE_LENGTH) return
         _state.value = form.copy(inviteCode = inviteCode, busy = true, error = null)
         viewModelScope.launch {
             controller.setServerUrl(form.serverUrl)
@@ -114,6 +150,55 @@ class ConnectPairViewModel(
                 SyncResult.NotConfigured -> _state.value =
                     form.copy(busy = false, error = "Проверьте адрес сервера")
             }
+        }
+    }
+
+    /** Ручной проход: тот самый «потянуть, чтобы обновить» с этого экрана. */
+    fun syncNow() {
+        val current = _state.value as? ConnectState.Connected ?: return
+        _state.value = current.copy(syncing = true, error = null)
+        viewModelScope.launch {
+            val result = controller.syncNow()
+            val latest = _state.value as? ConnectState.Connected ?: return@launch
+            _state.value = when (result) {
+                is SyncResult.Success ->
+                    latest.copy(syncing = false, error = null, lastSyncMillis = System.currentTimeMillis())
+                is SyncResult.Error -> latest.copy(syncing = false, error = result.message)
+                SyncResult.NotConfigured -> latest.copy(syncing = false, error = "Синхронизация не настроена")
+            }
+        }
+    }
+
+    fun leavePair() {
+        viewModelScope.launch {
+            val connected = _state.value as? ConnectState.Connected
+            val knownUrl = connected?.serverUrl
+                ?.takeIf { it.isNotBlank() }
+                ?: runCatching { controller.currentSettings().serverUrl }.getOrNull().orEmpty()
+            val knownSince = connected?.sinceMillis?.takeIf { it > 0 }
+            controller.leavePair()
+            val local = runCatching { pairRepository.current() }.getOrNull()
+            _state.value = ConnectState.Form(
+                serverUrl = knownUrl,
+                nameA = connected?.nameA?.takeIf { it.isNotBlank() } ?: local?.nameA.orEmpty(),
+                nameB = connected?.nameB?.takeIf { it.isNotBlank() } ?: local?.nameB.orEmpty(),
+                sinceMillis = knownSince
+                    ?: local?.sinceMillis?.takeIf { it > 0 }
+                    ?: Dates.startOfDay(Dates.today())
+            )
+        }
+    }
+
+    /** Экран «Пара создана» → карточка подключённой пары. */
+    fun dismissCreated() {
+        val current = _state.value as? ConnectState.Created ?: return
+        viewModelScope.launch {
+            val settings = controller.currentSettings()
+            _state.value = ConnectState.Connected(
+                serverUrl = settings.serverUrl,
+                pairId = current.pairId,
+                inviteCode = current.inviteCode
+            )
         }
     }
 

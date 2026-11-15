@@ -79,10 +79,10 @@ class SyncController(
         return engine.syncOnce()
     }
 
-    /** Выход из пары на этом устройстве: задачи сняты, локальные настройки стёрты. */
+    /** Выход из пары на этом устройстве: задачи сняты, пара забыта, адрес сервера остаётся. */
     suspend fun leavePair() {
         scheduler.cancelPeriodic()
-        settingsStore.clear()
+        settingsStore.clearCredentials()
     }
 
     /** Запустить синхронизацию в фоне (не дожидаясь результата). */

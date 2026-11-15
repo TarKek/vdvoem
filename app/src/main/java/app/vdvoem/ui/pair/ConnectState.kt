@@ -14,19 +14,33 @@ sealed interface ConnectState {
     data class Form(
         val serverUrl: String = "",
         val inviteCode: String = "",
-        val busy: Boolean = false,
-        val error: String? = null,
-        /** Кто ты и как зовут партнёра — уезжает на сервер при создании пары. */
         val nameA: String = "",
         val nameB: String = "",
-        /** Дата начала отношений; 0 — «сегодня», подставляется при создании. */
-        val sinceMillis: Long = Dates.startOfDay(Dates.today())
+        val sinceMillis: Long = Dates.startOfDay(Dates.today()),
+        val busy: Boolean = false,
+        val error: String? = null
     ) : ConnectState
 
     /** Пара создана: показываем код, который нужно передать партнёру. */
     data class Created(
         val pairId: String,
         val inviteCode: String
+    ) : ConnectState
+
+    /**
+     * Пара уже подключена: дальше настраивать нечего, но нужен вход в партнёра по коду,
+     * ручная синхронизация и выход из пары.
+     */
+    data class Connected(
+        val serverUrl: String,
+        val pairId: String,
+        val inviteCode: String,
+        val nameA: String = "",
+        val nameB: String = "",
+        val sinceMillis: Long = 0L,
+        val syncing: Boolean = false,
+        val lastSyncMillis: Long = 0L,
+        val error: String? = null
     ) : ConnectState
 
     companion object {

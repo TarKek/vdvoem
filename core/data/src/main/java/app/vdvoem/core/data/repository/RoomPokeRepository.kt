@@ -1,5 +1,6 @@
 package app.vdvoem.core.data.repository
 
+import app.vdvoem.core.data.LocalChangeSignal
 import app.vdvoem.core.data.db.PokeDao
 import app.vdvoem.core.data.db.PokeEntity
 import app.vdvoem.core.domain.model.Poke
@@ -16,6 +17,7 @@ class RoomPokeRepository(
 
     override suspend fun save(poke: Poke) {
         dao.upsert(poke.toEntity())
+        LocalChangeSignal.notifyLocalWrite()
     }
 }
 

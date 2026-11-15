@@ -76,7 +76,7 @@ class SyncScheduler(private val context: Context) {
 
         WorkManager.getInstance(context).enqueueUniqueWork(
             ONE_TIME_WORK_NAME,
-            ExistingWorkPolicy.REPLACE,
+            ExistingWorkPolicy.APPEND_OR_REPLACE,
             request
         )
     }

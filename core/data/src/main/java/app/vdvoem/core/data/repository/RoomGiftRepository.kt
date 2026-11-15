@@ -1,5 +1,6 @@
 package app.vdvoem.core.data.repository
 
+import app.vdvoem.core.data.LocalChangeSignal
 import app.vdvoem.core.data.db.GiftDao
 import app.vdvoem.core.data.db.GiftEntity
 import app.vdvoem.core.domain.model.Gift
@@ -17,10 +18,12 @@ class RoomGiftRepository(
 
     override suspend fun upsert(gift: Gift) {
         dao.upsert(gift.toEntity())
+        LocalChangeSignal.notifyLocalWrite()
     }
 
     override suspend fun delete(id: String) {
         dao.softDelete(id = id, now = System.currentTimeMillis())
+        LocalChangeSignal.notifyLocalWrite()
     }
 }
 
