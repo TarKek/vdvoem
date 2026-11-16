@@ -16,6 +16,9 @@ class RoomGiftRepository(
     override fun observeGifts(): Flow<List<Gift>> =
         dao.observeAll().map { gifts -> gifts.map { it.toDomain() } }
 
+    override fun observeGiftsIncludingDeleted(): Flow<List<Gift>> =
+        dao.observeAllIncludingDeleted().map { gifts -> gifts.map { it.toDomain() } }
+
     override suspend fun upsert(gift: Gift) {
         dao.upsert(gift.toEntity())
         LocalChangeSignal.notifyLocalWrite()
@@ -34,7 +37,9 @@ private fun GiftEntity.toDomain() = Gift(
     note = note,
     budget = budget,
     status = runCatching { GiftStatus.valueOf(status) }.getOrDefault(GiftStatus.IDEA),
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    wishId = wishId,
+    deletedAt = deletedAt
 )
 
 private fun Gift.toEntity() = GiftEntity(
@@ -44,5 +49,7 @@ private fun Gift.toEntity() = GiftEntity(
     note = note,
     budget = budget,
     status = status.name,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    deletedAt = deletedAt,
+    wishId = wishId
 )

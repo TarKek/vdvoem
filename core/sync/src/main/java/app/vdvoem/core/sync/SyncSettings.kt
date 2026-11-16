@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.IOException
+import java.util.UUID
 
 /**
  * Локальные настройки синхронизации.
@@ -27,7 +28,9 @@ data class SyncSettings(
     val lastServerTime: Long = 0L,
     /** Наибольший локальный `updatedAt`, который уже успешно уехал на сервер. */
     val lastPushedAt: Long = 0L,
-    val enabled: Boolean = false
+    val enabled: Boolean = false,
+    /** Стабильный id установки: отличает свои «сюрпризы» от чужих. */
+    val localDeviceId: String = ""
 ) {
     /** Есть сервер и токен — можно ходить в сеть. */
     val isConfigured: Boolean
@@ -55,7 +58,8 @@ class SyncSettingsStore(private val context: Context) {
                 inviteCode = prefs[KEY_INVITE_CODE].orEmpty(),
                 lastServerTime = prefs[KEY_LAST_SERVER_TIME] ?: 0L,
                 lastPushedAt = prefs[KEY_LAST_PUSHED_AT] ?: 0L,
-                enabled = prefs[KEY_ENABLED] ?: false
+                enabled = prefs[KEY_ENABLED] ?: false,
+                localDeviceId = prefs[KEY_LOCAL_DEVICE_ID].orEmpty()
             )
         }
 
@@ -88,6 +92,20 @@ class SyncSettingsStore(private val context: Context) {
 
     suspend fun setLastPushedAt(time: Long) {
         context.syncDataStore.edit { it[KEY_LAST_PUSHED_AT] = time }
+    }
+
+    /**
+     * Id установки: генерируется один раз при первом обращении и дальше не меняется.
+     * Нужен, чтобы «сюрприз» автора оставался видимым только на его устройстве.
+     */
+    suspend fun deviceId(): String {
+        val saved = current().localDeviceId
+        if (saved.isNotBlank()) return saved
+        val generated = UUID.randomUUID().toString()
+        context.syncDataStore.edit { prefs ->
+            if (prefs[KEY_LOCAL_DEVICE_ID].isNullOrBlank()) prefs[KEY_LOCAL_DEVICE_ID] = generated
+        }
+        return current().localDeviceId.ifBlank { generated }
     }
 
     /** Сохранить всё, что вернул сервер при создании/вступлении в пару. */
@@ -128,5 +146,6 @@ class SyncSettingsStore(private val context: Context) {
         val KEY_LAST_SERVER_TIME = longPreferencesKey("last_server_time")
         val KEY_LAST_PUSHED_AT = longPreferencesKey("last_pushed_at")
         val KEY_ENABLED = booleanPreferencesKey("enabled")
+        val KEY_LOCAL_DEVICE_ID = stringPreferencesKey("local_device_id")
     }
 }

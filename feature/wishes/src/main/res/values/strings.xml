@@ -24,6 +24,7 @@
     <string name="wishes_sort_button">Сортировка: %1$s</string>
     <string name="wishes_sort_newest">Сначала новые</string>
     <string name="wishes_sort_price">Сначала дороже</string>
+    <string name="wishes_sort_priority">По приоритету</string>
     <string name="wishes_sort_alphabet">По алфавиту</string>
 
     <string name="wishes_card_edit_label">Изменить желание</string>
@@ -51,6 +52,16 @@
     <string name="wishes_field_note_hint">Цвет, размер, ссылка — всё, что поможет выбрать</string>
     <string name="wishes_field_price">Примерная цена, ₽</string>
     <string name="wishes_field_price_hint">Только цифры</string>
+    <string name="wishes_field_url">Ссылка</string>
+    <string name="wishes_field_url_hint">https://…</string>
+    <string name="wishes_field_priority">Приоритет</string>
+    <string name="wishes_priority_low">Низкий</string>
+    <string name="wishes_priority_normal">Обычный</string>
+    <string name="wishes_priority_high">Высокий</string>
+    <string name="wishes_field_surprise">Сюрприз</string>
+    <string name="wishes_field_surprise_hint">Партнёр не увидит это желание</string>
+    <string name="wishes_pill_surprise">Сюрприз</string>
+    <string name="wishes_open_link">Открыть ссылку</string>
     <string name="wishes_save">Сохранить</string>
     <string name="wishes_cancel">Отмена</string>
 

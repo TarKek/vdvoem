@@ -16,6 +16,9 @@ class RoomWishRepository(
     override fun observeWishes(): Flow<List<Wish>> =
         dao.observeAll().map { wishes -> wishes.map { it.toDomain() } }
 
+    override fun observeWishesIncludingDeleted(): Flow<List<Wish>> =
+        dao.observeAllIncludingDeleted().map { wishes -> wishes.map { it.toDomain() } }
+
     override suspend fun upsert(wish: Wish) {
         dao.upsert(wish.toEntity())
         LocalChangeSignal.notifyLocalWrite()
@@ -34,7 +37,12 @@ private fun WishEntity.toDomain() = Wish(
     note = note,
     priceEstimate = priceEstimate,
     status = runCatching { WishStatus.valueOf(status) }.getOrDefault(WishStatus.WANTED),
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    priority = priority,
+    url = url,
+    surprise = surprise,
+    ownerDeviceId = ownerDeviceId,
+    deletedAt = deletedAt
 )
 
 private fun Wish.toEntity() = WishEntity(
@@ -44,5 +52,10 @@ private fun Wish.toEntity() = WishEntity(
     note = note,
     priceEstimate = priceEstimate,
     status = status.name,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    deletedAt = deletedAt,
+    priority = priority,
+    url = url,
+    surprise = surprise,
+    ownerDeviceId = ownerDeviceId
 )

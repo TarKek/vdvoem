@@ -1,8 +1,10 @@
 package app.vdvoem.core.sync.di
 
+import app.vdvoem.core.domain.device.DeviceIdentity
 import app.vdvoem.core.sync.IncomingPokeHandler
 import app.vdvoem.core.sync.SyncApi
 import app.vdvoem.core.sync.SyncController
+import app.vdvoem.core.sync.SyncDeviceIdentity
 import app.vdvoem.core.sync.SyncEngine
 import app.vdvoem.core.sync.SyncScheduler
 import app.vdvoem.core.sync.SyncSettingsStore
@@ -20,6 +22,8 @@ import org.koin.dsl.module
 val syncModule: Module = module {
 
     single { SyncSettingsStore(androidContext()) }
+
+    single<DeviceIdentity> { SyncDeviceIdentity(settingsStore = get()) }
 
     single { SyncApi(settings = get()) }
 

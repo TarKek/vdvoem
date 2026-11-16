@@ -1,5 +1,6 @@
 package app.vdvoem.core.data.db
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -36,7 +37,12 @@ data class WishEntity(
     val priceEstimate: Long?,
     val status: String,
     val updatedAt: Long,
-    val deletedAt: Long? = null
+    val deletedAt: Long? = null,
+    /** 0 — обычный, 1 — низкий, 2 — высокий. */
+    @ColumnInfo(defaultValue = "0") val priority: Int = 0,
+    @ColumnInfo(defaultValue = "''") val url: String = "",
+    @ColumnInfo(defaultValue = "0") val surprise: Boolean = false,
+    @ColumnInfo(name = "owner_device_id", defaultValue = "''") val ownerDeviceId: String = ""
 )
 
 @Entity(tableName = "gifts")
@@ -48,7 +54,9 @@ data class GiftEntity(
     val budget: Long?,
     val status: String,
     val updatedAt: Long,
-    val deletedAt: Long? = null
+    val deletedAt: Long? = null,
+    /** Желание, из которого вырос подарок; null — подарок добавлен вручную. */
+    @ColumnInfo(name = "wish_id") val wishId: String? = null
 )
 
 @Entity(tableName = "pokes")

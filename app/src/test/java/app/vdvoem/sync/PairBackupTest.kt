@@ -343,6 +343,79 @@ class PairBackupTest {
     }
 
     @Test
+    fun `wish extras and gift link survive round trip`() {
+        val original = snapshot(
+            wishes = listOf(
+                Wish(
+                    id = "w1",
+                    pairId = "pair",
+                    title = "Сюрприз",
+                    note = "не подглядывать",
+                    priceEstimate = 9_000L,
+                    status = WishStatus.WANTED,
+                    updatedAt = 1_700_000_000_020L,
+                    priority = Wish.PRIORITY_HIGH,
+                    url = "https://example.com/gift",
+                    surprise = true,
+                    ownerDeviceId = "device-1"
+                )
+            ),
+            gifts = listOf(
+                Gift(
+                    id = "g1",
+                    pairId = "pair",
+                    title = "Из желания",
+                    note = "Из желаний",
+                    budget = 9_000L,
+                    status = GiftStatus.IDEA,
+                    updatedAt = 1_700_000_000_021L,
+                    wishId = "w1"
+                )
+            )
+        )
+
+        val restored = PairBackup.parse(PairBackup.export(original))
+
+        assertEquals(original, restored)
+        val wish = restored?.wishes?.single()
+        assertEquals(Wish.PRIORITY_HIGH, wish?.priority)
+        assertEquals("https://example.com/gift", wish?.url)
+        assertEquals(true, wish?.surprise)
+        assertEquals("device-1", wish?.ownerDeviceId)
+        assertEquals("w1", restored?.gifts?.single()?.wishId)
+    }
+
+    @Test
+    fun `wish and gift tombstones survive round trip`() {
+        val original = snapshot(
+            wishes = listOf(
+                Wish(
+                    id = "w1",
+                    pairId = "pair",
+                    title = "Удалённое желание",
+                    updatedAt = 1_700_000_000_030L,
+                    deletedAt = 1_700_000_000_030L
+                )
+            ),
+            gifts = listOf(
+                Gift(
+                    id = "g1",
+                    pairId = "pair",
+                    title = "Удалённый подарок",
+                    updatedAt = 1_700_000_000_031L,
+                    deletedAt = 1_700_000_000_031L
+                )
+            )
+        )
+
+        val restored = PairBackup.parse(PairBackup.export(original))
+
+        assertEquals(original, restored)
+        assertEquals(1_700_000_000_030L, restored?.wishes?.single()?.deletedAt)
+        assertEquals(1_700_000_000_031L, restored?.gifts?.single()?.deletedAt)
+    }
+
+    @Test
     fun `corrupted json returns null`() {
         assertNull(PairBackup.parse(""))
         assertNull(PairBackup.parse("   "))

@@ -166,11 +166,12 @@ class SyncEngine(
 
     private suspend fun applyWishes(remote: List<WishDto>, pairId: String): Int {
         if (remote.isEmpty()) return 0
-        val localById = wishRepository.observeWishes().first().associateBy { it.id }
+        // Tombstone тоже читаем: иначе удалённое желание «оживало» бы от старой копии.
+        val localById = wishRepository.observeWishesIncludingDeleted().first().associateBy { it.id }
         var applied = 0
         remote.forEach { dto ->
             val local = localById[dto.id]
-            if (local == null || dto.updatedAt > local.updatedAt) {
+            if (shouldApplyRemote(local?.updatedAt, local?.deletedAt, dto.updatedAt)) {
                 wishRepository.upsert(dto.toDomain(fallbackPairId = pairId))
                 applied++
             }
@@ -180,11 +181,11 @@ class SyncEngine(
 
     private suspend fun applyGifts(remote: List<GiftDto>, pairId: String): Int {
         if (remote.isEmpty()) return 0
-        val localById = giftRepository.observeGifts().first().associateBy { it.id }
+        val localById = giftRepository.observeGiftsIncludingDeleted().first().associateBy { it.id }
         var applied = 0
         remote.forEach { dto ->
             val local = localById[dto.id]
-            if (local == null || dto.updatedAt > local.updatedAt) {
+            if (shouldApplyRemote(local?.updatedAt, local?.deletedAt, dto.updatedAt)) {
                 giftRepository.upsert(dto.toDomain(fallbackPairId = pairId))
                 applied++
             }
@@ -237,9 +238,9 @@ class SyncEngine(
         val localPair: Pair? = pairRepository.current()?.takeIf { it.updatedAt > pushedBefore }
         val events: List<CalendarEvent> = calendarRepository.observeEvents().first()
             .filter { it.updatedAt > pushedBefore }
-        val wishes: List<Wish> = wishRepository.observeWishes().first()
+        val wishes: List<Wish> = wishRepository.observeWishesIncludingDeleted().first()
             .filter { it.updatedAt > pushedBefore }
-        val gifts: List<Gift> = giftRepository.observeGifts().first()
+        val gifts: List<Gift> = giftRepository.observeGiftsIncludingDeleted().first()
             .filter { it.updatedAt > pushedBefore }
         val pokes: List<Poke> = pokeRepository.observe().first()
             .filter { it.updatedAt > pushedBefore }
@@ -263,6 +264,18 @@ class SyncEngine(
         const val TAG = "SyncEngine"
         const val NOT_CONFIGURED = "Синхронизация не настроена"
     }
+}
+
+/**
+ * LWW с учётом tombstone.
+ *
+ * Локальное удаление окончательно: более свежая серверная копия его не «оживляет».
+ * Свежий серверный tombstone применяется как обычное удаление (он новее локальной записи).
+ */
+private fun shouldApplyRemote(localUpdatedAt: Long?, localDeletedAt: Long?, remoteUpdatedAt: Long): Boolean {
+    if (localUpdatedAt == null) return true
+    if (remoteUpdatedAt <= localUpdatedAt) return false
+    return localDeletedAt == null
 }
 
 /** Самый свежий `updatedAt` в отправляемом наборе — водяной знак отправки. */

@@ -47,6 +47,8 @@ class CalendarModule : AppModule {
             onSaveEvent = viewModel::saveEvent,
             onDeleteEvent = viewModel::deleteEvent,
             onRemindersChange = viewModel::setRemindersEnabled,
+            onLeadDaysChange = viewModel::setReminderLeadDays,
+            onReminderHourChange = viewModel::setReminderHour,
             modifier = modifier
         )
     }

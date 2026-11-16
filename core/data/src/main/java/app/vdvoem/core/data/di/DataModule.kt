@@ -39,7 +39,8 @@ val dataModule = module {
                 VdvoemDatabase.MIGRATION_2_3,
                 VdvoemDatabase.MIGRATION_3_4,
                 VdvoemDatabase.MIGRATION_4_5,
-                VdvoemDatabase.MIGRATION_5_6
+                VdvoemDatabase.MIGRATION_5_6,
+                VdvoemDatabase.MIGRATION_6_7
             )
             .build()
     }

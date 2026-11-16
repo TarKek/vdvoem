@@ -52,6 +52,11 @@
 
     <string name="calendar_reminder_title">Напоминания</string>
     <string name="calendar_reminder_hint">За 7 дней и в день события</string>
+    <string name="calendar_reminder_hint_custom">За %1$d дн. и в день события, %2$d:00</string>
+    <string name="calendar_reminder_lead_title">Предупредить заранее</string>
+    <string name="calendar_reminder_lead_days">за %1$d дн.</string>
+    <string name="calendar_reminder_hour_title">Час напоминания</string>
+    <string name="calendar_reminder_hour">%1$d:00</string>
     <string name="calendar_reminder_denied">Уведомления отключены в системе</string>
     <string name="calendar_reminder_today">Сегодня</string>
     <string name="calendar_reminder_in_days">Через %1$s</string>

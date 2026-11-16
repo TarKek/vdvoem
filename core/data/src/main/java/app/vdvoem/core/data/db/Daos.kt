@@ -34,6 +34,10 @@ interface WishDao {
     @Query("SELECT * FROM wishes WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
     fun observeAll(): Flow<List<WishEntity>>
 
+    /** Включая tombstone: синку нужны удаления, интерфейсу — нет. */
+    @Query("SELECT * FROM wishes ORDER BY updatedAt DESC")
+    fun observeAllIncludingDeleted(): Flow<List<WishEntity>>
+
     @Upsert
     suspend fun upsert(wish: WishEntity)
 
@@ -45,6 +49,10 @@ interface WishDao {
 interface GiftDao {
     @Query("SELECT * FROM gifts WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
     fun observeAll(): Flow<List<GiftEntity>>
+
+    /** Включая tombstone: синку нужны удаления, интерфейсу — нет. */
+    @Query("SELECT * FROM gifts ORDER BY updatedAt DESC")
+    fun observeAllIncludingDeleted(): Flow<List<GiftEntity>>
 
     @Upsert
     suspend fun upsert(gift: GiftEntity)

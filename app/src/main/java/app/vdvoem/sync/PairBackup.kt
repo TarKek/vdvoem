@@ -81,6 +81,11 @@ object PairBackup {
                         .put("priceEstimate", wish.priceEstimate)
                         .put("status", wish.status.name)
                         .put("updatedAt", wish.updatedAt)
+                        .put("deletedAt", wish.deletedAt ?: JSONObject.NULL)
+                        .put("priority", wish.priority)
+                        .put("url", wish.url)
+                        .put("surprise", wish.surprise)
+                        .put("ownerDeviceId", wish.ownerDeviceId)
                 )
             }
         })
@@ -96,6 +101,8 @@ object PairBackup {
                         .put("budget", gift.budget)
                         .put("status", gift.status.name)
                         .put("updatedAt", gift.updatedAt)
+                        .put("deletedAt", gift.deletedAt ?: JSONObject.NULL)
+                        .put("wishId", gift.wishId ?: JSONObject.NULL)
                 )
             }
         })
@@ -188,7 +195,12 @@ object PairBackup {
                     note = json.optString("note"),
                     priceEstimate = json.optLongOrNull("priceEstimate"),
                     status = enumOrDefault(json.optString("status"), WishStatus.WANTED),
-                    updatedAt = json.optLong("updatedAt", 0L)
+                    updatedAt = json.optLong("updatedAt", 0L),
+                    priority = json.optInt("priority", Wish.PRIORITY_NORMAL),
+                    url = json.optString("url"),
+                    surprise = json.optBoolean("surprise", false),
+                    ownerDeviceId = json.optString("ownerDeviceId"),
+                    deletedAt = json.optLongOrNull("deletedAt")
                 )
             },
             gifts = root.optJSONArray("gifts").mapObjects { json ->
@@ -199,7 +211,9 @@ object PairBackup {
                     note = json.optString("note"),
                     budget = json.optLongOrNull("budget"),
                     status = enumOrDefault(json.optString("status"), GiftStatus.IDEA),
-                    updatedAt = json.optLong("updatedAt", 0L)
+                    updatedAt = json.optLong("updatedAt", 0L),
+                    wishId = if (json.isNull("wishId")) null else json.optString("wishId").ifBlank { null },
+                    deletedAt = json.optLongOrNull("deletedAt")
                 )
             },
             pokes = root.optJSONArray("pokes").mapObjects { json ->

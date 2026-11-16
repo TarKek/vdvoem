@@ -32,7 +32,13 @@ data class WishDto(
     @SerialName("priceEstimate") val priceEstimate: Long? = null,
     val status: String,
     @SerialName("updatedAt") val updatedAt: Long,
-    @SerialName("deletedAt") val deletedAt: Long? = null
+    @SerialName("deletedAt") val deletedAt: Long? = null,
+    /** 0 — обычный, 1 — низкий, 2 — высокий. */
+    val priority: Int = 0,
+    val url: String = "",
+    val surprise: Boolean = false,
+    /** Устройство автора: сюрпризы партнёра на клиенте скрываются. */
+    @SerialName("ownerDeviceId") val ownerDeviceId: String = ""
 )
 
 @Serializable
@@ -43,7 +49,9 @@ data class GiftDto(
     val budget: Long? = null,
     val status: String,
     @SerialName("updatedAt") val updatedAt: Long,
-    @SerialName("deletedAt") val deletedAt: Long? = null
+    @SerialName("deletedAt") val deletedAt: Long? = null,
+    /** Желание, из которого вырос подарок. */
+    @SerialName("wishId") val wishId: String? = null
 )
 
 @Serializable

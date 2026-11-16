@@ -377,8 +377,10 @@ private fun GiftCard(
     onDeleteRequest: () -> Unit
 ) {
     val budget = gift.budget
-    val fromWish = gift.note.contains(NOTE_FROM_WISH, ignoreCase = true)
-    val visibleNote = if (fromWish && gift.note.trim() == NOTE_FROM_WISH) "" else gift.note
+    // Новые данные несут прямую ссылку; старые подарки узнаём по метке в заметке.
+    val fromWish = gift.wishId != null || gift.note.contains(NOTE_FROM_WISH, ignoreCase = true)
+    // Метка-заглушка не должна дублировать пилюлю «Из желаний».
+    val visibleNote = if (gift.note.trim() == NOTE_FROM_WISH) "" else gift.note
     VdvoemCard(onClick = onEdit) {
         Row(verticalAlignment = Alignment.Top) {
             Text(

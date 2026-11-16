@@ -62,7 +62,13 @@ data class WishDto(
     val deletedAt: Long? = null,
     val pairId: String? = null,
     val note: String = "",
-    val priceEstimate: Long? = null
+    val priceEstimate: Long? = null,
+    /** 0 — обычный, 1 — низкий, 2 — высокий. */
+    val priority: Int = 0,
+    val url: String = "",
+    val surprise: Boolean = false,
+    /** Устройство автора: по нему партнёр понимает, что сюрприз чужой. */
+    val ownerDeviceId: String = ""
 )
 
 @Serializable
@@ -74,7 +80,9 @@ data class GiftDto(
     val deletedAt: Long? = null,
     val pairId: String? = null,
     val note: String = "",
-    val budget: Long? = null
+    val budget: Long? = null,
+    /** Ссылка на желание, из которого вырос подарок. */
+    val wishId: String? = null
 )
 
 @Serializable

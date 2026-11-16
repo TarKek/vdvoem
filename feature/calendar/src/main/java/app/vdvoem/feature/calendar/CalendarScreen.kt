@@ -84,7 +84,9 @@ fun CalendarScreen(
     onSaveEvent: (id: String?, title: String, dateMillis: Long, annual: Boolean) -> Unit,
     onDeleteEvent: (id: String) -> Unit,
     modifier: Modifier = Modifier,
-    onRemindersChange: (Boolean) -> Unit = {}
+    onRemindersChange: (Boolean) -> Unit = {},
+    onLeadDaysChange: (Int) -> Unit = {},
+    onReminderHourChange: (Int) -> Unit = {}
 ) {
     var editorOpen by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<EventUi?>(null) }
@@ -140,8 +142,10 @@ fun CalendarScreen(
 
             item(key = "reminders") {
                 RemindersCard(
-                    enabled = state.remindersEnabled,
-                    onToggle = toggleReminders
+                    settings = state.reminders,
+                    onToggle = toggleReminders,
+                    onLeadDaysChange = onLeadDaysChange,
+                    onHourChange = onReminderHourChange
                 )
             }
 
@@ -296,13 +300,15 @@ private fun CalendarHero(next: EventUi?) {
     }
 }
 
-/** Переключатель напоминаний: понятно, что включится и когда придёт уведомление. */
+/** Переключатель напоминаний и их расписание: за сколько дней и в котором часу. */
 @Composable
 private fun RemindersCard(
-    enabled: Boolean,
-    onToggle: (Boolean) -> Unit
+    settings: ReminderSettings,
+    onToggle: (Boolean) -> Unit,
+    onLeadDaysChange: (Int) -> Unit,
+    onHourChange: (Int) -> Unit
 ) {
-    VdvoemCard(onClick = { onToggle(!enabled) }) {
+    VdvoemCard(onClick = { onToggle(!settings.enabled) }) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -311,13 +317,50 @@ private fun RemindersCard(
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = stringResource(R.string.calendar_reminder_hint),
+                    text = stringResource(
+                        R.string.calendar_reminder_hint_custom,
+                        settings.leadDays,
+                        settings.hour
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
-            Switch(checked = enabled, onCheckedChange = onToggle)
+            Switch(checked = settings.enabled, onCheckedChange = onToggle)
+        }
+
+        if (settings.enabled) {
+            Text(
+                text = stringResource(R.string.calendar_reminder_lead_title),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = VdvoemSpacing.sm)
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)) {
+                ReminderSettings.LEAD_OPTIONS.forEach { days ->
+                    FilterChip(
+                        selected = days == settings.leadDays,
+                        onClick = { onLeadDaysChange(days) },
+                        label = { Text(stringResource(R.string.calendar_reminder_lead_days, days)) }
+                    )
+                }
+            }
+            Text(
+                text = stringResource(R.string.calendar_reminder_hour_title),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = VdvoemSpacing.xs)
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)) {
+                ReminderSettings.HOUR_OPTIONS.forEach { hour ->
+                    FilterChip(
+                        selected = hour == settings.hour,
+                        onClick = { onHourChange(hour) },
+                        label = { Text(stringResource(R.string.calendar_reminder_hour, hour)) }
+                    )
+                }
+            }
         }
     }
 }
@@ -723,9 +766,19 @@ private fun CalendarScreenEmptyPreview() {
 private fun RemindersCardPreview() {
     VdvoemTheme {
         Column(modifier = Modifier.padding(VdvoemSpacing.screenHorizontal)) {
-            RemindersCard(enabled = true, onToggle = {})
+            RemindersCard(
+                settings = ReminderSettings(enabled = true),
+                onToggle = {},
+                onLeadDaysChange = {},
+                onHourChange = {}
+            )
             Spacer(modifier = Modifier.size(VdvoemSpacing.md))
-            RemindersCard(enabled = false, onToggle = {})
+            RemindersCard(
+                settings = ReminderSettings(enabled = false),
+                onToggle = {},
+                onLeadDaysChange = {},
+                onHourChange = {}
+            )
         }
     }
 }

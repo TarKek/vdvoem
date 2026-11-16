@@ -15,7 +15,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         QuizScoreEntity::class,
         LessonEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class VdvoemDatabase : RoomDatabase() {
@@ -133,6 +133,22 @@ abstract class VdvoemDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
+            }
+        }
+
+        /**
+         * v6 → v7: приоритет, ссылка и «сюрприз» у желаний, ссылка на желание у подарка.
+         *
+         * Дефолты в ALTER обязаны совпадать с `@ColumnInfo(defaultValue = …)` в сущностях,
+         * иначе Room не примет миграцию при проверке схемы.
+         */
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `wishes` ADD COLUMN `priority` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `wishes` ADD COLUMN `url` TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE `wishes` ADD COLUMN `surprise` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `wishes` ADD COLUMN `owner_device_id` TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE `gifts` ADD COLUMN `wish_id` TEXT")
             }
         }
     }

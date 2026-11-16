@@ -125,7 +125,8 @@ class Repository(private val dataSource: DataSource) {
 
         val wishes = connection.prepareStatement(
             """
-            SELECT id, title, note, price_estimate, status, updated_at, deleted_at
+            SELECT id, title, note, price_estimate, status, updated_at, deleted_at,
+                   priority, url, surprise, owner_device_id
             FROM wishes WHERE pair_id = ? AND updated_at > ? ORDER BY updated_at
             """.trimIndent()
         ).use { statement ->
@@ -141,7 +142,11 @@ class Repository(private val dataSource: DataSource) {
                             priceEstimate = rows.getLong(4).takeUnless { rows.wasNull() },
                             status = rows.getString(5),
                             updatedAt = rows.getLong(6),
-                            deletedAt = rows.getLong(7).takeUnless { rows.wasNull() }
+                            deletedAt = rows.getLong(7).takeUnless { rows.wasNull() },
+                            priority = rows.getInt(8),
+                            url = rows.getString(9).orEmpty(),
+                            surprise = rows.getBoolean(10),
+                            ownerDeviceId = rows.getString(11).orEmpty()
                         )
                     )
                 }
@@ -150,7 +155,7 @@ class Repository(private val dataSource: DataSource) {
 
         val gifts = connection.prepareStatement(
             """
-            SELECT id, title, note, budget, status, updated_at, deleted_at
+            SELECT id, title, note, budget, status, updated_at, deleted_at, wish_id
             FROM gifts WHERE pair_id = ? AND updated_at > ? ORDER BY updated_at
             """.trimIndent()
         ).use { statement ->
@@ -162,7 +167,8 @@ class Repository(private val dataSource: DataSource) {
                         GiftDto(
                             id = rows.getString(1), title = rows.getString(2), note = rows.getString(3),
                             budget = rows.getLong(4).takeUnless { rows.wasNull() }, status = rows.getString(5),
-                            updatedAt = rows.getLong(6), deletedAt = rows.getLong(7).takeUnless { rows.wasNull() }
+                            updatedAt = rows.getLong(6), deletedAt = rows.getLong(7).takeUnless { rows.wasNull() },
+                            wishId = rows.getString(8).orEmpty().ifBlank { null }
                         )
                     )
                 }
@@ -283,11 +289,14 @@ class Repository(private val dataSource: DataSource) {
             changes.wishes.forEach { wish ->
                 applied += tx.prepareStatement(
                     """
-                    INSERT INTO wishes (id, pair_id, title, note, price_estimate, status, updated_at, deleted_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO wishes (id, pair_id, title, note, price_estimate, status, updated_at,
+                        deleted_at, priority, url, surprise, owner_device_id)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, note = EXCLUDED.note,
                         price_estimate = EXCLUDED.price_estimate, status = EXCLUDED.status,
-                        updated_at = EXCLUDED.updated_at, deleted_at = EXCLUDED.deleted_at
+                        updated_at = EXCLUDED.updated_at, deleted_at = EXCLUDED.deleted_at,
+                        priority = EXCLUDED.priority, url = EXCLUDED.url,
+                        surprise = EXCLUDED.surprise, owner_device_id = EXCLUDED.owner_device_id
                     WHERE EXCLUDED.updated_at > wishes.updated_at
                     """.trimIndent()
                 ).use { statement ->
@@ -301,6 +310,10 @@ class Repository(private val dataSource: DataSource) {
                     statement.setLong(7, wish.updatedAt)
                     if (wish.deletedAt != null) statement.setLong(8, wish.deletedAt)
                     else statement.setNull(8, java.sql.Types.BIGINT)
+                    statement.setInt(9, wish.priority)
+                    statement.setString(10, wish.url)
+                    statement.setBoolean(11, wish.surprise)
+                    statement.setString(12, wish.ownerDeviceId)
                     statement.executeUpdate()
                 }
             }
@@ -308,11 +321,13 @@ class Repository(private val dataSource: DataSource) {
             changes.gifts.forEach { gift ->
                 applied += tx.prepareStatement(
                     """
-                    INSERT INTO gifts (id, pair_id, title, note, budget, status, updated_at, deleted_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO gifts (id, pair_id, title, note, budget, status, updated_at,
+                        deleted_at, wish_id)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, note = EXCLUDED.note,
                         budget = EXCLUDED.budget, status = EXCLUDED.status,
-                        updated_at = EXCLUDED.updated_at, deleted_at = EXCLUDED.deleted_at
+                        updated_at = EXCLUDED.updated_at, deleted_at = EXCLUDED.deleted_at,
+                        wish_id = EXCLUDED.wish_id
                     WHERE EXCLUDED.updated_at > gifts.updated_at
                     """.trimIndent()
                 ).use { statement ->
@@ -326,6 +341,8 @@ class Repository(private val dataSource: DataSource) {
                     statement.setLong(7, gift.updatedAt)
                     if (gift.deletedAt != null) statement.setLong(8, gift.deletedAt)
                     else statement.setNull(8, java.sql.Types.BIGINT)
+                    if (gift.wishId != null) statement.setString(9, gift.wishId)
+                    else statement.setNull(9, java.sql.Types.VARCHAR)
                     statement.executeUpdate()
                 }
             }

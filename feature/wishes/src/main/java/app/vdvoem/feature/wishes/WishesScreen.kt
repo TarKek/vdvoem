@@ -1,5 +1,8 @@
 package app.vdvoem.feature.wishes
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.List
@@ -43,6 +47,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -54,10 +59,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import app.vdvoem.core.domain.model.Wish
@@ -81,11 +89,19 @@ fun WishesScreen(
     onSortChange: (WishSort) -> Unit,
     onQueryChange: (String) -> Unit,
     onResetQuery: () -> Unit,
-    onAddWish: (title: String, note: String, price: Long?) -> Unit,
-    onUpdateWish: (id: String, title: String, note: String, price: Long?) -> Unit,
+    onAddWish: (title: String, note: String, price: Long?, priority: Int, url: String, surprise: Boolean) -> Unit,
+    onUpdateWish: (
+        id: String,
+        title: String,
+        note: String,
+        price: Long?,
+        priority: Int,
+        url: String,
+        surprise: Boolean
+    ) -> Unit,
     onSetStatus: (id: String, status: WishStatus) -> Unit,
     onDeleteWish: (id: String) -> Unit,
-    onMakeGift: (id: String) -> Unit,
+    onMakeGift: (Wish) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var editingWish by remember { mutableStateOf<Wish?>(null) }
@@ -200,7 +216,7 @@ fun WishesScreen(
                         onEdit = { editingWish = wish },
                         onMarkDone = { onSetStatus(wish.id, WishStatus.DONE) },
                         onMakeGift = {
-                            onMakeGift(wish.id)
+                            onMakeGift(wish)
                             scope.launch { snackbarHostState.showSnackbar(giftAddedMessage) }
                         }
                     )
@@ -238,8 +254,8 @@ fun WishesScreen(
         WishDialog(
             wish = null,
             onDismiss = { showAddDialog = false },
-            onConfirm = { title, note, price ->
-                onAddWish(title, note, price)
+            onConfirm = { title, note, price, priority, url, surprise ->
+                onAddWish(title, note, price, priority, url, surprise)
                 showAddDialog = false
             },
             onDelete = null
@@ -250,8 +266,8 @@ fun WishesScreen(
         WishDialog(
             wish = wish,
             onDismiss = { editingWish = null },
-            onConfirm = { title, note, price ->
-                onUpdateWish(wish.id, title, note, price)
+            onConfirm = { title, note, price, priority, url, surprise ->
+                onUpdateWish(wish.id, title, note, price, priority, url, surprise)
                 editingWish = null
             },
             onDelete = {
@@ -457,6 +473,29 @@ private fun WishCard(
                     }
                     StatusPill(status = wish.status)
                 }
+                if (wish.safePriority != Wish.PRIORITY_NORMAL || wish.surprise) {
+                    Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
+                    Row(horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)) {
+                        if (wish.safePriority != Wish.PRIORITY_NORMAL) {
+                            WishPill(
+                                text = stringResource(priorityLabelRes(wish.safePriority)),
+                                container = priorityContainer(wish.safePriority),
+                                content = priorityContent(wish.safePriority)
+                            )
+                        }
+                        if (wish.surprise) {
+                            WishPill(
+                                text = stringResource(R.string.wishes_pill_surprise),
+                                container = MaterialTheme.colorScheme.secondaryContainer,
+                                content = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
+                    }
+                }
+                if (wish.url.isNotBlank()) {
+                    Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
+                    WishLink(url = wish.url)
+                }
             }
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
@@ -531,12 +570,72 @@ private fun StatusPill(status: WishStatus) {
     }
 }
 
+@Composable
+private fun WishPill(text: String, container: Color, content: Color) {
+    Surface(shape = CircleShape, color = container, contentColor = content) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.padding(
+                horizontal = VdvoemSpacing.md,
+                vertical = VdvoemSpacing.xs
+            )
+        )
+    }
+}
+
+/** Ссылка на товар: тап открывает браузер, а не диалог правки. */
+@Composable
+private fun WishLink(url: String) {
+    val context = LocalContext.current
+    val openLabel = stringResource(R.string.wishes_open_link)
+    Text(
+        text = url,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.primary,
+        textDecoration = TextDecoration.Underline,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.small)
+            .clickable(onClickLabel = openLabel) { openLink(context, url) }
+    )
+}
+
+/** Схему добавляем сами: люди часто вставляют ссылку без `https://`. */
+private fun openLink(context: Context, url: String) {
+    val normalized = if (url.startsWith("http://") || url.startsWith("https://")) url else "https://$url"
+    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(normalized))) }
+        .onFailure { error ->
+            android.util.Log.w(TAG, "Не удалось открыть ссылку $normalized: ${error.message}")
+        }
+}
+
+@Composable
+private fun priorityContainer(priority: Int): Color = when (priority) {
+    Wish.PRIORITY_HIGH -> MaterialTheme.colorScheme.tertiaryContainer
+    else -> MaterialTheme.colorScheme.surfaceVariant
+}
+
+@Composable
+private fun priorityContent(priority: Int): Color = when (priority) {
+    Wish.PRIORITY_HIGH -> MaterialTheme.colorScheme.onTertiaryContainer
+    else -> MaterialTheme.colorScheme.onSurfaceVariant
+}
+
+private fun priorityLabelRes(priority: Int): Int = when (priority) {
+    Wish.PRIORITY_HIGH -> R.string.wishes_priority_high
+    Wish.PRIORITY_LOW -> R.string.wishes_priority_low
+    else -> R.string.wishes_priority_normal
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WishDialog(
     wish: Wish?,
     onDismiss: () -> Unit,
-    onConfirm: (title: String, note: String, price: Long?) -> Unit,
+    onConfirm: (title: String, note: String, price: Long?, priority: Int, url: String, surprise: Boolean) -> Unit,
     onDelete: (() -> Unit)?
 ) {
     val editing = wish != null
@@ -545,6 +644,9 @@ private fun WishDialog(
     var price by remember(wish?.id) {
         mutableStateOf(wish?.priceEstimate?.toString().orEmpty())
     }
+    var priority by remember(wish?.id) { mutableStateOf(wish?.safePriority ?: Wish.PRIORITY_NORMAL) }
+    var url by remember(wish?.id) { mutableStateOf(wish?.url.orEmpty()) }
+    var surprise by remember(wish?.id) { mutableStateOf(wish?.surprise == true) }
     val canSave = title.isNotBlank()
 
     AlertDialog(
@@ -557,7 +659,10 @@ private fun WishDialog(
             )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)
+            ) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
@@ -585,6 +690,17 @@ private fun WishDialog(
                     placeholder = { Text(stringResource(R.string.wishes_field_price_hint)) },
                     modifier = Modifier.fillMaxWidth()
                 )
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it.trim() },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    label = { Text(stringResource(R.string.wishes_field_url)) },
+                    placeholder = { Text(stringResource(R.string.wishes_field_url_hint)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                PriorityPicker(priority = priority, onPriorityChange = { priority = it })
+                SurpriseSwitch(surprise = surprise, onSurpriseChange = { surprise = it })
                 if (onDelete != null) {
                     Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
                     OutlinedButton(
@@ -607,7 +723,7 @@ private fun WishDialog(
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(title, note, price.toLongOrNull()) },
+                onClick = { onConfirm(title, note, price.toLongOrNull(), priority, url, surprise) },
                 enabled = canSave
             ) {
                 Text(stringResource(R.string.wishes_save))
@@ -619,6 +735,54 @@ private fun WishDialog(
             }
         }
     )
+}
+
+/** Приоритет — три чипа: низкий, обычный, высокий. */
+@Composable
+private fun PriorityPicker(priority: Int, onPriorityChange: (Int) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.xs)) {
+        Text(
+            text = stringResource(R.string.wishes_field_priority),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)
+        ) {
+            PRIORITY_OPTIONS.forEach { value ->
+                FilterChip(
+                    selected = value == priority,
+                    onClick = { onPriorityChange(value) },
+                    label = { Text(stringResource(priorityLabelRes(value))) }
+                )
+            }
+        }
+    }
+}
+
+/** Сюрприз скрывает желание от партнёра: он увидит его только после вручения. */
+@Composable
+private fun SurpriseSwitch(surprise: Boolean, onSurpriseChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.wishes_field_surprise),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                text = stringResource(R.string.wishes_field_surprise_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Switch(checked = surprise, onCheckedChange = onSurpriseChange)
+    }
 }
 
 @Composable
@@ -662,12 +826,15 @@ private fun WishFilter.labelRes(): Int = when (this) {
 private fun WishSort.labelRes(): Int = when (this) {
     WishSort.NEWEST -> R.string.wishes_sort_newest
     WishSort.PRICE_DESC -> R.string.wishes_sort_price
+    WishSort.PRIORITY -> R.string.wishes_sort_priority
     WishSort.ALPHABET -> R.string.wishes_sort_alphabet
 }
 
 private fun WishSort.comparator(): Comparator<Wish> = when (this) {
     WishSort.NEWEST -> compareByDescending<Wish> { it.updatedAt }
     WishSort.PRICE_DESC -> compareByDescending<Wish> { it.priceEstimate ?: Long.MIN_VALUE }
+    WishSort.PRIORITY -> compareByDescending<Wish> { it.safePriority }
+        .thenBy(String.CASE_INSENSITIVE_ORDER) { it.title }
     WishSort.ALPHABET -> compareBy<Wish, String>(String.CASE_INSENSITIVE_ORDER) { it.title }
 }
 
@@ -682,6 +849,11 @@ private fun formatPrice(price: Long): String =
 
 private const val MAX_PRICE_DIGITS = 12
 
+private const val TAG = "WishesScreen"
+
+/** Порядок чипов в диалоге: от низкого к высокому. */
+private val PRIORITY_OPTIONS = listOf(Wish.PRIORITY_LOW, Wish.PRIORITY_NORMAL, Wish.PRIORITY_HIGH)
+
 @Preview(showBackground = true)
 @Composable
 private fun WishesScreenPreview() {
@@ -695,14 +867,19 @@ private fun WishesScreenPreview() {
                         title = "Наушники",
                         note = "Беспроводные, лучше с шумоподавлением",
                         priceEstimate = 3500,
-                        status = WishStatus.WANTED
+                        status = WishStatus.WANTED,
+                        priority = Wish.PRIORITY_HIGH,
+                        url = "https://example.com/headphones",
+                        surprise = true,
+                        ownerDeviceId = "local-device"
                     ),
                     Wish(
                         id = "2",
                         pairId = "local",
                         title = "Поездка в Карелию",
                         note = "На майские праздники",
-                        status = WishStatus.RESERVED
+                        status = WishStatus.RESERVED,
+                        priority = Wish.PRIORITY_LOW
                     )
                 ),
                 loading = false
@@ -714,8 +891,8 @@ private fun WishesScreenPreview() {
             onSortChange = {},
             onQueryChange = {},
             onResetQuery = {},
-            onAddWish = { _, _, _ -> },
-            onUpdateWish = { _, _, _, _ -> },
+            onAddWish = { _, _, _, _, _, _ -> },
+            onUpdateWish = { _, _, _, _, _, _, _ -> },
             onSetStatus = { _, _ -> },
             onDeleteWish = {},
             onMakeGift = {},
@@ -737,8 +914,8 @@ private fun WishesScreenEmptyPreview() {
             onSortChange = {},
             onQueryChange = {},
             onResetQuery = {},
-            onAddWish = { _, _, _ -> },
-            onUpdateWish = { _, _, _, _ -> },
+            onAddWish = { _, _, _, _, _, _ -> },
+            onUpdateWish = { _, _, _, _, _, _, _ -> },
             onSetStatus = { _, _ -> },
             onDeleteWish = {},
             onMakeGift = {},

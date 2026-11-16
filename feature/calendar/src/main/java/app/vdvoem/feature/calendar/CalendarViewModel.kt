@@ -42,6 +42,8 @@ data class CalendarUiState(
     val next: EventUi? = null,
     /** Включены ли напоминания о событиях (DataStore модуля). */
     val remindersEnabled: Boolean = false,
+    /** За сколько дней и в котором часу приходит напоминание. */
+    val reminders: ReminderSettings = ReminderSettings(),
     val loading: Boolean = true
 )
 
@@ -53,7 +55,7 @@ class CalendarViewModel(
 ) : ViewModel() {
 
     /** Состояние напоминаний: включается переключателем на экране календаря. */
-    private val remindersEnabled = MutableStateFlow(false)
+    private val reminderSettings = MutableStateFlow(ReminderSettings())
 
     /** Последний полученный список — из него строится расписание напоминаний. */
     private var latestEvents: List<CalendarEvent> = emptyList()
@@ -72,7 +74,7 @@ class CalendarViewModel(
             calendarRepository.observeEvents(),
             filter,
             sort,
-            remindersEnabled
+            reminderSettings
         ) { events, selected, order, reminders ->
             buildState(events, selected, order, reminders)
         }
@@ -102,7 +104,30 @@ class CalendarViewModel(
             val preferences = reminderPreferences ?: return@launch
             preferences.setEnabled(enabled)
             val scheduler = reminderScheduler ?: return@launch
-            if (enabled) scheduler.sync(latestEvents) else scheduler.cancelAll()
+            val settings = reminderSettings.value.copy(enabled = enabled)
+            if (enabled) scheduler.sync(latestEvents, settings) else scheduler.cancelAll()
+        }
+    }
+
+    /** За сколько дней предупреждать — пересобираем расписание сразу. */
+    fun setReminderLeadDays(days: Int) {
+        viewModelScope.launch {
+            val preferences = reminderPreferences ?: return@launch
+            preferences.setLeadDays(days)
+            val scheduler = reminderScheduler ?: return@launch
+            val settings = reminderSettings.value.copy(leadDays = days)
+            if (settings.enabled) scheduler.sync(latestEvents, settings)
+        }
+    }
+
+    /** В котором часу присылать напоминания. */
+    fun setReminderHour(hour: Int) {
+        viewModelScope.launch {
+            val preferences = reminderPreferences ?: return@launch
+            preferences.setHour(hour)
+            val scheduler = reminderScheduler ?: return@launch
+            val settings = reminderSettings.value.copy(hour = hour)
+            if (settings.enabled) scheduler.sync(latestEvents, settings)
         }
     }
 
@@ -111,16 +136,17 @@ class CalendarViewModel(
         val scheduler = reminderScheduler ?: return
         // Настройка: включённые напоминания сразу получают расписание.
         reminderJob = viewModelScope.launch {
-            preferences.enabled.collect { enabled ->
-                remindersEnabled.value = enabled
-                if (enabled) scheduler.sync(latestEvents) else scheduler.cancelAll()
+            preferences.settings.collect { settings ->
+                reminderSettings.value = settings
+                if (settings.enabled) scheduler.sync(latestEvents, settings) else scheduler.cancelAll()
             }
         }
         // Список событий: любое изменение (создание, правка, удаление) — повод пересобрать задачи.
         viewModelScope.launch {
             calendarRepository.observeEvents().collect { events ->
                 latestEvents = events
-                if (remindersEnabled.value) scheduler.sync(events)
+                val settings = reminderSettings.value
+                if (settings.enabled) scheduler.sync(events, settings)
             }
         }
     }
@@ -161,7 +187,7 @@ class CalendarViewModel(
         events: List<CalendarEvent>,
         selected: CalendarFilter,
         order: CalendarSort,
-        reminders: Boolean
+        reminders: ReminderSettings
     ): CalendarUiState {
         val today = Dates.today()
         val all = events.map { event ->
@@ -187,7 +213,8 @@ class CalendarViewModel(
             totalCount = all.size,
             filter = selected,
             sort = order,
-            remindersEnabled = reminders,
+            remindersEnabled = reminders.enabled,
+            reminders = reminders,
             // Ближайшее событие показываем в hero независимо от выбранного порядка.
             next = byNearest.firstOrNull { it.daysLeft >= 0 },
             loading = false

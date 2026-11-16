@@ -55,6 +55,14 @@ CREATE INDEX IF NOT EXISTS idx_events_pair_updated ON events (pair_id, updated_a
 CREATE INDEX IF NOT EXISTS idx_wishes_pair_updated ON wishes (pair_id, updated_at);
 CREATE INDEX IF NOT EXISTS idx_gifts_pair_updated ON gifts (pair_id, updated_at);
 
+-- Расширения желаний и подарков: таблицы уже существуют на рабочих базах,
+-- поэтому колонки добавляются идемпотентно.
+ALTER TABLE wishes ADD COLUMN IF NOT EXISTS priority INT NOT NULL DEFAULT 0;
+ALTER TABLE wishes ADD COLUMN IF NOT EXISTS url TEXT NOT NULL DEFAULT '';
+ALTER TABLE wishes ADD COLUMN IF NOT EXISTS surprise BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE wishes ADD COLUMN IF NOT EXISTS owner_device_id TEXT NOT NULL DEFAULT '';
+ALTER TABLE gifts ADD COLUMN IF NOT EXISTS wish_id TEXT;
+
 CREATE TABLE IF NOT EXISTS pokes (
     id         UUID PRIMARY KEY,
     pair_id    UUID NOT NULL REFERENCES pairs (id) ON DELETE CASCADE,
