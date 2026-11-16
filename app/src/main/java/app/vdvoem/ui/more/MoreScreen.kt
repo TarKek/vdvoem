@@ -187,8 +187,8 @@ fun MoreScreen(
             val description = when {
                 updateDownloading -> stringResource(R.string.more_update_downloading)
                 updateChecking -> stringResource(R.string.more_update_checking)
-                updateVersion != null -> stringResource(R.string.more_update_available, updateVersion)
                 updateFailed -> stringResource(R.string.more_update_error)
+                updateVersion != null -> stringResource(R.string.more_update_available, updateVersion)
                 else -> stringResource(R.string.more_update_current, appVersion)
             }
             ModuleRow(

@@ -27,8 +27,8 @@ android {
         applicationId = "app.vdvoem"
         minSdk = 26
         targetSdk = 35
-        versionCode = 13
-        versionName = "0.7.4"
+        versionCode = 15
+        versionName = "0.7.6"
     }
 
     signingConfigs {

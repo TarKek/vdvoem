@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
+import androidx.core.content.IntentCompat
 
 /**
  * Установка APK через штатный [PackageInstaller].
@@ -47,7 +48,14 @@ class InstallResultReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != ACTION_INSTALL_RESULT) return
         val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, -1)
-        if (status == PackageInstaller.STATUS_PENDING_USER_ACTION) return
+        if (status == PackageInstaller.STATUS_PENDING_USER_ACTION) {
+            // Система просит подтверждение — показываем её диалог, иначе установка молча висит.
+            val confirm = IntentCompat.getParcelableExtra(intent, Intent.EXTRA_INTENT, Intent::class.java)
+                ?: return
+            confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            runCatching { context.startActivity(confirm) }
+            return
+        }
         if (status == PackageInstaller.STATUS_SUCCESS) return
         val message = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
         val text = if (message.isNullOrBlank()) {
