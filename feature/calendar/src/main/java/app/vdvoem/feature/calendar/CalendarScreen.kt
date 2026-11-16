@@ -1,8 +1,11 @@
 package app.vdvoem.feature.calendar
 
 import android.Manifest
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.provider.CalendarContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.horizontalScroll
@@ -96,6 +99,14 @@ fun CalendarScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val deniedMessage = stringResource(R.string.calendar_reminder_denied)
+    val calendarFailedMessage = stringResource(R.string.calendar_add_to_calendar_failed)
+
+    // Экспорт в календарь телефона — только через Intent, без OAuth и разрешений.
+    val addToPhoneCalendar: (EventUi) -> Unit = { event ->
+        if (!insertIntoPhoneCalendar(context, event)) {
+            scope.launch { snackbarHostState.showSnackbar(calendarFailedMessage) }
+        }
+    }
 
     // Разрешение на уведомления: без него напоминания молча не покажутся.
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -201,6 +212,7 @@ fun CalendarScreen(
                 else -> items(state.events, key = { it.id }) { event ->
                     EventCard(
                         event = event,
+                        onAddToCalendar = { addToPhoneCalendar(event) },
                         onEdit = {
                             editing = event
                             editorOpen = true
@@ -443,6 +455,7 @@ private fun SortMenuButton(
 @Composable
 private fun EventCard(
     event: EventUi,
+    onAddToCalendar: () -> Unit,
     onEdit: () -> Unit
 ) {
     val editHint = stringResource(R.string.calendar_card_edit_hint, event.title)
@@ -487,6 +500,14 @@ private fun EventCard(
                 )
             }
             Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+            IconButton(onClick = onAddToCalendar) {
+                Icon(
+                    imageVector = Icons.Filled.DateRange,
+                    contentDescription = stringResource(R.string.calendar_add_to_calendar),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(VdvoemSizes.iconMd)
+                )
+            }
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = editHint,
@@ -681,6 +702,27 @@ private fun DeleteEventDialog(
             }
         }
     )
+}
+
+private const val MILLIS_PER_HOUR = 60L * 60L * 1000L
+
+/**
+ * Кладёт событие в календарь телефона через ACTION_INSERT: без OAuth, без разрешений и без записи
+ * в базу календаря — дальше пользователь сам жмёт «Сохранить» в приложении календаря.
+ * В модели нет времени события, поэтому запись создаётся как событие на весь день.
+ */
+private fun insertIntoPhoneCalendar(context: Context, event: EventUi): Boolean {
+    val begin = Dates.startOfDay(event.date)
+    val description = context.applicationInfo?.loadLabel(context.packageManager)?.toString().orEmpty()
+    val intent = Intent(Intent.ACTION_INSERT)
+        .setData(CalendarContract.Events.CONTENT_URI)
+        .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, begin)
+        .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, begin + MILLIS_PER_HOUR)
+        .putExtra(CalendarContract.EXTRA_EVENT_ALL_DAY, true)
+        .putExtra(CalendarContract.Events.TITLE, event.title)
+        .putExtra(CalendarContract.Events.DESCRIPTION, description)
+    // context из LocalContext — это Activity, поэтому FLAG_ACTIVITY_NEW_TASK не нужен.
+    return runCatching { context.startActivity(intent) }.isSuccess
 }
 
 private fun CalendarFilter.labelRes(): Int = when (this) {

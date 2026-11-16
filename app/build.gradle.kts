@@ -27,8 +27,8 @@ android {
         applicationId = "app.vdvoem"
         minSdk = 26
         targetSdk = 35
-        versionCode = 21
-        versionName = "0.11.0"
+        versionCode = 22
+        versionName = "0.12.0"
     }
 
     signingConfigs {
@@ -106,6 +106,7 @@ dependencies {
     implementation(project(":feature:notes"))
     implementation(project(":feature:cycle"))
     implementation(project(":feature:dates"))
+    implementation(project(":feature:voice"))
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 

@@ -1,6 +1,7 @@
 package app.vdvoem.core.sync
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Фасад для UI: настройки, вход в пару, разовая синхронизация.
@@ -11,12 +12,19 @@ class SyncController(
     private val api: SyncApi,
     private val engine: SyncEngine,
     private val scheduler: SyncScheduler,
-    private val statusHolder: SyncStatusHolder
+    private val statusHolder: SyncStatusHolder,
+    private val pendingChanges: PendingChanges
 ) {
 
     val settings: Flow<SyncSettings> = settingsStore.settings
 
     val status: Flow<SyncStatus> = statusHolder.state
+
+    /** «Не отправлено N»: локальные правки, которые ещё не уехали на сервер. */
+    val pendingCount: StateFlow<Int> = pendingChanges.pending
+
+    /** Пересчитать число неотправленных записей (вызывается вручную, если нужно сразу). */
+    suspend fun refreshPending(): Int = pendingChanges.refresh()
 
     suspend fun currentSettings(): SyncSettings = settingsStore.current()
 
@@ -91,5 +99,9 @@ class SyncController(
     }
 
     /** Синхронизировать прямо сейчас и дождаться итога. */
-    suspend fun syncNow(): SyncResult = engine.syncOnce()
+    suspend fun syncNow(): SyncResult {
+        val result = engine.syncOnce()
+        pendingChanges.refresh()
+        return result
+    }
 }

@@ -113,6 +113,7 @@ fun VdvoemRoot(
     val sentPokeIds by homePreferences.sentPokeIds
         .collectAsStateWithLifecycle(initialValue = emptySet())
     val syncStatus by syncController.status.collectAsStateWithLifecycle(initialValue = SyncStatus.Idle)
+    val pendingSyncCount by syncController.pendingCount.collectAsStateWithLifecycle()
     val syncing = syncStatus is SyncStatus.Running
     val navController = rememberNavController()
 
@@ -467,6 +468,8 @@ fun VdvoemRoot(
                         ?.let { "${it.nameA} и ${it.nameB}" },
                     onExport = { exportLauncher.launch("vdvoem-backup.json") },
                     onImport = { importLauncher.launch(arrayOf("*/*")) },
+                    pendingCount = pendingSyncCount,
+                    onSyncNow = { syncController.syncInBackground() },
                     appVersion = BuildConfig.VERSION_NAME,
                     updateVersion = updateInfo?.version,
                     updateChecking = updateChecking,

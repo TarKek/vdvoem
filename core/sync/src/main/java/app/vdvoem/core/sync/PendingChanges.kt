@@ -1,0 +1,107 @@
+package app.vdvoem.core.sync
+
+import app.vdvoem.core.data.LocalChangeSignal
+import app.vdvoem.core.domain.repository.CalendarRepository
+import app.vdvoem.core.domain.repository.CycleRepository
+import app.vdvoem.core.domain.repository.GiftRepository
+import app.vdvoem.core.domain.repository.LessonRepository
+import app.vdvoem.core.domain.repository.PairRepository
+import app.vdvoem.core.domain.repository.PokeRepository
+import app.vdvoem.core.domain.repository.QuizScoreRepository
+import app.vdvoem.core.domain.repository.WishRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
+/**
+ * «Сколько локальных изменений ещё не уехало на сервер».
+ *
+ * Считаем ровно тем же правилом, что и [SyncEngine] при сборе исходящих изменений:
+ * запись «не отправлена», если её `updatedAt` больше `SyncSettings.lastPushedAt`
+ * (водяного знака последней успешной отправки). Отдельной очереди нет — это
+ * первый шаг дорожной карты «офлайн-очередь», дальше сюда придёт настоящая очередь.
+ *
+ * Значение пересчитывается:
+ * - при создании (инициализация);
+ * - после каждого сигнала [LocalChangeSignal] (пользователь что-то изменил);
+ * - после смены [SyncStatus] (проход синка завершился, `lastPushedAt` мог сдвинуться).
+ *
+ * Опрос по таймеру не используется: подписка на сигналы дешевле и точнее.
+ */
+class PendingChanges(
+    private val settingsStore: SyncSettingsStore,
+    private val pairRepository: PairRepository,
+    private val calendarRepository: CalendarRepository,
+    private val wishRepository: WishRepository,
+    private val giftRepository: GiftRepository,
+    private val pokeRepository: PokeRepository,
+    private val quizScoreRepository: QuizScoreRepository,
+    private val lessonRepository: LessonRepository,
+    private val cycleRepository: CycleRepository,
+    private val statusHolder: SyncStatusHolder
+) {
+
+    private val _pending = MutableStateFlow(0)
+
+    /** Текущее число неотправленных записей; UI читает как обычный `StateFlow`. */
+    val pending: StateFlow<Int> = _pending.asStateFlow()
+
+    private val mutex = Mutex()
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    init {
+        scope.launch {
+            LocalChangeSignal.changes.collect { refresh() }
+        }
+        scope.launch {
+            // Running — это начало прохода: пересчитывать рано, итог придёт в Success/Error.
+            statusHolder.state.collect { status ->
+                if (status !is SyncStatus.Running) refresh()
+            }
+        }
+        scope.launch { refresh() }
+    }
+
+    /** Поток «не отправлено N» для UI: начинается с текущего значения. */
+    fun observe(): Flow<Int> = pending
+
+    /** Пересчитать и вернуть актуальное число неотправленных записей. */
+    suspend fun count(): Int = refresh()
+
+    /** Пересчёт с защитой от параллельных проходов (несколько сигналов подряд). */
+    suspend fun refresh(): Int = mutex.withLock {
+        val settings = runCatching { settingsStore.current() }.getOrNull()
+        if (settings == null || !settings.isConfigured) {
+            _pending.value = 0
+            return@withLock 0
+        }
+        val pushedAt = settings.lastPushedAt
+        val total = runCatching { countLocal(pushedAt) }.getOrElse { 0 }
+        _pending.value = total
+        total
+    }
+
+    private suspend fun countLocal(pushedAt: Long): Int {
+        var total = 0
+        if ((pairRepository.current()?.updatedAt ?: 0L) > pushedAt) total++
+        total += calendarRepository.observeEvents().first().count { it.updatedAt > pushedAt }
+        // Tombstone тоже считаем: удаление — такое же изменение, которое надо отправить.
+        total += wishRepository.observeWishesIncludingDeleted().first().count { it.updatedAt > pushedAt }
+        total += giftRepository.observeGiftsIncludingDeleted().first().count { it.updatedAt > pushedAt }
+        total += pokeRepository.observe().first().count { it.updatedAt > pushedAt }
+        total += quizScoreRepository.observe().first().count { it.updatedAt > pushedAt }
+        total += lessonRepository.observe().first().count { it.updatedAt > pushedAt }
+        total += cycleRepository.observeDaysIncludingDeleted().first().count { it.updatedAt > pushedAt }
+        total += cycleRepository.observeSettingsIncludingDeleted().first().count { it.updatedAt > pushedAt }
+        return total
+    }
+}

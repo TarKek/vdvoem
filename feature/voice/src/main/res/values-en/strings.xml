@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voice_module_title">Voice notes</string>
+    <string name="voice_module_description">Record voice notes right on your phone: ideas, out-loud thoughts and reminders to yourself. Recordings stay on this device only.</string>
+    <string name="voice_title">Voice notes</string>
+    <string name="voice_record">Record</string>
+    <string name="voice_stop">Stop</string>
+    <string name="voice_play">Play</string>
+    <string name="voice_stop_with_time">Stop %1$s</string>
+    <string name="voice_note_title">Note %1$d</string>
+    <string name="voice_empty_title">No recordings yet</string>
+    <string name="voice_empty_message">Tap “Record” and say everything you want to remember. The note stays on your phone.</string>
+    <string name="voice_delete">Delete</string>
+    <string name="voice_delete_confirm_title">Delete this note?</string>
+    <string name="voice_delete_confirm_message">The recording and its audio file will be deleted from your phone and cannot be restored.</string>
+    <string name="voice_delete_confirm_action">Delete</string>
+    <string name="voice_cancel">Cancel</string>
+    <string name="voice_ok">Got it</string>
+    <string name="voice_permission_title">Microphone access needed</string>
+    <string name="voice_permission_message">A voice note can’t be recorded without microphone permission. You can enable it in the app settings.</string>
+    <string name="voice_error_title">Something went wrong</string>
+    <string name="voice_error_record">Recording failed. Check that the microphone is not busy in another app and try again.</string>
+    <string name="voice_error_play">Could not play the recording: the file may be damaged or deleted.</string>
+</resources>

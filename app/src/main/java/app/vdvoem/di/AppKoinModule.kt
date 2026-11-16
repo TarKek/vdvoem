@@ -13,6 +13,7 @@ import app.vdvoem.feature.timetable.TimetableModule
 import app.vdvoem.feature.notes.NotesModule
 import app.vdvoem.feature.cycle.CycleModule
 import app.vdvoem.feature.dates.DatesModule
+import app.vdvoem.feature.voice.VoiceModule
 import app.vdvoem.feature.wishes.WishesViewModel
 import app.vdvoem.data.HomePreferences
 import app.vdvoem.notify.PokeNotifier
@@ -44,6 +45,7 @@ val appKoinModule = module {
                 get<NotesModule>(),
                 get<CycleModule>(),
                 get<DatesModule>(),
+                get<VoiceModule>(),
                 get<StoreModule>()
             )
         )

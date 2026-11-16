@@ -235,6 +235,8 @@
     <string name="nav_sheet_text">Два раздела между «Главной» и «Ещё». Отметь не больше двух — новый выбор заменит самый старый, остальные модули останутся здесь, в «Ещё».</string>
     <string name="nav_sheet_done">Готово</string>
     <string name="more_sync_connected_text">Пара подключена: данные общие на двух телефонах</string>
+    <string name="more_sync_pending">Не отправлено: %1$d</string>
+    <string name="more_sync_pending_hint">Нажми, чтобы отправить сейчас</string>
 
     <string name="push_service_title">Вдвоём: синхронизация</string>
     <string name="push_service_text">Обновления от партнёра приходят сразу</string>

@@ -62,6 +62,8 @@ fun MoreScreen(
     updateFailed: Boolean = false,
     appVersion: String = "",
     onUpdateClick: () -> Unit = {},
+    pendingCount: Int = 0,
+    onSyncNow: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var navSheetOpen by rememberSaveable { mutableStateOf(false) }
@@ -148,7 +150,18 @@ fun MoreScreen(
                 } else {
                     stringResource(R.string.more_sync_text)
                 },
-                onClick = onOpenConnect,
+                // Неотправленные правки видно сразу: строка превращается в «отправить сейчас».
+                footer = if (pendingCount > 0) {
+                    stringResource(R.string.more_sync_pending, pendingCount)
+                } else {
+                    null
+                },
+                hint = if (pendingCount > 0) {
+                    stringResource(R.string.more_sync_pending_hint)
+                } else {
+                    null
+                },
+                onClick = if (pendingCount > 0) onSyncNow else onOpenConnect,
                 icon = {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.List,
@@ -345,7 +358,9 @@ private fun ModuleRow(
     title: String,
     description: String,
     onClick: () -> Unit,
-    icon: @Composable () -> Unit
+    icon: @Composable () -> Unit,
+    footer: String? = null,
+    hint: String? = null
 ) {
     VdvoemCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Row(
@@ -367,6 +382,21 @@ private fun ModuleRow(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (footer != null) {
+                    Text(
+                        text = footer,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                if (hint != null) {
+                    Text(
+                        text = hint,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,

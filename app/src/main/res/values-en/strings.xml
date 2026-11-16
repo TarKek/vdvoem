@@ -221,6 +221,8 @@
     <string name="nav_sheet_text">Two sections between Home and More. Pick up to two — a new pick replaces the oldest, and the other modules stay here in More.</string>
     <string name="nav_sheet_done">Done</string>
     <string name="more_sync_connected_text">Couple connected: data is shared on two phones</string>
+    <string name="more_sync_pending">Not sent: %1$d</string>
+    <string name="more_sync_pending_hint">Tap to send now</string>
 
     <string name="push_service_title">Vdvoem: sync</string>
     <string name="push_service_text">Partner updates arrive instantly</string>

@@ -2,6 +2,7 @@ package app.vdvoem.core.sync.di
 
 import app.vdvoem.core.domain.device.DeviceIdentity
 import app.vdvoem.core.sync.IncomingPokeHandler
+import app.vdvoem.core.sync.PendingChanges
 import app.vdvoem.core.sync.RealtimeSync
 import app.vdvoem.core.sync.SyncApi
 import app.vdvoem.core.sync.SyncController
@@ -49,13 +50,30 @@ val syncModule: Module = module {
 
     single { SyncScheduler(context = androidContext()) }
 
+    // «Не отправлено N»: считается по lastPushedAt теми же репозиториями, что у движка.
+    single {
+        PendingChanges(
+            settingsStore = get(),
+            pairRepository = get(),
+            calendarRepository = get(),
+            wishRepository = get(),
+            giftRepository = get(),
+            pokeRepository = get(),
+            quizScoreRepository = get(),
+            lessonRepository = get(),
+            cycleRepository = get(),
+            statusHolder = get()
+        )
+    }
+
     single {
         SyncController(
             settingsStore = get(),
             api = get(),
             engine = get(),
             scheduler = get(),
-            statusHolder = get()
+            statusHolder = get(),
+            pendingChanges = get()
         )
     }
 

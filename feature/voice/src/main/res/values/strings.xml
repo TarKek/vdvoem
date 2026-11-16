@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voice_module_title">Голосовые заметки</string>
+    <string name="voice_module_description">Записывайте голосовые заметки прямо с телефона: идеи, мысли вслух и напоминания себе. Записи хранятся только на этом устройстве.</string>
+    <string name="voice_title">Голосовые заметки</string>
+    <string name="voice_record">Записать</string>
+    <string name="voice_stop">Остановить</string>
+    <string name="voice_play">Слушать</string>
+    <string name="voice_stop_with_time">Стоп %1$s</string>
+    <string name="voice_note_title">Заметка %1$d</string>
+    <string name="voice_empty_title">Пока нет записей</string>
+    <string name="voice_empty_message">Нажмите «Записать» и скажите всё, что хочется запомнить. Заметка останется на телефоне.</string>
+    <string name="voice_delete">Удалить</string>
+    <string name="voice_delete_confirm_title">Удалить заметку?</string>
+    <string name="voice_delete_confirm_message">Запись и её аудиофайл будут удалены с телефона без возможности восстановления.</string>
+    <string name="voice_delete_confirm_action">Удалить</string>
+    <string name="voice_cancel">Отмена</string>
+    <string name="voice_ok">Понятно</string>
+    <string name="voice_permission_title">Нужен доступ к микрофону</string>
+    <string name="voice_permission_message">Без разрешения на микрофон записать голосовую заметку не получится. Разрешение можно включить в настройках приложения.</string>
+    <string name="voice_error_title">Не получилось</string>
+    <string name="voice_error_record">Запись не удалась. Проверьте, что микрофон не занят другим приложением, и попробуйте снова.</string>
+    <string name="voice_error_play">Не удалось проиграть запись: возможно, файл повреждён или удалён.</string>
+</resources>
