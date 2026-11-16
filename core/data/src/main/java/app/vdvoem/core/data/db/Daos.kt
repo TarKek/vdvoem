@@ -90,3 +90,32 @@ interface LessonDao {
     @Query("UPDATE lessons SET deletedAt = :now, updatedAt = :now WHERE id = :id")
     suspend fun softDelete(id: String, now: Long)
 }
+
+@Dao
+interface CycleDayDao {
+    @Query("SELECT * FROM cycle_days WHERE deletedAt IS NULL ORDER BY dateMillis ASC")
+    fun observeAll(): Flow<List<CycleDayEntity>>
+
+    /** Включая tombstone: синку нужны удаления, экрану — нет. */
+    @Query("SELECT * FROM cycle_days ORDER BY dateMillis ASC")
+    fun observeAllIncludingDeleted(): Flow<List<CycleDayEntity>>
+
+    @Upsert
+    suspend fun upsert(day: CycleDayEntity)
+
+    @Query("UPDATE cycle_days SET deletedAt = :now, updatedAt = :now WHERE id = :id")
+    suspend fun softDelete(id: String, now: Long)
+}
+
+@Dao
+interface CycleSettingsDao {
+    @Query("SELECT * FROM cycle_settings WHERE deletedAt IS NULL LIMIT 1")
+    fun observe(): Flow<CycleSettingsEntity?>
+
+    /** Включая tombstone: синку нужны удаления, экрану — нет. */
+    @Query("SELECT * FROM cycle_settings ORDER BY updatedAt DESC")
+    fun observeAllIncludingDeleted(): Flow<List<CycleSettingsEntity>>
+
+    @Upsert
+    suspend fun upsert(settings: CycleSettingsEntity)
+}

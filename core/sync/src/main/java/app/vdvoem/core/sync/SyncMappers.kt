@@ -1,6 +1,11 @@
 package app.vdvoem.core.sync
 
+import app.vdvoem.core.domain.cycle.DEFAULT_CYCLE_LENGTH
+import app.vdvoem.core.domain.cycle.DEFAULT_PERIOD_LENGTH
 import app.vdvoem.core.domain.model.CalendarEvent
+import app.vdvoem.core.domain.model.CycleDay
+import app.vdvoem.core.domain.model.CycleSettings
+import app.vdvoem.core.domain.model.Flow
 import app.vdvoem.core.domain.model.Gift
 import app.vdvoem.core.domain.model.GiftStatus
 import app.vdvoem.core.domain.model.Lesson
@@ -168,6 +173,52 @@ object SyncMappers {
         quizId = quizId,
         percent = percent.coerceIn(0, 100),
         passedAt = if (passedAt > 0) passedAt else updatedAt,
+        updatedAt = updatedAt,
+        deletedAt = deletedAt
+    )
+
+    fun CycleDay.toDto(): CycleDayDto = CycleDayDto(
+        id = id,
+        dateMillis = dateMillis,
+        period = period,
+        flow = flow.name,
+        symptoms = symptoms,
+        mood = mood,
+        weight = weight,
+        note = note,
+        updatedAt = updatedAt,
+        deletedAt = deletedAt,
+        pairId = pairId
+    )
+
+    fun CycleDayDto.toDomain(fallbackPairId: String = ""): CycleDay = CycleDay(
+        id = id,
+        pairId = pairId?.takeIf { it.isNotBlank() } ?: fallbackPairId,
+        dateMillis = dateMillis,
+        period = period,
+        flow = runCatching { Flow.valueOf(flow) }.getOrDefault(Flow.NONE),
+        symptoms = symptoms.filter { it.isNotBlank() },
+        mood = mood,
+        weight = weight,
+        note = note,
+        updatedAt = updatedAt,
+        deletedAt = deletedAt
+    )
+
+    fun CycleSettings.toDto(): CycleSettingsDto = CycleSettingsDto(
+        id = id,
+        cycleLength = cycleLength,
+        periodLength = periodLength,
+        updatedAt = updatedAt,
+        deletedAt = deletedAt,
+        pairId = pairId
+    )
+
+    fun CycleSettingsDto.toDomain(fallbackPairId: String = ""): CycleSettings = CycleSettings(
+        id = id,
+        pairId = pairId?.takeIf { it.isNotBlank() } ?: fallbackPairId,
+        cycleLength = if (cycleLength > 0) cycleLength else DEFAULT_CYCLE_LENGTH,
+        periodLength = if (periodLength > 0) periodLength else DEFAULT_PERIOD_LENGTH,
         updatedAt = updatedAt,
         deletedAt = deletedAt
     )

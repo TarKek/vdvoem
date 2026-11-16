@@ -93,3 +93,35 @@ data class LessonEntity(
     val updatedAt: Long,
     val deletedAt: Long? = null
 )
+
+/**
+ * День трекера цикла. `symptoms` — список ключей через `|` (см. [CycleConverters]),
+ * `flow` — имя [app.vdvoem.core.domain.model.Flow].
+ *
+ * Дефолты обязаны совпадать с `MIGRATION_7_8`: Room сверяет схему при открытии базы.
+ */
+@Entity(tableName = "cycle_days")
+data class CycleDayEntity(
+    @PrimaryKey val id: String,
+    val pairId: String,
+    val dateMillis: Long,
+    @ColumnInfo(defaultValue = "0") val period: Boolean = false,
+    @ColumnInfo(defaultValue = "NONE") val flow: String = "NONE",
+    @ColumnInfo(defaultValue = "''") val symptoms: List<String> = emptyList(),
+    @ColumnInfo(defaultValue = "''") val mood: String = "",
+    val weight: Float? = null,
+    @ColumnInfo(defaultValue = "''") val note: String = "",
+    val updatedAt: Long,
+    val deletedAt: Long? = null
+)
+
+/** Ожидания пары по циклу: одна строка на пару, `id` = `pairId`. */
+@Entity(tableName = "cycle_settings")
+data class CycleSettingsEntity(
+    @PrimaryKey val id: String,
+    val pairId: String,
+    @ColumnInfo(defaultValue = "28") val cycleLength: Int = 28,
+    @ColumnInfo(defaultValue = "5") val periodLength: Int = 5,
+    val updatedAt: Long,
+    val deletedAt: Long? = null
+)

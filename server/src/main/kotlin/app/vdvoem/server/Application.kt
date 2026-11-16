@@ -9,6 +9,7 @@ import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.callloging.CallLogging
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
+import io.ktor.server.websocket.WebSockets
 
 fun main() {
     val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
@@ -37,5 +38,14 @@ fun Application.configureServer(repository: Repository, mediaRepository: MediaRe
             call.respond(HttpStatusCode.InternalServerError, ErrorResponse("internal error"))
         }
     }
+    // Мгновенный пуш партнёру (docs/CYCLE_SPEC.md §8): `GET /v1/ws` + рассылка из `POST /v1/sync`.
+    // Плагин ставим до маршрутов: билдер `webSocket` требует уже установленный WebSockets.
+    install(WebSockets) {
+        pingPeriodMillis = 20_000L
+        timeoutMillis = 60_000L
+        maxFrameSize = Long.MAX_VALUE
+        masking = false
+    }
     configureRouting(repository, mediaRepository)
+    pushRoutes(repository)
 }

@@ -67,6 +67,8 @@ fun Application.configureRouting(repository: Repository, mediaRepository: MediaR
                 val request = call.receive<PushRequest>()
                 val now = System.currentTimeMillis()
                 val applied = repository.push(pairId, request.changes)
+                // Успешная запись — сразу будим второй телефон пары (сбой пуша не влияет на ответ).
+                PushHub.notifyPair(pairId, exceptTokenHash = token?.let(Db::hash))
                 call.respond(PushResponse(now, applied))
             }
         }

@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cycle_module_title">Cycle</string>
+    <string name="cycle_module_description">Cycle calendar, symptoms and forecast — shared with your partner</string>
+
+    <!-- Phases -->
+    <string name="cycle_phase_period">Period</string>
+    <string name="cycle_phase_follicular">Follicular phase</string>
+    <string name="cycle_phase_ovulation">Ovulation</string>
+    <string name="cycle_phase_luteal">Luteal phase</string>
+
+    <!-- Hero -->
+    <string name="cycle_hero_period_day">Period: day %1$d</string>
+    <string name="cycle_hero_today">Period expected today</string>
+    <string name="cycle_hero_unknown">Not enough data for a forecast</string>
+    <string name="cycle_badge_late">Late</string>
+    <string name="cycle_ovulation_on">Ovulation: %1$s</string>
+
+    <plurals name="cycle_days_left">
+        <item quantity="one">Period in %1$d day</item>
+        <item quantity="other">Period in %1$d days</item>
+    </plurals>
+
+    <plurals name="cycle_late">
+        <item quantity="one">Late by %1$d day</item>
+        <item quantity="other">Late by %1$d days</item>
+    </plurals>
+
+    <plurals name="cycle_cycle_lasted">
+        <item quantity="one">Cycle lasted %1$d day</item>
+        <item quantity="other">Cycle lasted %1$d days</item>
+    </plurals>
+
+    <plurals name="cycle_hero_average">
+        <item quantity="one">Usually the cycle lasts %1$d day</item>
+        <item quantity="other">Usually the cycle lasts %1$d days</item>
+    </plurals>
+
+    <plurals name="cycle_history_length">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+
+    <!-- Actions -->
+    <string name="cycle_action_period">Edit period</string>
+    <string name="cycle_action_symptoms">Symptoms</string>
+    <string name="cycle_action_note">Note</string>
+
+    <!-- Calendar -->
+    <string name="cycle_calendar_title">Calendar</string>
+    <string name="cycle_legend_period">Period</string>
+    <string name="cycle_legend_forecast">Forecast</string>
+    <string name="cycle_legend_ovulation">Ovulation</string>
+
+    <!-- History -->
+    <string name="cycle_history_title">Cycle history</string>
+    <string name="cycle_history_empty">History appears after the second cycle</string>
+    <string name="cycle_history_range">%1$s — %2$s</string>
+    <string name="cycle_current_cycle">Current cycle: day %1$d</string>
+
+    <!-- Chart -->
+    <string name="cycle_chart_title">Cycle dynamics</string>
+    <string name="cycle_chart_empty">At least two cycles are needed to draw the chart</string>
+    <string name="cycle_chart_average">Average</string>
+    <string name="cycle_chart_shortest">Shortest</string>
+    <string name="cycle_chart_longest">Longest</string>
+
+    <!-- Tips -->
+    <string name="cycle_tips_title">Tips for today</string>
+
+    <!-- Empty state -->
+    <string name="cycle_empty_title">Mark the start of your period</string>
+    <string name="cycle_empty_message">The data is shared with your partner: they see the cycle and the forecast on their phone. Start with the first day of your period.</string>
+    <string name="cycle_empty_action">Mark today</string>
+
+    <!-- Period sheet -->
+    <string name="cycle_sheet_period_title">Period</string>
+    <string name="cycle_sheet_period_started">Started today</string>
+    <string name="cycle_sheet_period_ended">Period is over</string>
+    <string name="cycle_sheet_period_pick">Pick the start date</string>
+    <string name="cycle_sheet_period_hint">The forecast is recalculated automatically. The data is shared with your partner.</string>
+
+    <!-- Day sheet -->
+    <string name="cycle_sheet_day_today">Today</string>
+    <string name="cycle_sheet_period_toggle">Period day</string>
+    <string name="cycle_field_flow">Flow</string>
+    <string name="cycle_flow_none">None</string>
+    <string name="cycle_flow_light">Light</string>
+    <string name="cycle_flow_medium">Medium</string>
+    <string name="cycle_flow_heavy">Heavy</string>
+    <string name="cycle_sheet_symptoms">Symptoms</string>
+    <string name="cycle_sheet_mood">Mood</string>
+    <string name="cycle_sheet_weight">Weight, kg</string>
+    <string name="cycle_sheet_note">Note</string>
+    <string name="cycle_sheet_note_hint">How was the day?</string>
+    <string name="cycle_sheet_save">Save</string>
+    <string name="cycle_sheet_cancel">Cancel</string>
+    <string name="cycle_sheet_clear">Delete entry</string>
+    <string name="cycle_ok">Done</string>
+
+    <!-- Symptoms -->
+    <string name="cycle_symptom_cramps">Cramps</string>
+    <string name="cycle_symptom_headache">Headache</string>
+    <string name="cycle_symptom_backache">Backache</string>
+    <string name="cycle_symptom_acne">Acne</string>
+    <string name="cycle_symptom_bloating">Bloating</string>
+    <string name="cycle_symptom_fatigue">Fatigue</string>
+    <string name="cycle_symptom_nausea">Nausea</string>
+    <string name="cycle_symptom_breasts">Breasts</string>
+    <string name="cycle_symptom_sleep">Poor sleep</string>
+
+    <!-- Mood -->
+    <string name="cycle_mood_happy">Happy</string>
+    <string name="cycle_mood_calm">Calm</string>
+    <string name="cycle_mood_sad">Sad</string>
+    <string name="cycle_mood_irritable">Irritable</string>
+    <string name="cycle_mood_anxious">Anxious</string>
+    <string name="cycle_mood_energetic">Energetic</string>
+
+    <string-array name="cycle_weekdays">
+        <item>Mon</item>
+        <item>Tue</item>
+        <item>Wed</item>
+        <item>Thu</item>
+        <item>Fri</item>
+        <item>Sat</item>
+        <item>Sun</item>
+    </string-array>
+
+    <string-array name="cycle_tips_period">
+        <item>Warmth and rest</item>
+        <item>More iron</item>
+        <item>Gentle movement</item>
+    </string-array>
+
+    <string-array name="cycle_tips_period_text">
+        <item>A heating pad and warm tea relax the muscles and ease cramps.</item>
+        <item>Buckwheat, liver, pomegranate and greens support you on days of blood loss.</item>
+        <item>A walk or stretching eases the pain better than complete rest.</item>
+    </string-array>
+
+    <string-array name="cycle_tips_follicular">
+        <item>Energy is growing</item>
+        <item>More protein</item>
+        <item>Plans for two</item>
+    </string-array>
+
+    <string-array name="cycle_tips_follicular_text">
+        <item>The first half of the cycle is the best time for new things and workouts.</item>
+        <item>Protein and vegetables help you recover after the period.</item>
+        <item>Agree on a weekend together while you have the most energy.</item>
+    </string-array>
+
+    <string-array name="cycle_tips_ovulation">
+        <item>Peak energy</item>
+        <item>Water and fibre</item>
+        <item>More warmth</item>
+    </string-array>
+
+    <string-array name="cycle_tips_ovulation_text">
+        <item>Ovulation often matches your energy peak — use it.</item>
+        <item>It means less swelling and easier digestion.</item>
+        <item>Hug more: closeness feels especially good on these days.</item>
+    </string-array>
+
+    <string-array name="cycle_tips_luteal">
+        <item>Magnesium and sleep</item>
+        <item>Be kind to yourself</item>
+        <item>Less salt</item>
+    </string-array>
+
+    <string-array name="cycle_tips_luteal_text">
+        <item>Nuts and greens plus eight hours of sleep smooth out mood swings.</item>
+        <item>PMS is hormones, not character. Slow down without guilt.</item>
+        <item>Salt holds water — that is where swelling and heaviness come from.</item>
+    </string-array>
+</resources>

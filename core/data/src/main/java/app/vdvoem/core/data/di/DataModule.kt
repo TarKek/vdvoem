@@ -3,6 +3,7 @@ package app.vdvoem.core.data.di
 import androidx.room.Room
 import app.vdvoem.core.data.db.VdvoemDatabase
 import app.vdvoem.core.data.repository.RoomCalendarRepository
+import app.vdvoem.core.data.repository.RoomCycleRepository
 import app.vdvoem.core.data.repository.RoomGiftRepository
 import app.vdvoem.core.data.repository.RoomPairRepository
 import app.vdvoem.core.data.repository.RoomPokeRepository
@@ -13,6 +14,7 @@ import app.vdvoem.core.data.settings.DataStoreAppSettingsRepository
 import app.vdvoem.core.data.settings.DataStoreModuleSettingsRepository
 import app.vdvoem.core.domain.module.ModuleRegistry
 import app.vdvoem.core.domain.repository.CalendarRepository
+import app.vdvoem.core.domain.repository.CycleRepository
 import app.vdvoem.core.domain.repository.GiftRepository
 import app.vdvoem.core.domain.repository.LessonRepository
 import app.vdvoem.core.domain.repository.ModuleSettingsRepository
@@ -40,7 +42,8 @@ val dataModule = module {
                 VdvoemDatabase.MIGRATION_3_4,
                 VdvoemDatabase.MIGRATION_4_5,
                 VdvoemDatabase.MIGRATION_5_6,
-                VdvoemDatabase.MIGRATION_6_7
+                VdvoemDatabase.MIGRATION_6_7,
+                VdvoemDatabase.MIGRATION_7_8
             )
             .build()
     }
@@ -51,6 +54,8 @@ val dataModule = module {
     single { get<VdvoemDatabase>().pokeDao() }
     single { get<VdvoemDatabase>().quizScoreDao() }
     single { get<VdvoemDatabase>().lessonDao() }
+    single { get<VdvoemDatabase>().cycleDayDao() }
+    single { get<VdvoemDatabase>().cycleSettingsDao() }
 
     single<PairRepository> { RoomPairRepository(get()) }
     single<CalendarRepository> { RoomCalendarRepository(get()) }
@@ -59,5 +64,6 @@ val dataModule = module {
     single<PokeRepository> { RoomPokeRepository(get()) }
     single<QuizScoreRepository> { RoomQuizScoreRepository(get()) }
     single<LessonRepository> { RoomLessonRepository(get()) }
+    single<CycleRepository> { RoomCycleRepository(get(), get()) }
     single<AppSettingsRepository> { DataStoreAppSettingsRepository(androidContext()) }
 }

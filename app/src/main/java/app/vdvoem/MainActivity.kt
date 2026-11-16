@@ -17,6 +17,7 @@ import app.vdvoem.core.domain.settings.ThemeMode
 import app.vdvoem.core.sync.RealtimeSync
 import app.vdvoem.core.ui.theme.VdvoemTheme
 import app.vdvoem.ui.VdvoemRoot
+import app.vdvoem.widget.CycleWidgetUpdater
 import org.koin.compose.koinInject
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
@@ -63,6 +64,8 @@ class MainActivity : ComponentActivity(), KoinComponent {
 
     override fun onStop() {
         runCatching { realtimeSync.stop() }
+        // Данные могли измениться, пока экран был открыт — обновляем домашний виджет.
+        runCatching { CycleWidgetUpdater.requestRefresh(this) }
         super.onStop()
     }
 

@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cycle_module_title">Цикл</string>
+    <string name="cycle_module_description">Календарь цикла, симптомы и прогноз — общие для пары</string>
+
+    <!-- Фазы -->
+    <string name="cycle_phase_period">Месячные</string>
+    <string name="cycle_phase_follicular">Фолликулярная фаза</string>
+    <string name="cycle_phase_ovulation">Овуляция</string>
+    <string name="cycle_phase_luteal">Лютеиновая фаза</string>
+
+    <!-- Hero -->
+    <string name="cycle_hero_period_day">Месячные: %1$d-й день</string>
+    <string name="cycle_hero_today">Месячные ожидаются сегодня</string>
+    <string name="cycle_hero_unknown">Нет данных для прогноза</string>
+    <string name="cycle_badge_late">Задержка</string>
+    <string name="cycle_ovulation_on">Овуляция: %1$s</string>
+
+    <plurals name="cycle_days_left">
+        <item quantity="one">До месячных %1$d день</item>
+        <item quantity="few">До месячных %1$d дня</item>
+        <item quantity="many">До месячных %1$d дней</item>
+        <item quantity="other">До месячных %1$d дня</item>
+    </plurals>
+
+    <plurals name="cycle_late">
+        <item quantity="one">Задержка на %1$d день</item>
+        <item quantity="few">Задержка на %1$d дня</item>
+        <item quantity="many">Задержка на %1$d дней</item>
+        <item quantity="other">Задержка на %1$d дня</item>
+    </plurals>
+
+    <plurals name="cycle_cycle_lasted">
+        <item quantity="one">Цикл длился %1$d день</item>
+        <item quantity="few">Цикл длился %1$d дня</item>
+        <item quantity="many">Цикл длился %1$d дней</item>
+        <item quantity="other">Цикл длился %1$d дня</item>
+    </plurals>
+
+    <plurals name="cycle_hero_average">
+        <item quantity="one">Обычно цикл длится %1$d день</item>
+        <item quantity="few">Обычно цикл длится %1$d дня</item>
+        <item quantity="many">Обычно цикл длится %1$d дней</item>
+        <item quantity="other">Обычно цикл длится %1$d дня</item>
+    </plurals>
+
+    <plurals name="cycle_history_length">
+        <item quantity="one">%1$d день</item>
+        <item quantity="few">%1$d дня</item>
+        <item quantity="many">%1$d дней</item>
+        <item quantity="other">%1$d дня</item>
+    </plurals>
+
+    <!-- Действия -->
+    <string name="cycle_action_period">Изменить месячные</string>
+    <string name="cycle_action_symptoms">Симптомы</string>
+    <string name="cycle_action_note">Заметка</string>
+
+    <!-- Календарь -->
+    <string name="cycle_calendar_title">Календарь</string>
+    <string name="cycle_legend_period">Месячные</string>
+    <string name="cycle_legend_forecast">Прогноз</string>
+    <string name="cycle_legend_ovulation">Овуляция</string>
+
+    <!-- История -->
+    <string name="cycle_history_title">История циклов</string>
+    <string name="cycle_history_empty">История появится после второго цикла</string>
+    <string name="cycle_history_range">%1$s — %2$s</string>
+    <string name="cycle_current_cycle">Текущий цикл: %1$d-й день</string>
+
+    <!-- График -->
+    <string name="cycle_chart_title">Динамика цикла</string>
+    <string name="cycle_chart_empty">Нужно хотя бы два цикла, чтобы построить график</string>
+    <string name="cycle_chart_average">Средняя</string>
+    <string name="cycle_chart_shortest">Короткая</string>
+    <string name="cycle_chart_longest">Длинная</string>
+
+    <!-- Советы -->
+    <string name="cycle_tips_title">Советы на день</string>
+
+    <!-- Пустое состояние -->
+    <string name="cycle_empty_title">Отметьте начало месячных</string>
+    <string name="cycle_empty_message">Данные общие с партнёром: он видит цикл и прогноз на своём телефоне. Начните с первого дня месячных.</string>
+    <string name="cycle_empty_action">Отметить сегодня</string>
+
+    <!-- Шторка «Месячные» -->
+    <string name="cycle_sheet_period_title">Месячные</string>
+    <string name="cycle_sheet_period_started">Начались сегодня</string>
+    <string name="cycle_sheet_period_ended">Месячные закончились</string>
+    <string name="cycle_sheet_period_pick">Выбрать дату начала</string>
+    <string name="cycle_sheet_period_hint">Прогноз пересчитается автоматически. Данные общие с партнёром.</string>
+
+    <!-- Шторка дня -->
+    <string name="cycle_sheet_day_today">Сегодня</string>
+    <string name="cycle_sheet_period_toggle">День месячных</string>
+    <string name="cycle_field_flow">Выделения</string>
+    <string name="cycle_flow_none">Нет</string>
+    <string name="cycle_flow_light">Слабые</string>
+    <string name="cycle_flow_medium">Средние</string>
+    <string name="cycle_flow_heavy">Сильные</string>
+    <string name="cycle_sheet_symptoms">Симптомы</string>
+    <string name="cycle_sheet_mood">Настроение</string>
+    <string name="cycle_sheet_weight">Вес, кг</string>
+    <string name="cycle_sheet_note">Заметка</string>
+    <string name="cycle_sheet_note_hint">Как прошёл день?</string>
+    <string name="cycle_sheet_save">Сохранить</string>
+    <string name="cycle_sheet_cancel">Отмена</string>
+    <string name="cycle_sheet_clear">Удалить запись</string>
+    <string name="cycle_ok">Готово</string>
+
+    <!-- Симптомы -->
+    <string name="cycle_symptom_cramps">Спазмы</string>
+    <string name="cycle_symptom_headache">Головная боль</string>
+    <string name="cycle_symptom_backache">Боль в спине</string>
+    <string name="cycle_symptom_acne">Высыпания</string>
+    <string name="cycle_symptom_bloating">Вздутие</string>
+    <string name="cycle_symptom_fatigue">Усталость</string>
+    <string name="cycle_symptom_nausea">Тошнота</string>
+    <string name="cycle_symptom_breasts">Грудь</string>
+    <string name="cycle_symptom_sleep">Плохой сон</string>
+
+    <!-- Настроение -->
+    <string name="cycle_mood_happy">Радостно</string>
+    <string name="cycle_mood_calm">Спокойно</string>
+    <string name="cycle_mood_sad">Грустно</string>
+    <string name="cycle_mood_irritable">Раздражение</string>
+    <string name="cycle_mood_anxious">Тревожно</string>
+    <string name="cycle_mood_energetic">Энергично</string>
+
+    <string-array name="cycle_weekdays">
+        <item>Пн</item>
+        <item>Вт</item>
+        <item>Ср</item>
+        <item>Чт</item>
+        <item>Пт</item>
+        <item>Сб</item>
+        <item>Вс</item>
+    </string-array>
+
+    <string-array name="cycle_tips_period">
+        <item>Тепло и покой</item>
+        <item>Больше железа</item>
+        <item>Лёгкое движение</item>
+    </string-array>
+
+    <string-array name="cycle_tips_period_text">
+        <item>Грелка на живот и тёплый чай расслабляют мышцы и уменьшают спазмы.</item>
+        <item>Гречка, печень, гранат и зелень поддержат силы в дни потери крови.</item>
+        <item>Прогулка или растяжка снимают боль лучше, чем полный покой.</item>
+    </string-array>
+
+    <string-array name="cycle_tips_follicular">
+        <item>Энергия растёт</item>
+        <item>Больше белка</item>
+        <item>Планы на двоих</item>
+    </string-array>
+
+    <string-array name="cycle_tips_follicular_text">
+        <item>Первая половина цикла — лучшее время для новых дел и тренировок.</item>
+        <item>Белок и овощи помогут восстановиться после месячных.</item>
+        <item>Договоритесь о совместных выходных, пока сил больше всего.</item>
+    </string-array>
+
+    <string-array name="cycle_tips_ovulation">
+        <item>Пик сил</item>
+        <item>Вода и клетчатка</item>
+        <item>Больше тепла</item>
+    </string-array>
+
+    <string-array name="cycle_tips_ovulation_text">
+        <item>Овуляция часто совпадает с максимумом энергии — используйте это.</item>
+        <item>Так меньше отёков и легче пищеварение.</item>
+        <item>Обнимайтесь: в эти дни близость особенно приятна.</item>
+    </string-array>
+
+    <string-array name="cycle_tips_luteal">
+        <item>Магний и сон</item>
+        <item>Берегите себя</item>
+        <item>Меньше соли</item>
+    </string-array>
+
+    <string-array name="cycle_tips_luteal_text">
+        <item>Орехи и зелень плюс восемь часов сна сглаживают перепады настроения.</item>
+        <item>ПМС — это гормоны, а не характер. Снизьте темп без вины.</item>
+        <item>Соль задерживает воду — отсюда отёки и тяжесть.</item>
+    </string-array>
+</resources>

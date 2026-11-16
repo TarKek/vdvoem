@@ -11,6 +11,7 @@ import app.vdvoem.feature.settings.SettingsViewModel
 import app.vdvoem.feature.store.StoreModule
 import app.vdvoem.feature.timetable.TimetableModule
 import app.vdvoem.feature.notes.NotesModule
+import app.vdvoem.feature.cycle.CycleModule
 import app.vdvoem.feature.wishes.WishesViewModel
 import app.vdvoem.data.HomePreferences
 import app.vdvoem.notify.PokeNotifier
@@ -40,6 +41,7 @@ val appKoinModule = module {
                 get<QuizzesModule>(),
                 get<TimetableModule>(),
                 get<NotesModule>(),
+                get<CycleModule>(),
                 get<StoreModule>()
             )
         )
@@ -52,6 +54,7 @@ val appKoinModule = module {
             wishRepository = get(),
             giftRepository = get(),
             pokeRepository = get(),
+            cycleRepository = get(),
             deviceIdentity = get()
         )
     }
@@ -70,7 +73,8 @@ val appKoinModule = module {
             giftRepository = get(),
             pokeRepository = get(),
             quizScoreRepository = get(),
-            lessonRepository = get()
+            lessonRepository = get(),
+            cycleRepository = get()
         )
     }
 }

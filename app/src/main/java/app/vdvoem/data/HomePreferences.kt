@@ -164,6 +164,7 @@ class HomePreferences(private val context: Context) {
         const val WIDGET_GIFTS = "gifts"
         const val WIDGET_TESTS = "tests"
         const val WIDGET_MODULES = "modules"
+        const val WIDGET_CYCLE = "cycle"
 
         val ALL_WIDGETS = listOf(
             WIDGET_COUNTDOWN,
@@ -171,7 +172,8 @@ class HomePreferences(private val context: Context) {
             WIDGET_WISHES,
             WIDGET_GIFTS,
             WIDGET_TESTS,
-            WIDGET_MODULES
+            WIDGET_MODULES,
+            WIDGET_CYCLE
         )
 
         val DEFAULT_WIDGETS = listOf(

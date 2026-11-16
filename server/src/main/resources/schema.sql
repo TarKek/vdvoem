@@ -100,6 +100,38 @@ CREATE TABLE IF NOT EXISTS lessons (
 );
 CREATE INDEX IF NOT EXISTS idx_lessons_pair_updated ON lessons (pair_id, updated_at);
 
+-- Трекер менструального цикла пары: дни и настройки.
+-- id здесь TEXT, а не UUID: если клиент принесёт id не в формате UUID (например, из
+-- файла резервной копии), приведение типа не сорвёт весь push.
+-- symptoms — TEXT[]: в JSON API это обычный массив строковых ключей.
+CREATE TABLE IF NOT EXISTS cycle_days (
+    id          TEXT PRIMARY KEY,
+    pair_id     UUID NOT NULL REFERENCES pairs (id) ON DELETE CASCADE,
+    date_millis BIGINT NOT NULL,
+    period      BOOLEAN NOT NULL DEFAULT FALSE,
+    flow        TEXT NOT NULL DEFAULT 'NONE',
+    symptoms    TEXT[] NOT NULL DEFAULT '{}',
+    mood        TEXT NOT NULL DEFAULT '',
+    weight      REAL,
+    note        TEXT NOT NULL DEFAULT '',
+    updated_at  BIGINT NOT NULL,
+    deleted_at  BIGINT
+);
+
+CREATE INDEX IF NOT EXISTS idx_cycle_days_pair_updated ON cycle_days (pair_id, updated_at);
+CREATE INDEX IF NOT EXISTS idx_cycle_days_pair_date ON cycle_days (pair_id, date_millis);
+
+CREATE TABLE IF NOT EXISTS cycle_settings (
+    id            TEXT PRIMARY KEY,
+    pair_id       UUID NOT NULL REFERENCES pairs (id) ON DELETE CASCADE,
+    cycle_length  INT NOT NULL DEFAULT 28,
+    period_length INT NOT NULL DEFAULT 5,
+    updated_at    BIGINT NOT NULL,
+    deleted_at    BIGINT
+);
+
+CREATE INDEX IF NOT EXISTS idx_cycle_settings_pair_updated ON cycle_settings (pair_id, updated_at);
+
 -- Вложения (фото, видео, голосовые): метаданные синкаются, файл лежит на диске по storage_key.
 CREATE TABLE IF NOT EXISTS attachments (
     id          UUID PRIMARY KEY,

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.vdvoem.core.domain.repository.CalendarRepository
 import app.vdvoem.core.domain.repository.GiftRepository
+import app.vdvoem.core.domain.repository.CycleRepository
 import app.vdvoem.core.domain.repository.LessonRepository
 import app.vdvoem.core.domain.repository.PairRepository
 import app.vdvoem.core.domain.repository.PokeRepository
@@ -30,7 +31,8 @@ class BackupViewModel(
     private val giftRepository: GiftRepository,
     private val pokeRepository: PokeRepository,
     private val quizScoreRepository: QuizScoreRepository,
-    private val lessonRepository: LessonRepository
+    private val lessonRepository: LessonRepository,
+    private val cycleRepository: CycleRepository
 ) : ViewModel() {
 
     suspend fun buildExport(): String = withContext(Dispatchers.IO) {
@@ -42,7 +44,9 @@ class BackupViewModel(
                 gifts = giftRepository.observeGifts().first(),
                 pokes = pokeRepository.observe().first(),
                 quizScores = quizScoreRepository.observe().first(),
-                lessons = lessonRepository.observe().first()
+                lessons = lessonRepository.observe().first(),
+                cycleDays = cycleRepository.observeDaysIncludingDeleted().first(),
+                cycleSettings = cycleRepository.observeSettings().first()
             )
         )
     }
@@ -62,6 +66,8 @@ class BackupViewModel(
         snapshot.pokes.forEach { pokeRepository.save(it) }
         snapshot.quizScores.forEach { quizScoreRepository.save(it) }
         snapshot.lessons.forEach { lessonRepository.save(it) }
+        snapshot.cycleDays.forEach { cycleRepository.saveDay(it) }
+        snapshot.cycleSettings?.let { cycleRepository.saveSettings(it) }
 
         ImportResult(
             ok = true,

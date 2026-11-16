@@ -32,5 +32,7 @@ internal fun ChangesDto.maxUpdatedAt(): Long = (
         gifts.map { it.updatedAt } +
         pokes.map { it.updatedAt } +
         quizScores.map { it.updatedAt } +
-        lessons.map { it.updatedAt }
+        lessons.map { it.updatedAt } +
+        cycleDays.map { it.updatedAt } +
+        cycleSettings.map { it.updatedAt }
     ).maxOrNull() ?: 0L

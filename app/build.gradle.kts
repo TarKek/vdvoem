@@ -27,8 +27,8 @@ android {
         applicationId = "app.vdvoem"
         minSdk = 26
         targetSdk = 35
-        versionCode = 19
-        versionName = "0.9.0"
+        versionCode = 20
+        versionName = "0.10.0"
     }
 
     signingConfigs {
@@ -89,6 +89,8 @@ dependencies {
     implementation("io.insert-koin:koin-androidx-compose:4.0.0")
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
+    // Системный виджет на главном экране (Glance, CYCLE_SPEC §7).
+    implementation("androidx.glance:glance-appwidget:1.1.1")
 
     implementation(project(":core:ui"))
     implementation(project(":core:domain"))
@@ -102,6 +104,7 @@ dependencies {
     implementation(project(":feature:quizzes"))
     implementation(project(":feature:timetable"))
     implementation(project(":feature:notes"))
+    implementation(project(":feature:cycle"))
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 

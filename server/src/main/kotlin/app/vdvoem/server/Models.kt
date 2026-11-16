@@ -71,7 +71,9 @@ data class ChangesDto(
     val gifts: List<GiftDto> = emptyList(),
     val pokes: List<PokeDto> = emptyList(),
     @SerialName("quizScores") val quizScores: List<QuizScoreDto> = emptyList(),
-    val lessons: List<LessonDto> = emptyList()
+    val lessons: List<LessonDto> = emptyList(),
+    @SerialName("cycleDays") val cycleDays: List<CycleDayDto> = emptyList(),
+    @SerialName("cycleSettings") val cycleSettings: List<CycleSettingsDto> = emptyList()
 )
 
 @Serializable
@@ -94,6 +96,36 @@ data class QuizScoreDto(
     val percent: Int,
     @SerialName("passedAt") val passedAt: Long,
     @SerialName("updatedAt") val updatedAt: Long,
+    @SerialName("deletedAt") val deletedAt: Long? = null
+)
+
+/**
+ * День трекера цикла.
+ *
+ * `symptoms` — массив стабильных ключей (`cramps`, `headache`, …): в JSON обычный
+ * массив, в PostgreSQL `TEXT[]`. `flow` — имя перечисления (NONE/LIGHT/MEDIUM/HEAVY).
+ */
+@Serializable
+data class CycleDayDto(
+    val id: String,
+    @SerialName("dateMillis") val dateMillis: Long = 0,
+    val period: Boolean = false,
+    val flow: String = "NONE",
+    val symptoms: List<String> = emptyList(),
+    val mood: String = "",
+    val weight: Float? = null,
+    val note: String = "",
+    @SerialName("updatedAt") val updatedAt: Long = 0,
+    @SerialName("deletedAt") val deletedAt: Long? = null
+)
+
+/** Ожидания пары по циклу: одна запись на пару, `id` совпадает с `pairId`. */
+@Serializable
+data class CycleSettingsDto(
+    val id: String,
+    @SerialName("cycleLength") val cycleLength: Int = 28,
+    @SerialName("periodLength") val periodLength: Int = 5,
+    @SerialName("updatedAt") val updatedAt: Long = 0,
     @SerialName("deletedAt") val deletedAt: Long? = null
 )
 

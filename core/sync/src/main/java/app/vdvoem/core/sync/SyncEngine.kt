@@ -2,6 +2,8 @@ package app.vdvoem.core.sync
 
 import app.vdvoem.core.data.LocalChangeSignal
 import app.vdvoem.core.domain.model.CalendarEvent
+import app.vdvoem.core.domain.model.CycleDay
+import app.vdvoem.core.domain.model.CycleSettings
 import app.vdvoem.core.domain.model.Gift
 import app.vdvoem.core.domain.model.Lesson
 import app.vdvoem.core.domain.model.Pair
@@ -9,6 +11,7 @@ import app.vdvoem.core.domain.model.Poke
 import app.vdvoem.core.domain.model.QuizScore
 import app.vdvoem.core.domain.model.Wish
 import app.vdvoem.core.domain.repository.CalendarRepository
+import app.vdvoem.core.domain.repository.CycleRepository
 import app.vdvoem.core.domain.repository.GiftRepository
 import app.vdvoem.core.domain.repository.LessonRepository
 import app.vdvoem.core.domain.repository.PairRepository
@@ -47,6 +50,7 @@ class SyncEngine(
     private val pokeRepository: PokeRepository,
     private val quizScoreRepository: QuizScoreRepository,
     private val lessonRepository: LessonRepository,
+    private val cycleRepository: CycleRepository,
     private val statusHolder: SyncStatusHolder,
     /** Колбэк «пришло новое сердечко от партнёра»: уведомление рисует слой приложения. */
     private val pokeReceiver: suspend (List<Poke>) -> Unit = {}
@@ -92,6 +96,8 @@ class SyncEngine(
 
             applied += applyQuizScores(remote.quizScores, pairId)
             applied += applyLessons(remote.lessons, pairId)
+            applied += applyCycleDays(remote.cycleDays, pairId)
+            applied += applyCycleSettings(remote.cycleSettings, pairId)
 
             var pushed = 0
             if (!outgoing.isEmpty) {
@@ -109,6 +115,8 @@ class SyncEngine(
 
                 applied += applyQuizScores(response.quizScores, pairId)
                 applied += applyLessons(response.lessons, pairId)
+                applied += applyCycleDays(response.cycleDays, pairId)
+                applied += applyCycleSettings(response.cycleSettings, pairId)
 
                 // Отмечаем, что именно уже уехало: следующая отправка считается
                 // не от серверного времени, а от локального «водяного знака».
@@ -232,6 +240,36 @@ class SyncEngine(
         return applied
     }
 
+    /** Применяет дни цикла партнёра; tombstone важнее старых локальных копий. */
+    private suspend fun applyCycleDays(remote: List<CycleDayDto>, pairId: String): Int {
+        if (remote.isEmpty()) return 0
+        val localById = cycleRepository.observeDaysIncludingDeleted().first().associateBy { it.id }
+        var applied = 0
+        remote.forEach { dto ->
+            val local = localById[dto.id]
+            if (shouldApplyRemote(local?.updatedAt, local?.deletedAt, dto.updatedAt)) {
+                cycleRepository.saveDay(dto.toDomain(fallbackPairId = pairId))
+                applied++
+            }
+        }
+        return applied
+    }
+
+    /** Применяет настройки цикла пары; запись одна, конфликт решается по `updatedAt`. */
+    private suspend fun applyCycleSettings(remote: List<CycleSettingsDto>, pairId: String): Int {
+        if (remote.isEmpty()) return 0
+        val localById = cycleRepository.observeSettingsIncludingDeleted().first().associateBy { it.id }
+        var applied = 0
+        remote.forEach { dto ->
+            val local = localById[dto.id]
+            if (shouldApplyRemote(local?.updatedAt, local?.deletedAt, dto.updatedAt)) {
+                cycleRepository.saveSettings(dto.toDomain(fallbackPairId = pairId))
+                applied++
+            }
+        }
+        return applied
+    }
+
     // --- сбор локальных изменений ---
 
     private suspend fun collectLocalChanges(pushedBefore: Long): ChangesDto {
@@ -248,6 +286,10 @@ class SyncEngine(
             .filter { it.updatedAt > pushedBefore }
         val lessons: List<Lesson> = lessonRepository.observe().first()
             .filter { it.updatedAt > pushedBefore }
+        val cycleDays: List<CycleDay> = cycleRepository.observeDaysIncludingDeleted().first()
+            .filter { it.updatedAt > pushedBefore }
+        val cycleSettings: List<CycleSettings> = cycleRepository.observeSettingsIncludingDeleted().first()
+            .filter { it.updatedAt > pushedBefore }
 
         return ChangesDto(
             pair = localPair?.toDto(),
@@ -256,7 +298,9 @@ class SyncEngine(
             gifts = gifts.map { it.toDto() },
             pokes = pokes.map { it.toDto() },
             quizScores = quizScores.map { it.toDto() },
-            lessons = lessons.map { it.toDto() }
+            lessons = lessons.map { it.toDto() },
+            cycleDays = cycleDays.map { it.toDto() },
+            cycleSettings = cycleSettings.map { it.toDto() }
         )
     }
 

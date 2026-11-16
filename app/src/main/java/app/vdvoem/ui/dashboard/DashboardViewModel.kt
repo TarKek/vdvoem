@@ -5,7 +5,10 @@ import androidx.lifecycle.viewModelScope
 import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.model.Pair
 import app.vdvoem.core.domain.model.Poke
+import app.vdvoem.core.domain.cycle.CycleStats
+import app.vdvoem.core.domain.cycle.buildForecast
 import app.vdvoem.core.domain.repository.CalendarRepository
+import app.vdvoem.core.domain.repository.CycleRepository
 import app.vdvoem.core.domain.repository.GiftRepository
 import app.vdvoem.core.domain.repository.PairRepository
 import app.vdvoem.core.domain.repository.PokeRepository
@@ -26,7 +29,9 @@ data class DashboardUiState(
     val wishCount: Int = 0,
     val giftCount: Int = 0,
     val lastPoke: Poke? = null,
-    val pokes: List<Poke> = emptyList()
+    val pokes: List<Poke> = emptyList(),
+    /** Прогноз цикла для карточки-виджета; null, если данных ещё нет. */
+    val cycleStats: CycleStats? = null
 )
 
 class DashboardViewModel(
@@ -35,8 +40,18 @@ class DashboardViewModel(
     private val wishRepository: WishRepository,
     private val giftRepository: GiftRepository,
     private val pokeRepository: PokeRepository,
+    private val cycleRepository: CycleRepository,
     private val deviceIdentity: DeviceIdentity
 ) : ViewModel() {
+
+    /** Прогноз цикла отдельным потоком: он не должен пересчитывать всю «Главную». */
+    private val cycleFlow = combine(
+        cycleRepository.observeDays(),
+        cycleRepository.observeSettings()
+    ) { days, settings ->
+        // Без настроек считаем по умолчанию (28/5) — так же, как экран «Цикл».
+        buildForecast(days, settings, Dates.today())
+    }
 
     val state = combine(
         pairRepository.observe(),
@@ -69,6 +84,8 @@ class DashboardViewModel(
             lastPoke = pokes.firstOrNull(),
             pokes = pokes
         )
+    }.combine(cycleFlow) { dashboard, cycle ->
+        dashboard.copy(cycleStats = cycle)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),

@@ -3,6 +3,8 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
@@ -33,6 +35,25 @@
                 <action android:name="app.vdvoem.INSTALL_RESULT" />
             </intent-filter>
         </receiver>
+
+        <!-- Системный виджет «Цикл» (Glance): день, фаза, прогноз. -->
+        <receiver
+            android:name=".widget.CycleWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_cycle_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/cycle_widget_info" />
+        </receiver>
+
+        <!-- Мгновенный пуш партнёру: WebSocket + постоянное уведомление (CYCLE_SPEC §8). -->
+        <service
+            android:name=".push.PushService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
     </application>
 
 </manifest>

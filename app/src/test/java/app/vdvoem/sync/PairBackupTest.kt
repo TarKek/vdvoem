@@ -1,6 +1,9 @@
 package app.vdvoem.sync
 
 import app.vdvoem.core.domain.model.CalendarEvent
+import app.vdvoem.core.domain.model.CycleDay
+import app.vdvoem.core.domain.model.CycleSettings
+import app.vdvoem.core.domain.model.Flow
 import app.vdvoem.core.domain.model.Gift
 import app.vdvoem.core.domain.model.GiftStatus
 import app.vdvoem.core.domain.model.Lesson
@@ -27,7 +30,9 @@ class PairBackupTest {
         gifts: List<Gift> = emptyList(),
         pokes: List<Poke> = emptyList(),
         quizScores: List<QuizScore> = emptyList(),
-        lessons: List<Lesson> = emptyList()
+        lessons: List<Lesson> = emptyList(),
+        cycleDays: List<CycleDay> = emptyList(),
+        cycleSettings: CycleSettings? = null
     ) = PairBackup.Snapshot(
         pair = pair,
         events = events,
@@ -35,7 +40,9 @@ class PairBackupTest {
         gifts = gifts,
         pokes = pokes,
         quizScores = quizScores,
-        lessons = lessons
+        lessons = lessons,
+        cycleDays = cycleDays,
+        cycleSettings = cycleSettings
     )
 
     @Test
@@ -413,6 +420,115 @@ class PairBackupTest {
         assertEquals(original, restored)
         assertEquals(1_700_000_000_030L, restored?.wishes?.single()?.deletedAt)
         assertEquals(1_700_000_000_031L, restored?.gifts?.single()?.deletedAt)
+    }
+
+    @Test
+    fun `cycle days and settings survive round trip`() {
+        val original = snapshot(
+            cycleDays = listOf(
+                CycleDay(
+                    id = "day-1",
+                    pairId = "pair",
+                    dateMillis = 1_762_000_000_000L,
+                    period = true,
+                    flow = Flow.MEDIUM,
+                    symptoms = listOf("cramps", "headache"),
+                    mood = "irritable",
+                    weight = 61.4f,
+                    note = "тяжело",
+                    updatedAt = 1_762_000_000_100L
+                ),
+                CycleDay(
+                    id = "day-2",
+                    pairId = "pair",
+                    dateMillis = 1_762_086_400_000L,
+                    updatedAt = 1_762_000_000_200L,
+                    deletedAt = 1_762_000_000_200L
+                )
+            ),
+            cycleSettings = CycleSettings(
+                id = "pair",
+                pairId = "pair",
+                cycleLength = 30,
+                periodLength = 6,
+                updatedAt = 1_762_000_000_300L
+            )
+        )
+
+        val restored = PairBackup.parse(PairBackup.export(original))
+
+        assertEquals(original, restored)
+        val day = restored?.cycleDays?.first()
+        assertEquals(Flow.MEDIUM, day?.flow)
+        assertEquals(listOf("cramps", "headache"), day?.symptoms)
+        assertEquals("irritable", day?.mood)
+        assertEquals(61.4f, day?.weight)
+        assertEquals("тяжело", day?.note)
+        assertEquals(1_762_000_000_200L, restored?.cycleDays?.last()?.deletedAt)
+        assertEquals(30, restored?.cycleSettings?.cycleLength)
+        assertEquals(6, restored?.cycleSettings?.periodLength)
+    }
+
+    @Test
+    fun `cycle data counts towards the import total`() {
+        val original = snapshot(
+            cycleDays = listOf(CycleDay(id = "d1", pairId = "pair", dateMillis = 1L)),
+            cycleSettings = CycleSettings(id = "pair", pairId = "pair")
+        )
+
+        assertEquals(2, original.total)
+        assertEquals(2, PairBackup.parse(PairBackup.export(original))?.total)
+    }
+
+    @Test
+    fun `old file without cycle data imports with empty defaults`() {
+        val raw = """
+            {
+              "version": 1,
+              "events": [
+                {"id": "e1", "pairId": "p1", "title": "Годовщина", "dateMillis": 1650000000000, "annual": true, "updatedAt": 1700000000001}
+              ]
+            }
+        """.trimIndent()
+
+        val restored = PairBackup.parse(raw)
+
+        assertEquals(emptyList(), restored?.cycleDays)
+        assertNull(restored?.cycleSettings)
+        assertEquals(1, restored?.events?.size)
+    }
+
+    @Test
+    fun `cycle records tolerate missing fields`() {
+        val raw = """
+            {
+              "version": 1,
+              "cycleDays": [
+                {"id": "d1"}
+              ],
+              "cycleSettings": {
+                "id": "pair"
+              }
+            }
+        """.trimIndent()
+
+        val restored = PairBackup.parse(raw)
+
+        val day = restored?.cycleDays?.single()
+        assertEquals("", day?.pairId)
+        assertEquals(0L, day?.dateMillis)
+        assertEquals(false, day?.period)
+        assertEquals(Flow.NONE, day?.flow)
+        assertEquals(emptyList(), day?.symptoms)
+        assertEquals("", day?.mood)
+        assertNull(day?.weight)
+        assertNull(day?.deletedAt)
+
+        val settings = restored?.cycleSettings
+        assertEquals(28, settings?.cycleLength)
+        assertEquals(5, settings?.periodLength)
+        assertEquals("", settings?.pairId)
+        assertNull(settings?.deletedAt)
     }
 
     @Test

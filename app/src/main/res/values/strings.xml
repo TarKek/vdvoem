@@ -95,6 +95,8 @@
     <string name="widget_gifts_description">Сколько подарков запланировано</string>
     <string name="widget_tests_description">Быстрый вход в тесты для двоих</string>
     <string name="widget_modules_description">Сколько модулей включено</string>
+    <string name="widget_cycle_title">Цикл</string>
+    <string name="widget_cycle_no_data">Нет данных</string>
     <string name="widget_picker_title">Виджеты на главной</string>
     <string name="widget_picker_text">Добавляйте виджеты, меняйте их порядок и настраивайте каждый счётчик отдельно.</string>
     <string name="widget_picker_done">Готово</string>
@@ -229,4 +231,24 @@
     <string name="nav_sheet_text">Два раздела между «Главной» и «Ещё». Отметь не больше двух — новый выбор заменит самый старый, остальные модули останутся здесь, в «Ещё».</string>
     <string name="nav_sheet_done">Готово</string>
     <string name="more_sync_connected_text">Пара подключена: данные общие на двух телефонах</string>
+
+    <string name="push_service_title">Вдвоём: синхронизация</string>
+    <string name="push_service_text">Обновления от партнёра приходят сразу</string>
+    <string name="push_service_channel">Связь с партнёром</string>
+    <string name="push_service_channel_text">Постоянное уведомление, пока телефон на связи с партнёром</string>
+
+    <!-- Системный виджет «Цикл» (Glance). -->
+    <string name="widget_cycle_label">Цикл</string>
+    <string name="widget_cycle_description">День цикла, фаза и прогноз месячных</string>
+    <string name="widget_cycle_day">%1$d-й день</string>
+    <string name="widget_cycle_phase_period">Месячные</string>
+    <string name="widget_cycle_phase_follicular">Фолликулярная фаза</string>
+    <string name="widget_cycle_phase_ovulation">Овуляция</string>
+    <string name="widget_cycle_phase_luteal">Лютеиновая фаза</string>
+    <string name="widget_cycle_until_period">Месячные через %1$d дн.</string>
+    <string name="widget_cycle_until_short">через %1$d дн.</string>
+    <string name="widget_cycle_period_now">Месячные идут</string>
+    <string name="widget_cycle_period_today">Месячные ожидаются сегодня</string>
+    <string name="widget_cycle_late">Задержка %1$d дн.</string>
+    <string name="widget_cycle_empty">Отметь месячные в приложении</string>
 </resources>

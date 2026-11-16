@@ -77,6 +77,8 @@ import app.vdvoem.core.ui.components.SectionHeader
 import app.vdvoem.core.ui.components.VdvoemCard
 import app.vdvoem.core.ui.theme.VdvoemSizes
 import app.vdvoem.core.ui.theme.VdvoemSpacing
+import app.vdvoem.core.domain.cycle.CyclePhase
+import app.vdvoem.core.domain.cycle.CycleStats
 import app.vdvoem.data.CountdownConfig
 import app.vdvoem.data.HomePreferences
 import app.vdvoem.data.HomeWidget
@@ -99,6 +101,7 @@ fun DashboardScreen(
     lastPoke: String?,
     pokes: List<Poke> = emptyList(),
     sentPokeIds: Set<String> = emptySet(),
+    cycleStats: CycleStats? = null,
     refreshing: Boolean = false,
     onRefresh: () -> Unit = {},
     onWidgetsChange: (List<HomeWidget>) -> Unit,
@@ -109,6 +112,7 @@ fun DashboardScreen(
     onOpenWishes: () -> Unit,
     onOpenGifts: () -> Unit,
     onOpenQuizzes: () -> Unit,
+    onOpenCycle: () -> Unit,
     onOpenPairEditor: () -> Unit,
     onOpenCalendar: () -> Unit,
     modifier: Modifier = Modifier
@@ -184,6 +188,8 @@ fun DashboardScreen(
                 wishCount = wishCount,
                 giftCount = giftCount,
                 enabledModules = modules.size,
+                cycleStats = cycleStats,
+                onOpenCycle = onOpenCycle,
                 onOpenCalendar = onOpenCalendar,
                 onOpenWishes = onOpenWishes,
                 onOpenGifts = onOpenGifts,
@@ -481,6 +487,8 @@ private fun WidgetGrid(
     wishCount: Int,
     giftCount: Int,
     enabledModules: Int,
+    cycleStats: CycleStats?,
+    onOpenCycle: () -> Unit,
     onOpenCalendar: () -> Unit,
     onOpenWishes: () -> Unit,
     onOpenGifts: () -> Unit,
@@ -579,6 +587,35 @@ private fun WidgetGrid(
                             onClick = onOpenQuizzes,
                             modifier = Modifier.weight(1f)
                         )
+                        HomePreferences.WIDGET_CYCLE -> {
+                            val info = cycleStats?.takeIf { it.lastPeriodStart != null }
+                            val caption = if (info == null) null else {
+                                val until = info.daysUntilNextPeriod ?: 0L
+                                when {
+                                    info.isLate -> stringResource(
+                                        R.string.widget_cycle_late,
+                                        (-until).toInt().coerceAtLeast(1)
+                                    )
+                                    until <= 0L -> stringResource(R.string.widget_cycle_period_now)
+                                    else -> stringResource(
+                                        R.string.widget_cycle_until_short,
+                                        until.toInt()
+                                    )
+                                }
+                            }
+                            WidgetCard(
+                                icon = Icons.Filled.Favorite,
+                                title = stringResource(R.string.widget_cycle_title),
+                                value = when {
+                                    info == null -> stringResource(R.string.widget_cycle_no_data)
+                                    else -> stringResource(R.string.widget_cycle_day, info.currentDay)
+                                },
+                                onClick = onOpenCycle,
+                                caption = caption,
+                                highlight = true,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                         HomePreferences.WIDGET_MODULES -> WidgetCard(
                             icon = Icons.Filled.Star,
                             title = stringResource(R.string.dashboard_modules_title),
@@ -692,6 +729,7 @@ private fun widgetAvailable(type: String, enabledRoutes: Set<String>): Boolean =
     HomePreferences.WIDGET_WISHES, HomePreferences.WIDGET_GIFTS ->
         PresentsModule.ROUTE in enabledRoutes
     HomePreferences.WIDGET_TESTS -> "quizzes" in enabledRoutes
+    HomePreferences.WIDGET_CYCLE -> "cycle" in enabledRoutes
     else -> true
 }
 
@@ -732,6 +770,12 @@ private val widgetCatalog = listOf(
         R.string.dashboard_tests_card,
         R.string.widget_tests_description,
         Icons.Filled.Star
+    ),
+    WidgetEntry(
+        HomePreferences.WIDGET_CYCLE,
+        R.string.widget_cycle_title,
+        R.string.widget_cycle_description,
+        Icons.Filled.Favorite
     ),
     WidgetEntry(
         HomePreferences.WIDGET_MODULES,

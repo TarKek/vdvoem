@@ -18,12 +18,14 @@ data class ChangesDto(
     val pokes: List<PokeDto> = emptyList(),
     val quizScores: List<QuizScoreDto> = emptyList(),
     val lessons: List<LessonDto> = emptyList(),
+    val cycleDays: List<CycleDayDto> = emptyList(),
+    val cycleSettings: List<CycleSettingsDto> = emptyList(),
     /** Серверное время ответа — из него берётся следующий `since`. */
     val serverTime: Long = 0L
 ) {
     val size: Int
         get() = (if (pair != null) 1 else 0) + events.size + wishes.size + gifts.size + pokes.size +
-            quizScores.size + lessons.size
+            quizScores.size + lessons.size + cycleDays.size + cycleSettings.size
 
     val isEmpty: Boolean
         get() = size == 0
@@ -116,6 +118,34 @@ data class LessonDto(
     val endMinute: Int = 0,
     val room: String = "",
     val teacher: String = "",
+    val updatedAt: Long = 0L,
+    val deletedAt: Long? = null,
+    val pairId: String? = null
+)
+
+/** День трекера цикла. `symptoms` уходит обычным JSON-массивом строковых ключей. */
+@Serializable
+data class CycleDayDto(
+    val id: String,
+    val dateMillis: Long = 0L,
+    val period: Boolean = false,
+    /** Имя `Flow`: NONE, LIGHT, MEDIUM, HEAVY. */
+    val flow: String = "NONE",
+    val symptoms: List<String> = emptyList(),
+    val mood: String = "",
+    val weight: Float? = null,
+    val note: String = "",
+    val updatedAt: Long = 0L,
+    val deletedAt: Long? = null,
+    val pairId: String? = null
+)
+
+/** Ожидания пары по циклу: одна запись на пару, `id` = `pairId`. */
+@Serializable
+data class CycleSettingsDto(
+    val id: String,
+    val cycleLength: Int = 28,
+    val periodLength: Int = 5,
     val updatedAt: Long = 0L,
     val deletedAt: Long? = null,
     val pairId: String? = null

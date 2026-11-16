@@ -407,11 +407,13 @@ fun VdvoemRoot(
                         openTab(PresentsModule.ROUTE)
                     },
                     onOpenQuizzes = { openTab("quizzes") },
+                    onOpenCycle = { openTab("cycle") },
                     onOpenPairEditor = { pairDialogOpen = true },
                     widgets = widgets,
                     lastPoke = lastPoke,
                     pokes = dashboardState.pokes,
                     sentPokeIds = sentPokeIds,
+                    cycleStats = dashboardState.cycleStats,
                     refreshing = syncing,
                     onRefresh = { syncController.syncInBackground() },
                     onWidgetsChange = { list ->

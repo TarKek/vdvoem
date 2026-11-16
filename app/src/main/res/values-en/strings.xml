@@ -89,6 +89,8 @@
     <string name="widget_gifts_description">How many gifts are planned</string>
     <string name="widget_tests_description">Quick access to quizzes for two</string>
     <string name="widget_modules_description">How many modules are on</string>
+    <string name="widget_cycle_title">Cycle</string>
+    <string name="widget_cycle_no_data">No data</string>
     <string name="widget_picker_title">Widgets on Home</string>
     <string name="widget_picker_text">Add widgets, reorder them and tune each counter separately.</string>
     <string name="widget_picker_done">Done</string>
@@ -215,4 +217,24 @@
     <string name="nav_sheet_text">Two sections between Home and More. Pick up to two — a new pick replaces the oldest, and the other modules stay here in More.</string>
     <string name="nav_sheet_done">Done</string>
     <string name="more_sync_connected_text">Couple connected: data is shared on two phones</string>
+
+    <string name="push_service_title">Vdvoem: sync</string>
+    <string name="push_service_text">Partner updates arrive instantly</string>
+    <string name="push_service_channel">Connection to partner</string>
+    <string name="push_service_channel_text">Stays visible while the phone is connected to your partner</string>
+
+    <!-- Cycle home-screen widget (Glance). -->
+    <string name="widget_cycle_label">Cycle</string>
+    <string name="widget_cycle_description">Cycle day, phase and period forecast</string>
+    <string name="widget_cycle_day">Day %1$d</string>
+    <string name="widget_cycle_phase_period">Period</string>
+    <string name="widget_cycle_phase_follicular">Follicular phase</string>
+    <string name="widget_cycle_phase_ovulation">Ovulation</string>
+    <string name="widget_cycle_phase_luteal">Luteal phase</string>
+    <string name="widget_cycle_until_period">Period in %1$d d.</string>
+    <string name="widget_cycle_until_short">in %1$d d.</string>
+    <string name="widget_cycle_period_now">Period is on</string>
+    <string name="widget_cycle_period_today">Period expected today</string>
+    <string name="widget_cycle_late">%1$d d. late</string>
+    <string name="widget_cycle_empty">Log your period in the app</string>
 </resources>

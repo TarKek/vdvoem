@@ -2,6 +2,7 @@ package app.vdvoem.core.data.db
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
@@ -13,11 +14,14 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         GiftEntity::class,
         PokeEntity::class,
         QuizScoreEntity::class,
-        LessonEntity::class
+        LessonEntity::class,
+        CycleDayEntity::class,
+        CycleSettingsEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
+@TypeConverters(CycleConverters::class)
 abstract class VdvoemDatabase : RoomDatabase() {
     abstract fun pairDao(): PairDao
     abstract fun eventDao(): EventDao
@@ -26,6 +30,8 @@ abstract class VdvoemDatabase : RoomDatabase() {
     abstract fun pokeDao(): PokeDao
     abstract fun quizScoreDao(): QuizScoreDao
     abstract fun lessonDao(): LessonDao
+    abstract fun cycleDayDao(): CycleDayDao
+    abstract fun cycleSettingsDao(): CycleSettingsDao
 
     companion object {
         const val NAME = "vdvoem.db"
@@ -149,6 +155,48 @@ abstract class VdvoemDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE `wishes` ADD COLUMN `surprise` INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE `wishes` ADD COLUMN `owner_device_id` TEXT NOT NULL DEFAULT ''")
                 db.execSQL("ALTER TABLE `gifts` ADD COLUMN `wish_id` TEXT")
+            }
+        }
+
+        /**
+         * v7 → v8: трекер цикла — дни и настройки пары.
+         *
+         * Дефолты колонок обязаны совпадать с `@ColumnInfo(defaultValue = …)`
+         * в [CycleDayEntity] и [CycleSettingsEntity].
+         */
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `cycle_days` (
+                        `id` TEXT NOT NULL,
+                        `pairId` TEXT NOT NULL,
+                        `dateMillis` INTEGER NOT NULL,
+                        `period` INTEGER NOT NULL DEFAULT 0,
+                        `flow` TEXT NOT NULL DEFAULT 'NONE',
+                        `symptoms` TEXT NOT NULL DEFAULT '',
+                        `mood` TEXT NOT NULL DEFAULT '',
+                        `weight` REAL,
+                        `note` TEXT NOT NULL DEFAULT '',
+                        `updatedAt` INTEGER NOT NULL,
+                        `deletedAt` INTEGER,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `cycle_settings` (
+                        `id` TEXT NOT NULL,
+                        `pairId` TEXT NOT NULL,
+                        `cycleLength` INTEGER NOT NULL DEFAULT 28,
+                        `periodLength` INTEGER NOT NULL DEFAULT 5,
+                        `updatedAt` INTEGER NOT NULL,
+                        `deletedAt` INTEGER,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
             }
         }
     }

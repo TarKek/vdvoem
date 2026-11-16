@@ -1,6 +1,9 @@
 package app.vdvoem.sync
 
 import app.vdvoem.core.domain.model.CalendarEvent
+import app.vdvoem.core.domain.model.CycleDay
+import app.vdvoem.core.domain.model.CycleSettings
+import app.vdvoem.core.domain.model.Flow
 import app.vdvoem.core.domain.model.Gift
 import app.vdvoem.core.domain.model.GiftStatus
 import app.vdvoem.core.domain.model.Lesson
@@ -30,11 +33,14 @@ object PairBackup {
         val gifts: List<Gift>,
         val pokes: List<Poke> = emptyList(),
         val quizScores: List<QuizScore> = emptyList(),
-        val lessons: List<Lesson> = emptyList()
+        val lessons: List<Lesson> = emptyList(),
+        val cycleDays: List<CycleDay> = emptyList(),
+        val cycleSettings: CycleSettings? = null
     ) {
         /** Сколько записей реально переносится — для сообщения «Загружено записей». */
         val total: Int
-            get() = events.size + wishes.size + gifts.size + pokes.size + quizScores.size + lessons.size
+            get() = events.size + wishes.size + gifts.size + pokes.size + quizScores.size +
+                lessons.size + cycleDays.size + (if (cycleSettings != null) 1 else 0)
     }
 
     fun export(snapshot: Snapshot): String {
@@ -154,6 +160,38 @@ object PairBackup {
             }
         })
 
+        root.put("cycleDays", JSONArray().apply {
+            snapshot.cycleDays.forEach { day ->
+                put(
+                    JSONObject()
+                        .put("id", day.id)
+                        .put("pairId", day.pairId)
+                        .put("dateMillis", day.dateMillis)
+                        .put("period", day.period)
+                        .put("flow", day.flow.name)
+                        .put("symptoms", JSONArray(day.symptoms))
+                        .put("mood", day.mood)
+                        .put("weight", day.weight ?: JSONObject.NULL)
+                        .put("note", day.note)
+                        .put("updatedAt", day.updatedAt)
+                        .put("deletedAt", day.deletedAt ?: JSONObject.NULL)
+                )
+            }
+        })
+
+        snapshot.cycleSettings?.let { settings ->
+            root.put(
+                "cycleSettings",
+                JSONObject()
+                    .put("id", settings.id)
+                    .put("pairId", settings.pairId)
+                    .put("cycleLength", settings.cycleLength)
+                    .put("periodLength", settings.periodLength)
+                    .put("updatedAt", settings.updatedAt)
+                    .put("deletedAt", settings.deletedAt ?: JSONObject.NULL)
+            )
+        }
+
         return root.toString(2)
     }
 
@@ -250,6 +288,31 @@ object PairBackup {
                     updatedAt = json.optLong("updatedAt", 0L),
                     deletedAt = json.optLongOrNull("deletedAt")
                 )
+            },
+            cycleDays = root.optJSONArray("cycleDays").mapObjects { json ->
+                CycleDay(
+                    id = json.getString("id"),
+                    pairId = json.optString("pairId"),
+                    dateMillis = json.optLong("dateMillis", 0L),
+                    period = json.optBoolean("period", false),
+                    flow = enumOrDefault(json.optString("flow"), Flow.NONE),
+                    symptoms = json.optJSONArray("symptoms").toStringList(),
+                    mood = json.optString("mood"),
+                    weight = if (json.isNull("weight")) null else json.optDouble("weight", 0.0).toFloat(),
+                    note = json.optString("note"),
+                    updatedAt = json.optLong("updatedAt", 0L),
+                    deletedAt = json.optLongOrNull("deletedAt")
+                )
+            },
+            cycleSettings = root.optJSONObject("cycleSettings")?.let { json ->
+                CycleSettings(
+                    id = json.getString("id"),
+                    pairId = json.optString("pairId"),
+                    cycleLength = json.optInt("cycleLength", 28),
+                    periodLength = json.optInt("periodLength", 5),
+                    updatedAt = json.optLong("updatedAt", 0L),
+                    deletedAt = json.optLongOrNull("deletedAt")
+                )
             }
         )
         } catch (e: JSONException) {
@@ -269,6 +332,15 @@ private fun <T> JSONArray?.mapObjects(transform: (JSONObject) -> T): List<T> {
 
 private fun JSONObject.optLongOrNull(key: String): Long? =
     if (isNull(key)) null else optLong(key)
+
+private fun JSONArray?.toStringList(): List<String> {
+    if (this == null) return emptyList()
+    return buildList {
+        for (index in 0 until length()) {
+            optString(index).takeIf { it.isNotBlank() }?.let { add(it) }
+        }
+    }
+}
 
 private inline fun <reified T : Enum<T>> enumOrDefault(name: String, default: T): T =
     enumValues<T>().firstOrNull { it.name == name } ?: default
