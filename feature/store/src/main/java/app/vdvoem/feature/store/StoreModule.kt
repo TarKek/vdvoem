@@ -12,7 +12,9 @@ import org.koin.core.module.Module
 import org.koin.dsl.module
 
 /**
- * Сам магазин — тоже модуль, но он всегда включён и не показывается в собственном списке.
+ * Экран «Возможности» — он же настройка видимости модулей в навигации.
+ *
+ * Модуль всегда доступен и не показывается в собственном списке.
  */
 class StoreModule : AppModule {
     override val manifest = ModuleManifest(
@@ -29,7 +31,7 @@ class StoreModule : AppModule {
 
     @Composable
     override fun Screen(modifier: Modifier) {
-        // Магазин открывается из корневого экрана и получает зависимости оттуда,
+        // Экран открывается из корневого экрана и получает зависимости оттуда,
         // поэтому собственный Screen не используется.
     }
 

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notes_module_title">Личные заметки</string>
+    <string name="notes_module_description">Только для тебя: записи остаются на этом телефоне и не синхронизируются</string>
+    <string name="notes_title">Заметки</string>
+    <string name="notes_add">Добавить заметку</string>
+    <string name="notes_empty_title">Пока нет заметок</string>
+    <string name="notes_empty_message">Записывай мысли, списки и идеи — партнёр их не увидит.</string>
+    <string name="notes_new">Новая заметка</string>
+    <string name="notes_edit">Заметка</string>
+    <string name="notes_field_title">Заголовок</string>
+    <string name="notes_field_body">Текст</string>
+    <string name="notes_save">Сохранить</string>
+    <string name="notes_cancel">Отмена</string>
+    <string name="notes_delete">Удалить</string>
+    <string name="notes_delete_confirm_title">Удалить заметку?</string>
+    <string name="notes_delete_confirm_message">Заметка исчезнет с этого устройства без возможности восстановления.</string>
+    <string name="notes_delete_confirm_action">Удалить</string>
+    <string name="notes_untitled">Без названия</string>
+    <string name="notes_error_empty">Заполни заголовок или текст</string>
+</resources>

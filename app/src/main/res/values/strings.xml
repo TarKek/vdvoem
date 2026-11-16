@@ -3,7 +3,7 @@
     <string name="app_name">Вдвоём</string>
 
     <string name="title_home">Главная</string>
-    <string name="title_store">Дополнения</string>
+    <string name="title_store">Возможности</string>
 
     <string name="action_store">Дополнения</string>
     <string name="action_back">Назад</string>
@@ -138,8 +138,8 @@
     <string name="more_empty_title">Пока нечего показать</string>
     <string name="more_empty_text">Включите модули в магазине дополнений — они появятся здесь.</string>
     <string name="more_addons_title">Дополнения</string>
-    <string name="more_store_title">Магазин дополнений</string>
-    <string name="more_store_text">Включайте и выключайте модули приложения</string>
+    <string name="more_store_title">Возможности</string>
+    <string name="more_store_text">Всё уже внутри — выбери, что показывать в навигации</string>
     <string name="more_data_title">Данные</string>
     <string name="more_export_text">Резервная копия пары, событий, желаний и подарков в файл</string>
     <string name="more_import_text">Добавит записи из копии, текущие данные останутся</string>

@@ -98,7 +98,9 @@ fun VdvoemRoot(
     dashboardViewModel: DashboardViewModel = koinViewModel(),
     backupViewModel: BackupViewModel = koinViewModel()
 ) {
-    val enabledIds by viewModel.enabledIds.collectAsStateWithLifecycle()
+    // Модули не включаются и не выключаются: всё из APK доступно всегда.
+    // Пользователь решает только, показывать модуль в навигации или скрыть.
+    val hiddenIds by viewModel.hiddenIds.collectAsStateWithLifecycle()
     val orderIds by viewModel.order.collectAsStateWithLifecycle()
     val dashboardState by dashboardViewModel.state.collectAsStateWithLifecycle()
     val homePreferences: HomePreferences = koinInject()
@@ -203,39 +205,52 @@ fun VdvoemRoot(
     // остальные — по манифесту. Тот же список использует магазин.
     val orderedModules = remember(orderIds, registry) { registry.ordered(orderIds) }
     val effectiveOrder = remember(orderedModules) { orderedModules.map { it.manifest.id } }
-    val enabledModules = remember(enabledIds, orderedModules) {
+    // Маршруты всех модулей, включая скрытые: восстановление back stack после поворота
+    // или смерти процесса не должно падать на маршруте, которого нет в графе.
+    val allNavModules = remember(orderedModules) {
         orderedModules.filter {
-            it.manifest.id in enabledIds &&
-                it.manifest.id != StoreModule.ID &&
-                !it.manifest.comingSoon
+            it.manifest.id != StoreModule.ID && !it.manifest.comingSoon
         }
+    }
+    // Модули для навигации: всё собранное в APK за вычетом скрытых пользователем.
+    // Скрытие не удаляет данные — модуль просто пропадает из вкладок и «Ещё».
+    val visibleModules = remember(orderedModules, hiddenIds) {
+        registry.visible(orderedModules, hiddenIds).filter {
+            it.manifest.id != StoreModule.ID && !it.manifest.comingSoon
+        }
+    }
+    val visibleRoutes = remember(visibleModules) { visibleModules.map { it.route }.toSet() }
+    // Магазин дополнений работает на старой сигнатуре enabledIds/onToggle: «включено» в нём
+    // теперь означает «видно в навигации», то есть модуль не скрыт пользователем.
+    val visibleIds = remember(orderedModules, hiddenIds) {
+        orderedModules.map { it.manifest.id }.toSet() - hiddenIds
     }
     // «Главная» и «Ещё» закреплены, между ними — две настраиваемые вкладки (не больше четырёх всего).
     val navRoutes by homePreferences.navRoutes
         .collectAsStateWithLifecycle(initialValue = HomePreferences.DEFAULT_NAV_ROUTES)
-    val bottomModules = remember(enabledModules, navRoutes) {
-        val byRoute = enabledModules.associateBy { it.route }
-        val position = enabledModules.withIndex().associate { (index, module) -> module.route to index }
+    val bottomModules = remember(visibleModules, navRoutes) {
+        val byRoute = visibleModules.associateBy { it.route }
+        val position = visibleModules.withIndex().associate { (index, module) -> module.route to index }
         // Какие вкладки выбраны — решает navRoutes, а их порядок берём из магазина.
+        // Скрытая вкладка просто выпадает из нижней панели, а не роняет навигацию.
         navRoutes.mapNotNull { byRoute[it] }
             .distinctBy { it.route }
             .sortedBy { position[it.route] ?: Int.MAX_VALUE }
             .take(HomePreferences.NAV_SLOTS)
     }
-    val overflowModules = remember(enabledModules, bottomModules) {
+    val overflowModules = remember(visibleModules, bottomModules) {
         val inBottomBar = bottomModules.map { it.route }.toSet()
-        enabledModules.filterNot { it.route in inBottomBar }
+        visibleModules.filterNot { it.route in inBottomBar }
     }
-    val enabledRoutes = remember(enabledModules) { enabledModules.map { it.route }.toSet() }
 
     /**
      * Единый переход к вкладке/модулю: не новый уровень, а переключение вкладки.
-     * Модуль выключен — ведём в магазин дополнений, чтобы его можно было включить.
+     * Модуль скрыт — ведём в магазин дополнений, чтобы его можно было вернуть.
      */
     fun openTab(route: String) {
         val target = when {
             route == Routes.HOME || route == Routes.MORE || route == Routes.STORE -> route
-            route in enabledRoutes -> route
+            route in visibleRoutes -> route
             else -> Routes.STORE
         }
         navController.navigate(target) {
@@ -258,10 +273,11 @@ fun VdvoemRoot(
             ?: stringResource(R.string.app_name)
     }
 
-    LaunchedEffect(enabledIds) {
+    // Модуль скрыли, пока он открыт, — уводим на «Главную», чтобы не остаться в пустоте.
+    LaunchedEffect(hiddenIds) {
         val route = navController.currentBackStackEntry?.destination?.route
         val module = registry.byRoute(route)
-        if (module != null && module.manifest.id !in enabledIds) {
+        if (module != null && module.manifest.id in hiddenIds) {
             navController.navigate(Routes.HOME) {
                 popUpTo(Routes.HOME) { inclusive = true }
                 launchSingleTop = true
@@ -374,7 +390,7 @@ fun VdvoemRoot(
         ) {
             composable(Routes.HOME) {
                 DashboardScreen(
-                    modules = enabledModules,
+                    modules = visibleModules,
                     pair = dashboardState.pair,
                     events = dashboardState.events,
                     eventCount = dashboardState.eventCount,
@@ -427,9 +443,9 @@ fun VdvoemRoot(
             composable(Routes.STORE) {
                 StoreScreen(
                     registry = registry,
-                    enabledIds = enabledIds,
+                    hiddenIds = hiddenIds,
+                    onHiddenChange = viewModel::setHidden,
                     order = effectiveOrder,
-                    onToggle = viewModel::setEnabled,
                     onOrderChange = viewModel::setOrder
                 )
             }
@@ -440,7 +456,7 @@ fun VdvoemRoot(
                     onOpenStore = { openTab(Routes.STORE) },
                     onOpenConnect = { navController.navigate(Routes.CONNECT) { launchSingleTop = true } },
                     bottomModules = bottomModules,
-                    navModules = enabledModules,
+                    navModules = visibleModules,
                     onNavRoutesChange = { routes ->
                         scope.launch { homePreferences.setNavRoutes(routes) }
                     },
@@ -511,7 +527,9 @@ fun VdvoemRoot(
                     modifier = Modifier.fillMaxSize()
                 )
             }
-            enabledModules.forEach { module ->
+            // Скрытые модули тоже объявлены в графе — их экран просто никогда не показывается
+            // в навигации, а открытый скрытый маршрут уводит на «Главную» (см. LaunchedEffect).
+            allNavModules.forEach { module ->
                 composable(module.route) {
                     module.Screen(Modifier.fillMaxSize())
                 }

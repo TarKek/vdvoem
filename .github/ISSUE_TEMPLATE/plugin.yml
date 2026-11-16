@@ -1,0 +1,50 @@
+name: Новый плагин
+description: Предложить плагин для «Вдвоём»
+title: "[плагин] "
+labels: ["plugin"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо! Заполни коротко — этого хватит, чтобы обсудить идею до кода.
+        Правила и контракт: `docs/PLUGIN_SDK.md`.
+  - type: input
+    id: name
+    attributes:
+      label: Название
+      placeholder: Например «Дневник настроения»
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Область
+      description: Общее синхронизируется с партнёром, личное живёт только на телефоне
+      options:
+        - Общее для пары (SHARED)
+        - Только у меня (LOCAL)
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: Что делает
+      description: Какие экраны, какие действия, зачем это паре
+    validations:
+      required: true
+  - type: textarea
+    id: data
+    attributes:
+      label: Данные
+      description: Какие записи появляются, какие поля, что уезжает партнёру (для LOCAL — «ничего»)
+      placeholder: "Запись: id, дата, настроение 1–5, заметка. Синкается целиком, удаление — tombstone."
+    validations:
+      required: true
+  - type: checkboxes
+    id: ready
+    attributes:
+      label: Готовность
+      options:
+        - label: Могу прислать PR с кодом
+        - label: Нужна помощь с кодом, есть только идея
+        - label: Проверю сборку на своём телефоне

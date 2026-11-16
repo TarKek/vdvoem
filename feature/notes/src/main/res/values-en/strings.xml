@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notes_module_title">Personal notes</string>
+    <string name="notes_module_description">Just for you: notes stay on this phone and are never synced</string>
+    <string name="notes_title">Notes</string>
+    <string name="notes_add">Add note</string>
+    <string name="notes_empty_title">No notes yet</string>
+    <string name="notes_empty_message">Jot down thoughts, lists and ideas — your partner won\'t see them.</string>
+    <string name="notes_new">New note</string>
+    <string name="notes_edit">Note</string>
+    <string name="notes_field_title">Title</string>
+    <string name="notes_field_body">Text</string>
+    <string name="notes_save">Save</string>
+    <string name="notes_cancel">Cancel</string>
+    <string name="notes_delete">Delete</string>
+    <string name="notes_delete_confirm_title">Delete this note?</string>
+    <string name="notes_delete_confirm_message">The note will be removed from this device permanently.</string>
+    <string name="notes_delete_confirm_action">Delete</string>
+    <string name="notes_untitled">Untitled</string>
+    <string name="notes_error_empty">Enter a title or some text</string>
+</resources>

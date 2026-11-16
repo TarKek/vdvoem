@@ -21,8 +21,12 @@ private val Context.modulePreferences by preferencesDataStore(name = "module_set
 /**
  * Локальное состояние модулей в DataStore.
  *
- * Пока пользователь ни разу не менял настройки, возвращаются значения по умолчанию из реестра —
- * так новые модули, помеченные defaultEnabled, появляются у всех без миграций.
+ * Модули не включаются и не выключаются: всё из APK доступно всегда. Хранится только набор
+ * скрытых из навигации идентификаторов (`hidden_module_ids`) — по умолчанию набор пуст,
+ * то есть видны все модули. Скрытие не удаляет данные: возврат галочки возвращает и модуль.
+ *
+ * Устаревший набор `enabled_module_ids` читается и пишется ради совместимости, но навигация
+ * на него не опирается.
  *
  * Порядок модулей хранится одной строкой `module_order` через запятую: DataStore не гарантирует
  * порядок в наборе строк, а он здесь как раз и важен.
@@ -41,6 +45,16 @@ class DataStoreModuleSettingsRepository(
                 throw throwable
             }
         }
+
+    override val hiddenIds: Flow<Set<String>> = storedPreferences
+        .map { preferences -> preferences[KEY_HIDDEN].orEmpty() }
+
+    override suspend fun setHidden(moduleId: String, hidden: Boolean) {
+        context.modulePreferences.edit { preferences ->
+            val current = preferences[KEY_HIDDEN].orEmpty()
+            preferences[KEY_HIDDEN] = if (hidden) current + moduleId else current - moduleId
+        }
+    }
 
     override val enabledIds: Flow<Set<String>> = storedPreferences
         .map { preferences ->
@@ -120,6 +134,9 @@ class DataStoreModuleSettingsRepository(
         const val SETTINGS_PREFIX = "module_settings_"
 
         val KEY_ENABLED = stringSetPreferencesKey("enabled_module_ids")
+
+        /** Скрытые из навигации модули; пусто — видны все. */
+        val KEY_HIDDEN = stringSetPreferencesKey("hidden_module_ids")
         val KEY_INITIALIZED = booleanPreferencesKey("initialized")
         val KEY_SCHEMA = intPreferencesKey("modules_schema")
         val KEY_ORDER = stringPreferencesKey("module_order")

@@ -1,6 +1,5 @@
 package app.vdvoem.feature.store
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,35 +11,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -49,16 +37,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import app.vdvoem.core.domain.module.AppModule
 import app.vdvoem.core.domain.module.ModuleCategory
+import app.vdvoem.core.domain.module.ModuleManifest
 import app.vdvoem.core.domain.module.ModuleRegistry
-import app.vdvoem.core.ui.components.EmptyState
+import app.vdvoem.core.domain.module.ModuleScope
 import app.vdvoem.core.ui.components.InfoPill
 import app.vdvoem.core.ui.components.SectionHeader
 import app.vdvoem.core.ui.components.VdvoemCard
 import app.vdvoem.core.ui.theme.VdvoemSizes
 import app.vdvoem.core.ui.theme.VdvoemSpacing
 import app.vdvoem.core.ui.theme.VdvoemTheme
-import java.util.Locale
 
+/** Возможность, которая появится в следующих версиях. */
 private data class PlannedModule(
     val icon: ImageVector,
     val titleRes: Int,
@@ -74,77 +63,45 @@ private val plannedModules = listOf(
     PlannedModule(Icons.Filled.Face, R.string.store_mood_title, R.string.store_mood_description)
 )
 
+/**
+ * Экран «Возможности» (маршрут по-прежнему `store`).
+ *
+ * Магазина больше нет: всё собрано в APK и доступно всегда. Пользователь решает только,
+ * показывать ли модуль в навигации — скрытие не удаляет данные. Список разделён по
+ * [ModuleScope]: что общее с партнёром и что живёт только на этом телефоне.
+ */
 @Composable
 fun StoreScreen(
     registry: ModuleRegistry,
-    enabledIds: Set<String>,
-    onToggle: (moduleId: String, enabled: Boolean) -> Unit,
+    hiddenIds: Set<String>,
+    onHiddenChange: (moduleId: String, hidden: Boolean) -> Unit,
     order: List<String> = emptyList(),
     onOrderChange: (List<String>) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val available = registry.modules.filter { it.manifest.id != StoreModule.ID && !it.manifest.comingSoon }
-    val enabledCount = available.count { it.manifest.id in enabledIds }
-    // Переставлять можно только включённые доступные модули: выключенные в порядке не участвуют.
-    val orderIndex = order.withIndex().associate { (index, id) -> id to index }
-    val reorderable = order.filter { id ->
-        id in enabledIds && available.any { it.manifest.id == id }
+    val available = registry.toggleable.filter { it.manifest.id != StoreModule.ID }
+    val baseOrder = order.ifEmpty { available.map { it.manifest.id } }
+    val orderIndex = baseOrder.withIndex().associate { (index, id) -> id to index }
+    val visibleCount = available.count { it.manifest.id !in hiddenIds }
+
+    // Переставлять можно только показанные модули: скрытые в порядке не участвуют.
+    fun reorderableIds(scope: ModuleScope): List<String> = baseOrder.filter { id ->
+        id !in hiddenIds && available.any { it.manifest.id == id && it.manifest.scope == scope }
     }
 
-    fun moveModule(moduleId: String, delta: Int) {
-        val index = reorderable.indexOf(moduleId)
+    fun moveModule(scope: ModuleScope, moduleId: String, delta: Int) {
+        val section = reorderableIds(scope)
+        val index = section.indexOf(moduleId)
         val target = index + delta
-        if (index < 0 || target !in reorderable.indices) return
-        val neighbour = reorderable[target]
-        val ids = order.toMutableList()
+        if (index < 0 || target !in section.indices) return
+        val neighbour = section[target]
+        val ids = baseOrder.toMutableList()
         val from = ids.indexOf(moduleId)
         val to = ids.indexOf(neighbour)
         if (from < 0 || to < 0) return
         ids[from] = neighbour
         ids[to] = moduleId
         onOrderChange(ids)
-    }
-    var searchQuery by rememberSaveable { mutableStateOf("") }
-    var selectedCategory by rememberSaveable { mutableStateOf("ALL") }
-    var showDisableAllDialog by rememberSaveable { mutableStateOf(false) }
-    val normalizedQuery = searchQuery.trim().lowercase(Locale.ROOT)
-    val visibleModules = available.filter { module ->
-        val matchesCategory = selectedCategory == "ALL" || module.manifest.category.name == selectedCategory
-        val title = stringResource(module.manifest.titleRes)
-        val description = stringResource(module.manifest.descriptionRes)
-        val matchesQuery = normalizedQuery.isEmpty() ||
-            title.lowercase(Locale.ROOT).contains(normalizedQuery) ||
-            description.lowercase(Locale.ROOT).contains(normalizedQuery)
-        matchesCategory && matchesQuery
-    }
-    val categories = listOf(
-        "ALL" to stringResource(R.string.store_filter_all),
-        ModuleCategory.CORE.name to stringResource(R.string.store_filter_core),
-        ModuleCategory.TOGETHER.name to stringResource(R.string.store_filter_together),
-        ModuleCategory.PERSONAL.name to stringResource(R.string.store_filter_personal),
-        ModuleCategory.FUN.name to stringResource(R.string.store_filter_fun)
-    )
-
-    if (showDisableAllDialog) {
-        AlertDialog(
-            onDismissRequest = { showDisableAllDialog = false },
-            title = { Text(stringResource(R.string.store_disable_all_title)) },
-            text = { Text(stringResource(R.string.store_disable_all_message, visibleModules.count { it.manifest.id in enabledIds })) },
-            confirmButton = {
-                TextButton(onClick = {
-                    visibleModules.filter { it.manifest.id in enabledIds }
-                        .forEach { onToggle(it.manifest.id, false) }
-                    showDisableAllDialog = false
-                }) {
-                    Text(stringResource(R.string.store_disable_all_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDisableAllDialog = false }) {
-                    Text(stringResource(R.string.store_cancel))
-                }
-            }
-        )
     }
 
     LazyColumn(
@@ -157,7 +114,7 @@ fun StoreScreen(
         ),
         verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)
     ) {
-        item {
+        item(key = "hero") {
             VdvoemCard(containerColor = MaterialTheme.colorScheme.primaryContainer) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -181,7 +138,7 @@ fun StoreScreen(
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Spacer(modifier = Modifier.size(VdvoemSpacing.md))
-                InfoPill(text = stringResource(R.string.store_enabled_count, enabledCount, available.size))
+                InfoPill(text = stringResource(R.string.store_visible_count, visibleCount, available.size))
                 Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
                 Text(
                     text = stringResource(R.string.store_order_hint),
@@ -189,109 +146,50 @@ fun StoreScreen(
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Spacer(modifier = Modifier.size(VdvoemSpacing.md))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)
+                Button(
+                    onClick = { hiddenIds.forEach { onHiddenChange(it, false) } },
+                    enabled = hiddenIds.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Button(
-                        onClick = {
-                            visibleModules.filter { it.manifest.id !in enabledIds }
-                                .forEach { onToggle(it.manifest.id, true) }
-                        },
-                        enabled = visibleModules.any { it.manifest.id !in enabledIds },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(stringResource(R.string.store_enable_all))
-                    }
-                    OutlinedButton(
-                        onClick = { showDisableAllDialog = true },
-                        enabled = visibleModules.any { it.manifest.id in enabledIds },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(stringResource(R.string.store_disable_all))
-                    }
+                    Text(stringResource(R.string.store_show_all))
                 }
             }
         }
 
-        item {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                label = { Text(stringResource(R.string.store_search_label)) }
-            )
-        }
+        ModuleScope.entries.forEach { scope ->
+            val sectionModules = available
+                .filter { it.manifest.scope == scope }
+                // Внутри раздела — пользовательский порядок, иначе порядок манифеста.
+                .sortedBy { orderIndex[it.manifest.id] ?: Int.MAX_VALUE }
+            if (sectionModules.isEmpty()) return@forEach
 
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.xs)) {
-                Text(
-                    text = stringResource(R.string.store_filter_label),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Row(
-                    modifier = Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)
+            item(key = "scope_${scope.name}") {
+                Column(
+                    modifier = Modifier.padding(top = VdvoemSpacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.xs)
                 ) {
-                    categories.forEach { (category, label) ->
-                        FilterChip(
-                            selected = selectedCategory == category,
-                            onClick = { selectedCategory = category },
-                            label = { Text(label) }
-                        )
-                    }
-                }
-                Text(
-                    text = stringResource(R.string.store_soon_filter_note),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
-        if (visibleModules.isEmpty()) {
-            item(key = "empty_search") {
-                EmptyState(
-                    icon = Icons.Filled.Search,
-                    title = stringResource(R.string.store_no_results_title),
-                    message = stringResource(R.string.store_no_results_message),
-                    actionLabel = stringResource(R.string.store_reset_filters),
-                    onAction = {
-                        searchQuery = ""
-                        selectedCategory = "ALL"
-                    }
-                )
-            }
-        } else {
-            ModuleCategory.entries.forEach { category ->
-                val categoryModules = visibleModules
-                    .filter { it.manifest.category == category }
-                    // Внутри категории — пользовательский порядок (иначе порядок манифеста).
-                    .sortedBy { orderIndex[it.manifest.id] ?: Int.MAX_VALUE }
-                if (categoryModules.isEmpty()) return@forEach
-
-                item(key = "header_${category.name}") {
-                    SectionHeader(
-                        title = stringResource(category.titleRes()),
-                        modifier = Modifier.padding(top = VdvoemSpacing.sm)
+                    SectionHeader(title = stringResource(scope.titleRes()))
+                    Text(
+                        text = stringResource(scope.hintRes()),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                items(categoryModules, key = { it.manifest.id }) { module ->
-                    val enabled = module.manifest.id in enabledIds
-                    val position = reorderable.indexOf(module.manifest.id)
-                    ModuleRow(
-                        module = module,
-                        enabled = enabled,
-                        canMoveUp = enabled && position > 0,
-                        canMoveDown = enabled && position in 0 until reorderable.lastIndex,
-                        onMoveUp = { moveModule(module.manifest.id, -1) },
-                        onMoveDown = { moveModule(module.manifest.id, 1) },
-                        onToggle = { checked -> onToggle(module.manifest.id, checked) }
-                    )
-                }
+            }
+
+            val movable = reorderableIds(scope)
+            items(sectionModules, key = { it.manifest.id }) { module ->
+                val visible = module.manifest.id !in hiddenIds
+                val position = movable.indexOf(module.manifest.id)
+                ModuleRow(
+                    module = module,
+                    visible = visible,
+                    canMoveUp = visible && position > 0,
+                    canMoveDown = visible && position >= 0 && position < movable.lastIndex,
+                    onMoveUp = { moveModule(scope, module.manifest.id, -1) },
+                    onMoveDown = { moveModule(scope, module.manifest.id, 1) },
+                    onVisibleChange = { checked -> onHiddenChange(module.manifest.id, !checked) }
+                )
             }
         }
 
@@ -304,7 +202,7 @@ fun StoreScreen(
         }
         items(plannedModules, key = { it.titleRes }) { planned -> PlannedModuleRow(planned) }
 
-        item {
+        item(key = "footer") {
             Text(
                 text = stringResource(R.string.store_footer),
                 style = MaterialTheme.typography.bodySmall,
@@ -318,16 +216,16 @@ fun StoreScreen(
 @Composable
 private fun ModuleRow(
     module: AppModule,
-    enabled: Boolean,
+    visible: Boolean,
     canMoveUp: Boolean,
     canMoveDown: Boolean,
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
-    onToggle: (Boolean) -> Unit
+    onVisibleChange: (Boolean) -> Unit
 ) {
     VdvoemCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            ModuleIcon(module.icon)
+            ModuleIcon(module.icon, muted = !visible)
             Spacer(modifier = Modifier.size(VdvoemSpacing.md))
             Column(
                 modifier = Modifier.weight(1f),
@@ -336,7 +234,12 @@ private fun ModuleRow(
                 Text(
                     text = stringResource(module.manifest.titleRes),
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (visible) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
                 )
                 Text(
                     text = stringResource(module.manifest.descriptionRes),
@@ -344,8 +247,8 @@ private fun ModuleRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            // Переставлять можно только включённые модули: выключенные в порядке не участвуют.
-            if (enabled) {
+            // Переставлять можно только показанные модули: скрытые в порядке не участвуют.
+            if (visible) {
                 MoveButtons(
                     canMoveUp = canMoveUp,
                     canMoveDown = canMoveDown,
@@ -353,8 +256,19 @@ private fun ModuleRow(
                     onMoveDown = onMoveDown
                 )
             }
-            Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
-            Switch(checked = enabled, onCheckedChange = onToggle)
+        }
+        Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.store_visibility_toggle),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f)
+            )
+            Switch(checked = visible, onCheckedChange = onVisibleChange)
         }
     }
 }
@@ -445,15 +359,107 @@ private fun ModuleIcon(icon: ImageVector, muted: Boolean = false) {
     }
 }
 
-private fun ModuleCategory.titleRes(): Int = when (this) {
-    ModuleCategory.CORE -> R.string.store_category_core
-    ModuleCategory.TOGETHER -> R.string.store_category_together
-    ModuleCategory.PERSONAL -> R.string.store_category_personal
-    ModuleCategory.FUN -> R.string.store_category_fun
+private fun ModuleScope.titleRes(): Int = when (this) {
+    ModuleScope.SHARED -> R.string.store_scope_shared
+    ModuleScope.LOCAL -> R.string.store_scope_local
+}
+
+private fun ModuleScope.hintRes(): Int = when (this) {
+    ModuleScope.SHARED -> R.string.store_scope_shared_hint
+    ModuleScope.LOCAL -> R.string.store_scope_local_hint
 }
 
 /** Прозрачность стрелки, когда двигать некуда. */
 private const val DISABLED_ALPHA = 0.38f
+
+/** Модуль-заглушка для превью: реальные экраны здесь не нужны. */
+private class PreviewModule(
+    override val manifest: ModuleManifest,
+    override val icon: ImageVector
+) : AppModule {
+    override val route: String = manifest.id
+
+    @Composable
+    override fun Screen(modifier: Modifier) = Unit
+}
+
+private fun previewModule(
+    id: String,
+    titleRes: Int,
+    descriptionRes: Int,
+    scope: ModuleScope,
+    order: Int,
+    icon: ImageVector
+): AppModule = PreviewModule(
+    manifest = ModuleManifest(
+        id = id,
+        titleRes = titleRes,
+        descriptionRes = descriptionRes,
+        category = ModuleCategory.TOGETHER,
+        order = order,
+        scope = scope
+    ),
+    icon = icon
+)
+
+private val previewRegistry = ModuleRegistry(
+    listOf(
+        previewModule(
+            id = "preview.presents",
+            titleRes = R.string.store_tasks_title,
+            descriptionRes = R.string.store_tasks_description,
+            scope = ModuleScope.SHARED,
+            order = 10,
+            icon = Icons.AutoMirrored.Filled.List
+        ),
+        previewModule(
+            id = "preview.notes",
+            titleRes = R.string.store_notes_title,
+            descriptionRes = R.string.store_notes_description,
+            scope = ModuleScope.SHARED,
+            order = 20,
+            icon = Icons.Filled.Edit
+        ),
+        previewModule(
+            id = "preview.countdown",
+            titleRes = R.string.store_countdown_title,
+            descriptionRes = R.string.store_countdown_description,
+            scope = ModuleScope.SHARED,
+            order = 30,
+            icon = Icons.Filled.Star
+        ),
+        previewModule(
+            id = "preview.mood",
+            titleRes = R.string.store_mood_title,
+            descriptionRes = R.string.store_mood_description,
+            scope = ModuleScope.LOCAL,
+            order = 40,
+            icon = Icons.Filled.Face
+        ),
+        previewModule(
+            id = "preview.steam",
+            titleRes = R.string.store_steam_title,
+            descriptionRes = R.string.store_steam_description,
+            scope = ModuleScope.LOCAL,
+            order = 50,
+            icon = Icons.Filled.Lock
+        )
+    )
+)
+
+@Preview(name = "Возможности", showBackground = true, heightDp = 1100)
+@Composable
+private fun StoreScreenPreview() {
+    VdvoemTheme {
+        Surface(color = MaterialTheme.colorScheme.background) {
+            StoreScreen(
+                registry = previewRegistry,
+                hiddenIds = setOf("preview.steam"),
+                onHiddenChange = { _, _ -> }
+            )
+        }
+    }
+}
 
 @Preview(name = "Стрелки порядка")
 @Composable

@@ -130,8 +130,8 @@
     <string name="more_empty_title">Nothing here yet</string>
     <string name="more_empty_text">Turn on modules in the add-ons store — they\'ll show up here.</string>
     <string name="more_addons_title">Add-ons</string>
-    <string name="more_store_title">Add-ons store</string>
-    <string name="more_store_text">Turn app modules on and off</string>
+    <string name="more_store_title">Features</string>
+    <string name="more_store_text">Everything is already built in — choose what to show in navigation</string>
     <string name="more_data_title">Data</string>
     <string name="more_export_text">Back up your couple, events, wishes and gifts to a file</string>
     <string name="more_import_text">Adds records from a backup, keeps your current data</string>
