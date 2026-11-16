@@ -1,34 +1,36 @@
 package app.vdvoem.feature.quizzes
 
+import androidx.annotation.StringRes
 import kotlin.math.roundToInt
 
 /**
- * Вариант ответа: текст и вес в баллах.
+ * Вариант ответа: текст-ресурс и вес в баллах.
  *
  * Вес от 0 до 3 — чем больше балл, тем «здоровее» ответ для пары.
  */
 data class QuizOption(
-    val text: String,
+    @StringRes val textRes: Int,
     val score: Int
 )
 
 /** Вопрос теста и его варианты (2–4 штуки). */
 data class QuizQuestion(
-    val text: String,
+    @StringRes val textRes: Int,
     val options: List<QuizOption>
 )
 
 /**
- * Тест целиком: контент живёт в коде, а не в ресурсах — это данные, а не UI-тексты.
+ * Тест целиком: тексты лежат в ресурсах модуля (`values/strings.xml` и `values-en/strings.xml`),
+ * а в коде остаются только идентификаторы, баллы и структура.
  *
  * [interpretations] — ровно три трактовки результата: низкая, средняя и высокая.
  */
 data class Quiz(
     val id: String,
-    val title: String,
-    val description: String,
+    @StringRes val titleRes: Int,
+    @StringRes val descriptionRes: Int,
     val questions: List<QuizQuestion>,
-    val interpretations: List<String>
+    @StringRes val interpretations: List<Int>
 ) {
 
     /** Максимум баллов, который можно набрать. */
@@ -50,8 +52,9 @@ data class Quiz(
     }
 
     /** Короткая интерпретация по проценту: три градации. */
-    fun interpretation(percent: Int): String =
-        interpretations.getOrElse(levelOf(percent)) { interpretations.lastOrNull().orEmpty() }
+    @StringRes
+    fun interpretationRes(percent: Int): Int =
+        interpretations.getOrElse(levelOf(percent)) { interpretations.last() }
 
     companion object {
         /** 0 — низкая (< 40 %), 1 — средняя (40–69 %), 2 — высокая (70 %+). */
@@ -87,73 +90,73 @@ object QuizCatalog {
 
     private fun compatibilityQuiz() = Quiz(
         id = COMPATIBILITY_ID,
-        title = "Совместимость",
-        description = "Быт, планы, отдых и ссоры — насколько вы совпадаете в повседневности.",
+        titleRes = R.string.quiz_compat_title,
+        descriptionRes = R.string.quiz_compat_description,
         interpretations = listOf(
-            "Пока вы идёте рядом, но каждый своим маршрутом. Начните с малого: полчаса в день без телефонов и разговор о планах на неделю.",
-            "У вас прочная база, но быт и планы иногда расходятся. Договаривайтесь о мелочах — именно они держат пару, а не большие даты.",
-            "Вы хорошо чувствуете друг друга и в быту, и в планах. Сохраняйте привычку обсуждать, а не догадываться."
+            R.string.quiz_compat_result_low,
+            R.string.quiz_compat_result_mid,
+            R.string.quiz_compat_result_high
         ),
         questions = listOf(
             QuizQuestion(
-                text = "Как вы решаете, кто что делает по дому?",
+                textRes = R.string.quiz_compat_q1,
                 options = listOf(
-                    QuizOption("Договариваемся и делим по-честному", 3),
-                    QuizOption("Кто свободен, тот и делает", 2),
-                    QuizOption("Каждый за себя, как получится", 1),
-                    QuizOption("Обычно всё тянет один", 0)
+                    QuizOption(R.string.quiz_compat_q1_a1, 3),
+                    QuizOption(R.string.quiz_compat_q1_a2, 2),
+                    QuizOption(R.string.quiz_compat_q1_a3, 1),
+                    QuizOption(R.string.quiz_compat_q1_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Планы на выходные вы обсуждаете…",
+                textRes = R.string.quiz_compat_q2,
                 options = listOf(
-                    QuizOption("Заранее и вместе", 3),
-                    QuizOption("В пятницу вечером, по настроению", 2),
-                    QuizOption("Каждый сам по себе, потом созвонимся", 1)
+                    QuizOption(R.string.quiz_compat_q2_a1, 3),
+                    QuizOption(R.string.quiz_compat_q2_a2, 2),
+                    QuizOption(R.string.quiz_compat_q2_a3, 1)
                 )
             ),
             QuizQuestion(
-                text = "Идеальный отпуск для вас двоих — это…",
+                textRes = R.string.quiz_compat_q3,
                 options = listOf(
-                    QuizOption("Тихо вдвоём, без толпы", 2),
-                    QuizOption("Активно: города, походы, движ", 2),
-                    QuizOption("Кто куда: один на море, другой на диван", 0),
-                    QuizOption("Куда позовут друзья", 1)
+                    QuizOption(R.string.quiz_compat_q3_a1, 2),
+                    QuizOption(R.string.quiz_compat_q3_a2, 2),
+                    QuizOption(R.string.quiz_compat_q3_a3, 0),
+                    QuizOption(R.string.quiz_compat_q3_a4, 1)
                 )
             ),
             QuizQuestion(
-                text = "Если один устал и молчит, второй…",
+                textRes = R.string.quiz_compat_q4,
                 options = listOf(
-                    QuizOption("Спрашивает, что случилось, и слушает", 3),
-                    QuizOption("Даёт побыть одному, потом обнимает", 2),
-                    QuizOption("Обижается на молчание", 0),
-                    QuizOption("Не замечает", 1)
+                    QuizOption(R.string.quiz_compat_q4_a1, 3),
+                    QuizOption(R.string.quiz_compat_q4_a2, 2),
+                    QuizOption(R.string.quiz_compat_q4_a3, 0),
+                    QuizOption(R.string.quiz_compat_q4_a4, 1)
                 )
             ),
             QuizQuestion(
-                text = "Ссора у вас обычно заканчивается…",
+                textRes = R.string.quiz_compat_q5,
                 options = listOf(
-                    QuizOption("Разговором и выводами", 3),
-                    QuizOption("Обнимашками без разбора", 2),
-                    QuizOption("Кто-то уходит и возвращается как ни в чём не бывало", 1),
-                    QuizOption("Осадком, который всплывает снова", 0)
+                    QuizOption(R.string.quiz_compat_q5_a1, 3),
+                    QuizOption(R.string.quiz_compat_q5_a2, 2),
+                    QuizOption(R.string.quiz_compat_q5_a3, 1),
+                    QuizOption(R.string.quiz_compat_q5_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Деньги в паре у вас устроены как…",
+                textRes = R.string.quiz_compat_q6,
                 options = listOf(
-                    QuizOption("Общий бюджет и общие цели", 3),
-                    QuizOption("Свои счета, общие траты по договорённости", 2),
-                    QuizOption("Каждый платит за себя, тему не обсуждаем", 1)
+                    QuizOption(R.string.quiz_compat_q6_a1, 3),
+                    QuizOption(R.string.quiz_compat_q6_a2, 2),
+                    QuizOption(R.string.quiz_compat_q6_a3, 1)
                 )
             ),
             QuizQuestion(
-                text = "Планы на будущее — жильё, работа, дети…",
+                textRes = R.string.quiz_compat_q7,
                 options = listOf(
-                    QuizOption("Обсуждаем регулярно", 3),
-                    QuizOption("Говорим, когда придёт время", 2),
-                    QuizOption("Избегаем сложных тем", 0),
-                    QuizOption("Один уже всё решил", 1)
+                    QuizOption(R.string.quiz_compat_q7_a1, 3),
+                    QuizOption(R.string.quiz_compat_q7_a2, 2),
+                    QuizOption(R.string.quiz_compat_q7_a3, 0),
+                    QuizOption(R.string.quiz_compat_q7_a4, 1)
                 )
             )
         )
@@ -161,75 +164,75 @@ object QuizCatalog {
 
     private fun loveLanguageQuiz() = Quiz(
         id = LOVE_LANGUAGE_ID,
-        title = "Язык любви",
-        description = "Время, подарки, слова, забота и прикосновения: как вы говорите о любви.",
+        titleRes = R.string.quiz_love_title,
+        descriptionRes = R.string.quiz_love_description,
         interpretations = listOf(
-            "Похоже, вы пока говорите на разных языках и ждёте, что другой догадается. Начните с простого вопроса: что для партнёра важнее всего?",
-            "Вы чувствуете друг друга, но знаки внимания иногда теряются в делах. Добавьте одно маленькое действие в день — эффект заметен быстро.",
-            "Вы умеете говорить на языке партнёра и не забываете про него в быту. Это редкий навык — берегите и подпитывайте."
+            R.string.quiz_love_result_low,
+            R.string.quiz_love_result_mid,
+            R.string.quiz_love_result_high
         ),
         questions = listOf(
             QuizQuestion(
-                text = "Вы знаете, какой язык любви у партнёра?",
+                textRes = R.string.quiz_love_q1,
                 options = listOf(
-                    QuizOption("Да, и стараюсь говорить на нём", 3),
-                    QuizOption("Догадываюсь", 2),
-                    QuizOption("Скорее знаю свой", 1),
-                    QuizOption("Не думали об этом", 0)
+                    QuizOption(R.string.quiz_love_q1_a1, 3),
+                    QuizOption(R.string.quiz_love_q1_a2, 2),
+                    QuizOption(R.string.quiz_love_q1_a3, 1),
+                    QuizOption(R.string.quiz_love_q1_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Когда партнёр рассказывает о проблеме, вы…",
+                textRes = R.string.quiz_love_q2,
                 options = listOf(
-                    QuizOption("Слушаю и спрашиваю: нужен совет или поддержка", 3),
-                    QuizOption("Сразу предлагаю решение", 2),
-                    QuizOption("Перевожу на свои истории", 1),
-                    QuizOption("Жду, пока само отпустит", 0)
+                    QuizOption(R.string.quiz_love_q2_a1, 3),
+                    QuizOption(R.string.quiz_love_q2_a2, 2),
+                    QuizOption(R.string.quiz_love_q2_a3, 1),
+                    QuizOption(R.string.quiz_love_q2_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Сколько времени в день вы проводите вдвоём без экранов?",
+                textRes = R.string.quiz_love_q3,
                 options = listOf(
-                    QuizOption("Больше часа", 3),
-                    QuizOption("Около получаса", 2),
-                    QuizOption("Иногда по пять минут", 1),
-                    QuizOption("Почти никогда", 0)
+                    QuizOption(R.string.quiz_love_q3_a1, 3),
+                    QuizOption(R.string.quiz_love_q3_a2, 2),
+                    QuizOption(R.string.quiz_love_q3_a3, 1),
+                    QuizOption(R.string.quiz_love_q3_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Подарки вы выбираете…",
+                textRes = R.string.quiz_love_q4,
                 options = listOf(
-                    QuizOption("Зная мелочи, о которых партнёр мечтал", 3),
-                    QuizOption("По практичности и нужности", 2),
-                    QuizOption("В последний момент", 1),
-                    QuizOption("Дарим деньги", 0)
+                    QuizOption(R.string.quiz_love_q4_a1, 3),
+                    QuizOption(R.string.quiz_love_q4_a2, 2),
+                    QuizOption(R.string.quiz_love_q4_a3, 1),
+                    QuizOption(R.string.quiz_love_q4_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Как вы говорите о чувствах?",
+                textRes = R.string.quiz_love_q5,
                 options = listOf(
-                    QuizOption("Прямо: «скучаю», «ты мне важен»", 3),
-                    QuizOption("Через заботу и дела", 2),
-                    QuizOption("Через подколы и шутки", 1),
-                    QuizOption("Считаю, что и так понятно", 0)
+                    QuizOption(R.string.quiz_love_q5_a1, 3),
+                    QuizOption(R.string.quiz_love_q5_a2, 2),
+                    QuizOption(R.string.quiz_love_q5_a3, 1),
+                    QuizOption(R.string.quiz_love_q5_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Забота в быту выглядит как…",
+                textRes = R.string.quiz_love_q6,
                 options = listOf(
-                    QuizOption("Замечаю мелочи и делаю без просьб", 3),
-                    QuizOption("Помогаю, если попросят", 2),
-                    QuizOption("Делаю своё, жду просьбы", 1),
-                    QuizOption("Каждый справится сам", 0)
+                    QuizOption(R.string.quiz_love_q6_a1, 3),
+                    QuizOption(R.string.quiz_love_q6_a2, 2),
+                    QuizOption(R.string.quiz_love_q6_a3, 1),
+                    QuizOption(R.string.quiz_love_q6_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Про прикосновения можно сказать…",
+                textRes = R.string.quiz_love_q7,
                 options = listOf(
-                    QuizOption("Тактильность у нас постоянная", 3),
-                    QuizOption("Обнимаемся при встрече и на ночь", 2),
-                    QuizOption("Только когда кто-то очень устал", 1),
-                    QuizOption("Почти не касаемся друг друга", 0)
+                    QuizOption(R.string.quiz_love_q7_a1, 3),
+                    QuizOption(R.string.quiz_love_q7_a2, 2),
+                    QuizOption(R.string.quiz_love_q7_a3, 1),
+                    QuizOption(R.string.quiz_love_q7_a4, 0)
                 )
             )
         )
@@ -237,75 +240,75 @@ object QuizCatalog {
 
     private fun whoIsWhoQuiz() = Quiz(
         id = WHO_IS_WHO_ID,
-        title = "Кто из вас…",
-        description = "Забавный тест про привычки пары: кто мирится, кто забывает ключи и кто придумывает планы.",
+        titleRes = R.string.quiz_who_title,
+        descriptionRes = R.string.quiz_who_description,
         interpretations = listOf(
-            "Кажется, в привычках вы живёте немного параллельно. Смешных общих ритуалов пока мало — самое время завести пару своих.",
-            "Половина привычек у вас общая, половина — своя. Это нормально: главное, что вы их замечаете и можете посмеяться вместе.",
-            "Вы очень «парные»: даже мелочи у вас общие. Отличный фундамент — не забывайте иногда удивлять друг друга."
+            R.string.quiz_who_result_low,
+            R.string.quiz_who_result_mid,
+            R.string.quiz_who_result_high
         ),
         questions = listOf(
             QuizQuestion(
-                text = "Кто из вас первым мирится после ссоры?",
+                textRes = R.string.quiz_who_q1,
                 options = listOf(
-                    QuizOption("Обычно оба", 3),
-                    QuizOption("Я", 2),
-                    QuizOption("Партнёр", 2),
-                    QuizOption("Никто — само проходит", 0)
+                    QuizOption(R.string.quiz_who_q1_a1, 3),
+                    QuizOption(R.string.quiz_who_q1_a2, 2),
+                    QuizOption(R.string.quiz_who_q1_a3, 2),
+                    QuizOption(R.string.quiz_who_q1_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Кто заводит будильник на десять минут раньше нужного?",
+                textRes = R.string.quiz_who_q2,
                 options = listOf(
-                    QuizOption("Оба", 3),
-                    QuizOption("Только я", 2),
-                    QuizOption("Только партнёр", 2),
-                    QuizOption("Никто, встаём по первому", 1)
+                    QuizOption(R.string.quiz_who_q2_a1, 3),
+                    QuizOption(R.string.quiz_who_q2_a2, 2),
+                    QuizOption(R.string.quiz_who_q2_a3, 2),
+                    QuizOption(R.string.quiz_who_q2_a4, 1)
                 )
             ),
             QuizQuestion(
-                text = "Кто забывает, где оставил ключи?",
+                textRes = R.string.quiz_who_q3,
                 options = listOf(
-                    QuizOption("Оба", 3),
-                    QuizOption("Только я", 2),
-                    QuizOption("Только партнёр", 2),
-                    QuizOption("Никто, у нас всё на месте", 1)
+                    QuizOption(R.string.quiz_who_q3_a1, 3),
+                    QuizOption(R.string.quiz_who_q3_a2, 2),
+                    QuizOption(R.string.quiz_who_q3_a3, 2),
+                    QuizOption(R.string.quiz_who_q3_a4, 1)
                 )
             ),
             QuizQuestion(
-                text = "Кто выбирает фильм на вечер?",
+                textRes = R.string.quiz_who_q4,
                 options = listOf(
-                    QuizOption("По очереди, оба участвуют", 3),
-                    QuizOption("Я", 2),
-                    QuizOption("Партнёр", 2),
-                    QuizOption("Никто, смотрим телефоны", 0)
+                    QuizOption(R.string.quiz_who_q4_a1, 3),
+                    QuizOption(R.string.quiz_who_q4_a2, 2),
+                    QuizOption(R.string.quiz_who_q4_a3, 2),
+                    QuizOption(R.string.quiz_who_q4_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Кто первым замечает, что закончился чай или сахар?",
+                textRes = R.string.quiz_who_q5,
                 options = listOf(
-                    QuizOption("Оба", 3),
-                    QuizOption("Я", 2),
-                    QuizOption("Партнёр", 2),
-                    QuizOption("Никто, пока не надоест", 0)
+                    QuizOption(R.string.quiz_who_q5_a1, 3),
+                    QuizOption(R.string.quiz_who_q5_a2, 2),
+                    QuizOption(R.string.quiz_who_q5_a3, 2),
+                    QuizOption(R.string.quiz_who_q5_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Кто обнимает просто так, без повода?",
+                textRes = R.string.quiz_who_q6,
                 options = listOf(
-                    QuizOption("Оба", 3),
-                    QuizOption("Я", 2),
-                    QuizOption("Партнёр", 2),
-                    QuizOption("Оба забываем", 0)
+                    QuizOption(R.string.quiz_who_q6_a1, 3),
+                    QuizOption(R.string.quiz_who_q6_a2, 2),
+                    QuizOption(R.string.quiz_who_q6_a3, 2),
+                    QuizOption(R.string.quiz_who_q6_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Кто придумывает планы на выходные?",
+                textRes = R.string.quiz_who_q7,
                 options = listOf(
-                    QuizOption("Оба предлагаем", 3),
-                    QuizOption("Я", 2),
-                    QuizOption("Партнёр", 2),
-                    QuizOption("Планы приходят сами", 1)
+                    QuizOption(R.string.quiz_who_q7_a1, 3),
+                    QuizOption(R.string.quiz_who_q7_a2, 2),
+                    QuizOption(R.string.quiz_who_q7_a3, 2),
+                    QuizOption(R.string.quiz_who_q7_a4, 1)
                 )
             )
         )
@@ -313,75 +316,75 @@ object QuizCatalog {
 
     private fun homeMoneyQuiz() = Quiz(
         id = HOME_MONEY_ID,
-        title = "Быт и деньги",
-        description = "Дела по дому, общий бюджет, накопления и покупки — как устроена ваша повседневность.",
+        titleRes = R.string.quiz_home_title,
+        descriptionRes = R.string.quiz_home_description,
         interpretations = listOf(
-            "Быт и деньги у вас пока идут сами по себе, и это утомляет обоих. Начните с одного шага: раз в неделю пять минут на «кто что делает» и «сколько потратили».",
-            "Основа у вас есть, но договорённости держатся на памяти, а не на правилах. Запишите распределение дел и лимит крупных трат — станет спокойнее.",
-            "Вы ведёте быт и бюджет как команда: обсуждаете, планируете и не копите обид. Это самая прочная часть пары — берегите её."
+            R.string.quiz_home_result_low,
+            R.string.quiz_home_result_mid,
+            R.string.quiz_home_result_high
         ),
         questions = listOf(
             QuizQuestion(
-                text = "Как устроен ваш общий бюджет?",
+                textRes = R.string.quiz_home_q1,
                 options = listOf(
-                    QuizOption("Общая касса и общие цели", 3),
-                    QuizOption("Свои счета, общие траты по договорённости", 2),
-                    QuizOption("Кто-то один всё контролирует", 1),
-                    QuizOption("Никто не знает, куда уходят деньги", 0)
+                    QuizOption(R.string.quiz_home_q1_a1, 3),
+                    QuizOption(R.string.quiz_home_q1_a2, 2),
+                    QuizOption(R.string.quiz_home_q1_a3, 1),
+                    QuizOption(R.string.quiz_home_q1_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Крупная покупка — вы…",
+                textRes = R.string.quiz_home_q2,
                 options = listOf(
-                    QuizOption("Обсуждаем заранее и решаем вместе", 3),
-                    QuizOption("Предупреждаем, но решаем сами", 2),
-                    QuizOption("Каждый покупает на своё, без обсуждений", 1),
-                    QuizOption("Спорим о ней уже после", 0)
+                    QuizOption(R.string.quiz_home_q2_a1, 3),
+                    QuizOption(R.string.quiz_home_q2_a2, 2),
+                    QuizOption(R.string.quiz_home_q2_a3, 1),
+                    QuizOption(R.string.quiz_home_q2_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Кто помнит про счета и сроки?",
+                textRes = R.string.quiz_home_q3,
                 options = listOf(
-                    QuizOption("Ведём вместе или по очереди", 3),
-                    QuizOption("Один, но второй в курсе", 2),
-                    QuizOption("Кто вспомнил, тот и заплатил", 1),
-                    QuizOption("Узнаём о долге в последний момент", 0)
+                    QuizOption(R.string.quiz_home_q3_a1, 3),
+                    QuizOption(R.string.quiz_home_q3_a2, 2),
+                    QuizOption(R.string.quiz_home_q3_a3, 1),
+                    QuizOption(R.string.quiz_home_q3_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Домашние дела распределены как?",
+                textRes = R.string.quiz_home_q4,
                 options = listOf(
-                    QuizOption("У каждого свои зоны, и оба их знают", 3),
-                    QuizOption("Делаем вместе в выходной", 2),
-                    QuizOption("Кто свободен, тот и делает", 1),
-                    QuizOption("Всё держится на одном человеке", 0)
+                    QuizOption(R.string.quiz_home_q4_a1, 3),
+                    QuizOption(R.string.quiz_home_q4_a2, 2),
+                    QuizOption(R.string.quiz_home_q4_a3, 1),
+                    QuizOption(R.string.quiz_home_q4_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Накопления на общую цель…",
+                textRes = R.string.quiz_home_q5,
                 options = listOf(
-                    QuizOption("Откладываем регулярно и видим прогресс", 3),
-                    QuizOption("Откладываем, когда остаётся", 2),
-                    QuizOption("Планируем начать", 1),
-                    QuizOption("Не копим", 0)
+                    QuizOption(R.string.quiz_home_q5_a1, 3),
+                    QuizOption(R.string.quiz_home_q5_a2, 2),
+                    QuizOption(R.string.quiz_home_q5_a3, 1),
+                    QuizOption(R.string.quiz_home_q5_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Про деньги вы говорите…",
+                textRes = R.string.quiz_home_q6,
                 options = listOf(
-                    QuizOption("Спокойно и регулярно", 3),
-                    QuizOption("Когда что-то меняется", 2),
-                    QuizOption("Только когда возникла проблема", 1),
-                    QuizOption("Стараемся не поднимать тему", 0)
+                    QuizOption(R.string.quiz_home_q6_a1, 3),
+                    QuizOption(R.string.quiz_home_q6_a2, 2),
+                    QuizOption(R.string.quiz_home_q6_a3, 1),
+                    QuizOption(R.string.quiz_home_q6_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Продукты и мелочи для дома покупает…",
+                textRes = R.string.quiz_home_q7,
                 options = listOf(
-                    QuizOption("Кто свободен или вместе", 3),
-                    QuizOption("В основном один, но по списку от обоих", 2),
-                    QuizOption("Всегда один и без обсуждений", 1),
-                    QuizOption("Покупаем хаотично, потом выбрасываем", 0)
+                    QuizOption(R.string.quiz_home_q7_a1, 3),
+                    QuizOption(R.string.quiz_home_q7_a2, 2),
+                    QuizOption(R.string.quiz_home_q7_a3, 1),
+                    QuizOption(R.string.quiz_home_q7_a4, 0)
                 )
             )
         )
@@ -389,75 +392,75 @@ object QuizCatalog {
 
     private fun futurePlansQuiz() = Quiz(
         id = FUTURE_PLANS_ID,
-        title = "Планы на будущее",
-        description = "Жильё, работа, отпуск и мечты на пять лет: смотрите ли вы в одну сторону.",
+        titleRes = R.string.quiz_future_title,
+        descriptionRes = R.string.quiz_future_description,
         interpretations = listOf(
-            "О будущем вы почти не говорите, и каждый рисует его сам. Начните с одного вопроса: «Каким ты видишь наш следующий год?» — без споров и дедлайнов.",
-            "Вы знаете главное друг о друге, но планы чаще обсуждаете, чем записываете. Одна общая цель на полгода сделает разговоры конкретнее.",
-            "У вас есть общая картина будущего и привычка её сверять. Это редкое совпадение — продолжайте мечтать вслух."
+            R.string.quiz_future_result_low,
+            R.string.quiz_future_result_mid,
+            R.string.quiz_future_result_high
         ),
         questions = listOf(
             QuizQuestion(
-                text = "Каким вы видите себя через пять лет?",
+                textRes = R.string.quiz_future_q1,
                 options = listOf(
-                    QuizOption("Обсуждали и примерно представляем", 3),
-                    QuizOption("Есть идеи, но без деталей", 2),
-                    QuizOption("Каждый думает по-своему", 1),
-                    QuizOption("Не заглядываем так далеко", 0)
+                    QuizOption(R.string.quiz_future_q1_a1, 3),
+                    QuizOption(R.string.quiz_future_q1_a2, 2),
+                    QuizOption(R.string.quiz_future_q1_a3, 1),
+                    QuizOption(R.string.quiz_future_q1_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Большие цели — жильё, ремонт, переезд…",
+                textRes = R.string.quiz_future_q2,
                 options = listOf(
-                    QuizOption("Записаны и разбиты на шаги", 3),
-                    QuizOption("Обсуждаем, но без плана", 2),
-                    QuizOption("Вспоминаем редко", 1),
-                    QuizOption("Не обсуждаем", 0)
+                    QuizOption(R.string.quiz_future_q2_a1, 3),
+                    QuizOption(R.string.quiz_future_q2_a2, 2),
+                    QuizOption(R.string.quiz_future_q2_a3, 1),
+                    QuizOption(R.string.quiz_future_q2_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Отпуск через полгода…",
+                textRes = R.string.quiz_future_q3,
                 options = listOf(
-                    QuizOption("Уже выбрали и забронировали", 3),
-                    QuizOption("Знаем направление и копим", 2),
-                    QuizOption("Решим ближе к делу", 1),
-                    QuizOption("Планов пока нет", 0)
+                    QuizOption(R.string.quiz_future_q3_a1, 3),
+                    QuizOption(R.string.quiz_future_q3_a2, 2),
+                    QuizOption(R.string.quiz_future_q3_a3, 1),
+                    QuizOption(R.string.quiz_future_q3_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Работа и карьера партнёра для вас…",
+                textRes = R.string.quiz_future_q4,
                 options = listOf(
-                    QuizOption("Обсуждаем изменения и поддерживаем", 3),
-                    QuizOption("Узнаём новости по факту", 2),
-                    QuizOption("Считаем это личным делом", 1),
-                    QuizOption("Не интересуемся", 0)
+                    QuizOption(R.string.quiz_future_q4_a1, 3),
+                    QuizOption(R.string.quiz_future_q4_a2, 2),
+                    QuizOption(R.string.quiz_future_q4_a3, 1),
+                    QuizOption(R.string.quiz_future_q4_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Финансовые цели на год…",
+                textRes = R.string.quiz_future_q5,
                 options = listOf(
-                    QuizOption("Общие и конкретные", 3),
-                    QuizOption("Есть у каждого свои", 2),
-                    QuizOption("Что-то планируем", 1),
-                    QuizOption("Никаких", 0)
+                    QuizOption(R.string.quiz_future_q5_a1, 3),
+                    QuizOption(R.string.quiz_future_q5_a2, 2),
+                    QuizOption(R.string.quiz_future_q5_a3, 1),
+                    QuizOption(R.string.quiz_future_q5_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Мечты друг друга — путешествия, хобби, язык…",
+                textRes = R.string.quiz_future_q6,
                 options = listOf(
-                    QuizOption("Знаем и помогаем их осуществлять", 3),
-                    QuizOption("Знаем, но редко помогаем", 2),
-                    QuizOption("Знаем только часть", 1),
-                    QuizOption("Почти не знаем", 0)
+                    QuizOption(R.string.quiz_future_q6_a1, 3),
+                    QuizOption(R.string.quiz_future_q6_a2, 2),
+                    QuizOption(R.string.quiz_future_q6_a3, 1),
+                    QuizOption(R.string.quiz_future_q6_a4, 0)
                 )
             ),
             QuizQuestion(
-                text = "Разговор о будущем обычно…",
+                textRes = R.string.quiz_future_q7,
                 options = listOf(
-                    QuizOption("Спокойный и конкретный", 3),
-                    QuizOption("Начинается и растворяется", 2),
-                    QuizOption("Перерастает в спор", 1),
-                    QuizOption("Не начинается", 0)
+                    QuizOption(R.string.quiz_future_q7_a1, 3),
+                    QuizOption(R.string.quiz_future_q7_a2, 2),
+                    QuizOption(R.string.quiz_future_q7_a3, 1),
+                    QuizOption(R.string.quiz_future_q7_a4, 0)
                 )
             )
         )

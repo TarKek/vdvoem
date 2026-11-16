@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Вдвоём</string>
+
+    <string name="title_home">Home</string>
+    <string name="title_store">Add-ons</string>
+
+    <string name="action_store">Add-ons</string>
+    <string name="action_back">Back</string>
+    <string name="action_open">Open</string>
+    <string name="action_more">More</string>
+    <string name="pair_account_action">Couple: edit</string>
+
+    <string name="backup_export">Save data to file</string>
+    <string name="backup_import">Load data from file</string>
+    <string name="backup_export_done">File saved</string>
+    <string name="backup_import_done">Records loaded: %1$d</string>
+    <string name="backup_failed">Couldn\'t do it: the file is damaged or not suitable</string>
+
+    <string name="dashboard_hero_title">The two of you</string>
+    <string name="dashboard_hero_text">Shared plans, wishes and gifts in one place. Start by setting up your couple.</string>
+    <string name="dashboard_setup_pair">Set up couple</string>
+    <string name="dashboard_edit_pair">Edit couple</string>
+    <string name="dashboard_pair_names">%1$s and %2$s</string>
+    <string name="dashboard_pair_since">Together since %1$s</string>
+    <string name="dashboard_pair_since_missing">No start date yet — tap the couple card</string>
+
+    <string name="pair_dialog_title">Our couple</string>
+    <string name="pair_field_you">Your name</string>
+    <string name="pair_field_partner">Partner\'s name</string>
+    <string name="pair_since_value">Together since %1$s</string>
+    <string name="pair_save">Save</string>
+    <string name="pair_cancel">Cancel</string>
+    <string name="pair_ok">OK</string>
+
+    <plurals name="dashboard_days_together">
+        <item quantity="one">together %d day</item>
+        <item quantity="other">together %d days</item>
+    </plurals>
+
+    <plurals name="dashboard_days_word">
+        <item quantity="one">day</item>
+        <item quantity="other">days</item>
+    </plurals>
+
+    <plurals name="dashboard_days_short">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+
+    <string name="dashboard_wishes_card">Wishes</string>
+    <string name="dashboard_gifts_card">Gifts</string>
+    <string name="dashboard_tests_card">Quizzes</string>
+    <string name="dashboard_tests_card_subtitle">For two</string>
+    <string name="dashboard_widgets_title">Widgets</string>
+    <string name="presents_title">Wishes and gifts</string>
+    <string name="presents_short_title">Wishes</string>
+    <string name="presents_description">A shared list of wishes and gift ideas</string>
+    <string name="presents_tab_wishes">Wishes</string>
+    <string name="presents_tab_gifts">Gifts</string>
+    <string name="dashboard_widget_add">Add widget</string>
+    <string name="dashboard_widget_empty">Empty</string>
+    <string name="dashboard_today">Today</string>
+    <string name="dashboard_passed">Already passed</string>
+    <string name="dashboard_poke">Send a heart</string>
+    <string name="dashboard_poke_sent">Heart sent — your partner will see it after sync</string>
+    <string name="dashboard_birthday">%1$s · %2$s</string>
+
+    <string name="pair_birthday_a">Birthday: me</string>
+    <string name="pair_birthday_a_value">My birthday: %1$s</string>
+    <string name="pair_birthday_b">Birthday: partner</string>
+    <string name="pair_birthday_b_value">Partner\'s birthday: %1$s</string>
+
+    <string name="dashboard_poke_last">Last heart: %1$s</string>
+    <string name="poke_history_title">Heart history</string>
+    <string name="poke_history_open">Heart history</string>
+    <string name="poke_history_empty">No hearts yet — send the first one</string>
+    <string name="poke_history_mine">You</string>
+    <string name="poke_history_partner">Partner</string>
+    <string name="poke_notification_title">A heart for you</string>
+    <string name="poke_notification_channel">Hearts</string>
+    <string name="poke_notification_channel_text">Messages from your partner</string>
+
+    <string name="widget_countdown_title">Countdown</string>
+    <string name="widget_countdown_description">A counter to or since a chosen date</string>
+    <string name="widget_event_title">Events</string>
+    <string name="widget_event_description">How many dates are saved</string>
+    <string name="widget_wishes_description">How many wishes are on the list</string>
+    <string name="widget_gifts_description">How many gifts are planned</string>
+    <string name="widget_tests_description">Quick access to quizzes for two</string>
+    <string name="widget_modules_description">How many modules are on</string>
+    <string name="widget_picker_title">Widgets on Home</string>
+    <string name="widget_picker_text">Add widgets, reorder them and tune each counter separately.</string>
+    <string name="widget_picker_done">Done</string>
+    <string name="widget_add_section">Add widget</string>
+    <string name="widget_move_up">Up</string>
+    <string name="widget_move_down">Down</string>
+    <string name="widget_configure">Set up</string>
+    <string name="widget_remove">Remove widget</string>
+
+    <string name="countdown_settings_title">Countdown settings</string>
+    <string name="countdown_target_section">What to count</string>
+    <string name="countdown_target_nearest">Nearest event</string>
+    <string name="countdown_special_targets">Special dates</string>
+    <string name="countdown_target_pair">Together with partner</string>
+    <string name="countdown_target_birthday">Birthday: %1$s</string>
+    <string name="countdown_direction_section">Direction</string>
+    <string name="countdown_direction_until">Time left</string>
+    <string name="countdown_direction_since">Time passed</string>
+    <string name="countdown_custom_title">Custom label (optional)</string>
+    <string name="countdown_preview">%1$s · %2$s · %3$s</string>
+    <string name="widget_countdown_since_date">since %1$s</string>
+    <string name="countdown_preview_passed">already passed</string>
+    <plurals name="widget_days_passed">
+        <item quantity="one">%d day ago</item>
+        <item quantity="other">%d days ago</item>
+    </plurals>
+
+    <string name="poke_dialog_title">Heart</string>
+    <string name="poke_dialog_text">Your partner will get it as a notification once sync is on.</string>
+    <string name="poke_field">Your message</string>
+    <string name="poke_send">Send</string>
+    <string name="poke_quick_love">Love you</string>
+    <string name="poke_quick_miss">Miss you</string>
+    <string name="poke_quick_hug">Hug you</string>
+    <string name="poke_quick_thinking">Thinking of you</string>
+
+    <string name="more_title">More</string>
+    <string name="more_intro">Modules that didn\'t fit in the bottom bar. Tap a row to open it.</string>
+    <string name="more_empty_title">Nothing here yet</string>
+    <string name="more_empty_text">Turn on modules in the add-ons store — they\'ll show up here.</string>
+    <string name="more_addons_title">Add-ons</string>
+    <string name="more_store_title">Add-ons store</string>
+    <string name="more_store_text">Turn app modules on and off</string>
+    <string name="more_data_title">Data</string>
+    <string name="more_export_text">Back up your couple, events, wishes and gifts to a file</string>
+    <string name="more_import_text">Adds records from a backup, keeps your current data</string>
+    <string name="more_update_section">Updates</string>
+    <string name="more_update_title">Updates</string>
+    <string name="more_update_current">Version %1$s · tap to check for updates</string>
+    <string name="more_update_checking">Checking for updates…</string>
+    <string name="more_update_available">Version %1$s is available · tap to download</string>
+    <string name="more_update_downloading">Downloading update…</string>
+    <string name="more_update_error">Couldn\'t check for updates · tap to retry</string>
+    <string name="more_update_failed">Couldn\'t download the update</string>
+    <string name="more_update_no_app">No app to install the APK</string>
+    <string name="more_update_permission">Allow installing updates, then tap again</string>
+
+    <string name="dashboard_modules_title">Your modules</string>
+    <string name="dashboard_modules_all">All</string>
+    <string name="dashboard_modules_empty_title">Nothing yet</string>
+    <string name="dashboard_modules_empty_message">Turn on modules in the add-ons store — calendar, wishes or gifts.</string>
+    <string name="dashboard_open_store">Open add-ons</string>
+
+    <plurals name="dashboard_events_count">
+        <item quantity="one">%d event</item>
+        <item quantity="other">%d events</item>
+    </plurals>
+
+    <plurals name="dashboard_wishes_count">
+        <item quantity="one">%d wish</item>
+        <item quantity="other">%d wishes</item>
+    </plurals>
+
+    <plurals name="dashboard_gifts_count">
+        <item quantity="one">%d gift</item>
+        <item quantity="other">%d gifts</item>
+    </plurals>
+
+    <string name="dashboard_upcoming_title">Upcoming</string>
+    <string name="dashboard_upcoming_empty_title">No events yet</string>
+    <string name="dashboard_upcoming_empty_message">Once you add events, the nearest one will appear here.</string>
+    <string name="dashboard_upcoming_empty_action">Open calendar</string>
+    <string name="connect_title">Sync</string>
+    <string name="connect_hero_title">Couple sync</string>
+    <string name="connect_hero_text">One server, shared data on two phones. Enter the address, then create a couple or join with a code.</string>
+    <string name="connect_server_label">Server address</string>
+    <string name="connect_server_hint">https://…</string>
+    <string name="connect_server_text">Your server address. If it\'s local, you\'ll need a tunnel or a public IP.</string>
+    <string name="connect_create_title">New couple</string>
+    <string name="connect_create_text">Create a couple and pass the code to your partner.</string>
+    <string name="connect_create">Create couple</string>
+    <string name="connect_join_title">Join with a code</string>
+    <string name="connect_join_text">Enter the 8-character code your partner sent you.</string>
+    <string name="connect_join">Join</string>
+    <string name="connect_code_hint">Invite code</string>
+    <string name="connect_code_counter">%1$d / %2$d</string>
+    <string name="connect_busy">Connecting…</string>
+    <string name="connect_created_title">Couple created</string>
+    <string name="connect_created_text">Pass this code to your partner — they\'ll enter it on their sync screen.</string>
+    <string name="connect_copy">Copy code</string>
+    <string name="connect_copied">Code copied</string>
+    <string name="connect_done">Done</string>
+    <string name="connect_connected_title">Couple connected</string>
+    <string name="connect_connected_names">%1$s and %2$s</string>
+    <string name="connect_connected_name_a">You</string>
+    <string name="connect_connected_name_b">Partner</string>
+    <string name="connect_connected_since">Together since %1$s</string>
+    <string name="connect_invite_title">Code for the second phone</string>
+    <string name="connect_invite_text">Your partner enters this code on their phone: “More” → “Connect couple”.</string>
+    <string name="connect_sync_now">Sync now</string>
+    <string name="connect_syncing">Syncing…</string>
+    <string name="connect_sync_hint">Usually it happens on its own: when you open the app and after every edit.</string>
+    <string name="connect_leave">Leave couple</string>
+    <string name="connect_leave_title">Leave the couple?</string>
+    <string name="connect_leave_text">Sync settings on this phone will be reset. Your data stays on the device and on the server.</string>
+    <string name="connect_leave_confirm">Leave</string>
+    <string name="more_sync_section">Sync</string>
+    <string name="more_sync_title">Connect couple</string>
+    <string name="more_sync_text">Shared data on two phones via your own server</string>
+    <string name="more_nav_section">Navigation</string>
+    <string name="more_nav_title">Bottom bar</string>
+    <string name="more_nav_text">%1$s · tap to choose sections</string>
+    <string name="nav_sheet_title">Bottom bar</string>
+    <string name="nav_sheet_text">Two sections between Home and More. Pick up to two — a new pick replaces the oldest, and the other modules stay here in More.</string>
+    <string name="nav_sheet_done">Done</string>
+    <string name="more_sync_connected_text">Couple connected: data is shared on two phones</string>
+</resources>

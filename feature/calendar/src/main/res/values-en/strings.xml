@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calendar_module_title">Calendar</string>
+    <string name="calendar_module_description">Shared events, anniversaries and reminders</string>
+
+    <string name="calendar_hero_title">Shared dates and anniversaries</string>
+    <string name="calendar_hero_next">%1$s · %2$s</string>
+    <string name="calendar_hero_empty">Empty for now — add an upcoming date and we\'ll show how many days are left</string>
+    <string name="calendar_add">Add event</string>
+    <string name="calendar_today">Today</string>
+    <string name="calendar_passed">Already passed</string>
+    <string name="calendar_in_days">In %1$s</string>
+
+    <string name="calendar_section_events">Events</string>
+    <string name="calendar_show_all">Show all</string>
+    <string name="calendar_loading">Loading dates…</string>
+
+    <string name="calendar_filter_all">All</string>
+    <string name="calendar_filter_today">Today</string>
+    <string name="calendar_filter_week">7 days</string>
+    <string name="calendar_filter_month">This month</string>
+
+    <string name="calendar_sort_label">Sort: %1$s</string>
+    <string name="calendar_sort_nearest">Nearest first</string>
+    <string name="calendar_sort_alphabet">By name</string>
+
+    <string name="calendar_filter_empty_title">No dates in this period</string>
+    <string name="calendar_filter_empty_message">Your events are still here — just choose another period.</string>
+    <string name="calendar_filter_reset">Show all</string>
+
+    <string name="calendar_empty_title">Your dates will appear here</string>
+    <string name="calendar_empty_message">Add an anniversary, a date night or a trip — we\'ll show how many days are left.</string>
+
+    <string name="calendar_card_meta">%1$s · %2$s</string>
+    <string name="calendar_card_meta_annual">%1$s · %2$s · every year</string>
+    <string name="calendar_card_edit_hint">Edit: %1$s</string>
+
+    <string name="calendar_dialog_title">New event</string>
+    <string name="calendar_dialog_edit_title">Edit event</string>
+    <string name="calendar_action_delete">Delete event</string>
+    <string name="calendar_delete_title">Delete this event?</string>
+    <string name="calendar_delete_message">“%1$s” will disappear from the calendar for both of you. This can\'t be undone.</string>
+    <string name="calendar_delete_confirm">Delete</string>
+    <string name="calendar_field_title">Title</string>
+    <string name="calendar_field_title_hint">For example, anniversary</string>
+    <string name="calendar_field_date">Date: %1$s</string>
+    <string name="calendar_annual">Every year</string>
+    <string name="calendar_annual_hint">Repeat on this day every year</string>
+    <string name="calendar_save">Save</string>
+    <string name="calendar_cancel">Cancel</string>
+    <string name="calendar_ok">OK</string>
+
+    <string name="calendar_reminder_title">Reminders</string>
+    <string name="calendar_reminder_hint">7 days before and on the day</string>
+    <string name="calendar_reminder_hint_custom">%1$d days before and on the day, %2$d:00</string>
+    <string name="calendar_reminder_lead_title">Notify in advance</string>
+    <string name="calendar_reminder_lead_days">%1$d days before</string>
+    <string name="calendar_reminder_hour_title">Reminder hour</string>
+    <string name="calendar_reminder_hour">%1$d:00</string>
+    <string name="calendar_reminder_denied">Notifications are disabled in the system</string>
+    <string name="calendar_reminder_today">Today</string>
+    <string name="calendar_reminder_in_days">In %1$s</string>
+    <string name="calendar_reminder_channel">Reminders</string>
+    <string name="calendar_reminder_channel_description">Reminders about calendar events</string>
+
+    <plurals name="calendar_days_left">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+</resources>

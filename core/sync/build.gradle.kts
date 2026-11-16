@@ -21,6 +21,10 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
@@ -39,4 +43,7 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.9.1")
 
     implementation("io.insert-koin:koin-android:4.0.0")
+
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")
 }

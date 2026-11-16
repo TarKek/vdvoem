@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="timetable_module_title">Timetable</string>
+    <string name="timetable_module_description">Lessons by day of the week — shared with your partner</string>
+    <string name="timetable_title">Timetable</string>
+    <string name="timetable_count">%1$d</string>
+    <string name="timetable_add">Add lesson</string>
+    <string name="timetable_empty_title">Timetable is empty</string>
+    <string name="timetable_empty_message">Add the first lesson — your partner will see it on their phone.</string>
+    <string name="timetable_new">New lesson</string>
+    <string name="timetable_edit">Lesson</string>
+    <string name="timetable_subject">Subject</string>
+    <string name="timetable_day">Day of the week</string>
+    <string name="timetable_start">Start</string>
+    <string name="timetable_end">End</string>
+    <string name="timetable_room">Room</string>
+    <string name="timetable_teacher">Teacher</string>
+    <string name="timetable_save">Save</string>
+    <string name="timetable_cancel">Cancel</string>
+    <string name="timetable_delete">Delete lesson</string>
+    <string name="timetable_error_subject">Enter a subject</string>
+    <string name="timetable_error_time">Time format 9:00</string>
+    <string name="timetable_error_order">End must be after start</string>
+
+    <string-array name="timetable_weekdays">
+        <item>Mon</item>
+        <item>Tue</item>
+        <item>Wed</item>
+        <item>Thu</item>
+        <item>Fri</item>
+        <item>Sat</item>
+        <item>Sun</item>
+    </string-array>
+</resources>

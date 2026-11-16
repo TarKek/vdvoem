@@ -20,7 +20,19 @@ class ModulesViewModel(
         initialValue = registry.defaultEnabledIds
     )
 
+    /** Сохранённый порядок модулей; пустой — ещё не переставляли. */
+    val order: StateFlow<List<String>> = repository.order.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = emptyList()
+    )
+
     fun setEnabled(moduleId: String, enabled: Boolean) {
         viewModelScope.launch { repository.setEnabled(moduleId, enabled) }
+    }
+
+    /** Новый порядок модулей списком идентификаторов (перестановка идёт из магазина). */
+    fun setOrder(ids: List<String>) {
+        viewModelScope.launch { repository.setOrder(ids) }
     }
 }

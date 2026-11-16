@@ -183,13 +183,13 @@ private fun QuizCard(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = quiz.title,
+                    text = stringResource(quiz.titleRes),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(modifier = Modifier.height(VdvoemSpacing.xs))
                 Text(
-                    text = quiz.description,
+                    text = stringResource(quiz.descriptionRes),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
@@ -276,7 +276,7 @@ private fun QuizQuestionView(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = quiz.title,
+                text = stringResource(quiz.titleRes),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f)
@@ -305,7 +305,7 @@ private fun QuizQuestionView(
         )
 
         Text(
-            text = question.text,
+            text = stringResource(question.textRes),
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(top = VdvoemSpacing.sm)
         )
@@ -317,7 +317,7 @@ private fun QuizQuestionView(
 
         question.options.forEachIndexed { index, option ->
             QuizOptionRow(
-                text = option.text,
+                text = stringResource(option.textRes),
                 selected = index == selected,
                 onClick = { onSelectOption(index) }
             )
@@ -401,7 +401,7 @@ private fun QuizResultView(
     val context = LocalContext.current
     val shareText = stringResource(
         R.string.quizzes_share_text,
-        outcome.quiz.title,
+        stringResource(outcome.quiz.titleRes),
         outcome.percent
     )
     val shareChooserTitle = stringResource(R.string.quizzes_share_chooser)
@@ -419,7 +419,7 @@ private fun QuizResultView(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = outcome.quiz.title,
+            text = stringResource(outcome.quiz.titleRes),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -479,7 +479,7 @@ private fun QuizResultView(
             )
             Spacer(modifier = Modifier.height(VdvoemSpacing.xs))
             Text(
-                text = outcome.interpretation,
+                text = stringResource(outcome.interpretationRes),
                 style = MaterialTheme.typography.bodyLarge
             )
         }
@@ -530,7 +530,7 @@ private fun Quiz.estimatedMinutes(): Int =
     ((questions.size + 1) / 2).coerceAtLeast(1)
 
 private val passedAtFormatter: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("d MMM", Locale("ru"))
+    DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())
 
 private fun formatPassedAt(epochMillis: Long): String =
     Instant.ofEpochMilli(epochMillis)
@@ -586,7 +586,7 @@ private fun QuizResultPreview() {
                 score = quiz.maxScore * percent / 100,
                 maxScore = quiz.maxScore,
                 percent = percent,
-                interpretation = quiz.interpretation(percent),
+                interpretationRes = quiz.interpretationRes(percent),
                 passedAt = System.currentTimeMillis(),
                 bestPercent = percent + 8,
                 isNewRecord = false

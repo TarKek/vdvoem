@@ -9,6 +9,7 @@ import app.vdvoem.core.domain.repository.CalendarRepository
 import app.vdvoem.core.domain.repository.GiftRepository
 import app.vdvoem.core.domain.repository.PairRepository
 import app.vdvoem.core.domain.repository.PokeRepository
+import app.vdvoem.core.domain.device.DeviceIdentity
 import app.vdvoem.core.domain.repository.WishRepository
 import app.vdvoem.core.domain.time.Dates
 import kotlinx.coroutines.flow.SharingStarted
@@ -33,7 +34,8 @@ class DashboardViewModel(
     private val calendarRepository: CalendarRepository,
     private val wishRepository: WishRepository,
     private val giftRepository: GiftRepository,
-    private val pokeRepository: PokeRepository
+    private val pokeRepository: PokeRepository,
+    private val deviceIdentity: DeviceIdentity
 ) : ViewModel() {
 
     val state = combine(
@@ -43,6 +45,11 @@ class DashboardViewModel(
         giftRepository.observeGifts(),
         pokeRepository.observe()
     ) { pair, events, wishes, gifts, pokes ->
+        // Желание-сюрприз партнёра не должно попадать даже в счётчик на главной.
+        val myDevice = deviceIdentity.deviceId()
+        val visibleWishes = wishes.filterNot { wish ->
+            wish.surprise && wish.ownerDeviceId.isNotEmpty() && wish.ownerDeviceId != myDevice
+        }
         val today = Dates.today()
         val dated = events.map { event ->
             event to Dates.nextOccurrence(event.dateMillis, event.annual, today)
@@ -57,7 +64,7 @@ class DashboardViewModel(
             events = events.sortedBy { it.dateMillis },
             nextEvent = (upcoming ?: latestPast)?.first,
             eventCount = events.size,
-            wishCount = wishes.size,
+            wishCount = visibleWishes.size,
             giftCount = gifts.size,
             lastPoke = pokes.firstOrNull(),
             pokes = pokes

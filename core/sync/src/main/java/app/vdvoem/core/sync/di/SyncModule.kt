@@ -2,6 +2,7 @@ package app.vdvoem.core.sync.di
 
 import app.vdvoem.core.domain.device.DeviceIdentity
 import app.vdvoem.core.sync.IncomingPokeHandler
+import app.vdvoem.core.sync.RealtimeSync
 import app.vdvoem.core.sync.SyncApi
 import app.vdvoem.core.sync.SyncController
 import app.vdvoem.core.sync.SyncDeviceIdentity
@@ -56,4 +57,7 @@ val syncModule: Module = module {
             statusHolder = get()
         )
     }
+
+    // «Живой» опрос, пока приложение на экране: активити дёргает start()/stop().
+    single { RealtimeSync(controller = get()) }
 }

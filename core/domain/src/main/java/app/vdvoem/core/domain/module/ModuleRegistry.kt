@@ -3,8 +3,9 @@ package app.vdvoem.core.domain.module
 /**
  * Реестр всех собранных в APK модулей.
  *
- * Порядок задаётся [ModuleManifest.order], поэтому включённые модули в нижней навигации
- * идут в предсказуемом порядке независимо от порядка регистрации в DI.
+ * Базовый порядок задаётся [ModuleManifest.order], поэтому включённые модули в нижней навигации
+ * идут в предсказуемом порядке независимо от порядка регистрации в DI. Пользователь может
+ * переставить модули — тогда используется сохранённый порядок (см. [ordered]).
  */
 class ModuleRegistry(modules: List<AppModule>) {
 
@@ -20,6 +21,25 @@ class ModuleRegistry(modules: List<AppModule>) {
 
     /** Модули, которые можно включать и выключать. */
     val toggleable: List<AppModule> = this.modules.filter { !it.manifest.comingSoon }
+
+    /**
+     * Модули в пользовательском порядке: сначала известные из [orderIds] (в сохранённой
+     * последовательности), затем остальные по [ModuleManifest.order].
+     *
+     * Неизвестные и повторяющиеся идентификаторы игнорируются, поэтому устаревшие настройки
+     * или удалённые модули ничего не ломают.
+     */
+    fun ordered(orderIds: List<String>): List<AppModule> {
+        if (orderIds.isEmpty()) return modules
+        val known = orderIds.distinct().mapNotNull(byId::get)
+        if (known.isEmpty()) return modules
+        val knownIds = known.mapTo(HashSet()) { it.manifest.id }
+        return known + modules.filterNot { it.manifest.id in knownIds }
+    }
+
+    /** Эффективный порядок идентификаторов всех модулей — его и сохраняем в настройках. */
+    fun effectiveOrder(orderIds: List<String>): List<String> =
+        ordered(orderIds).map { it.manifest.id }
 
     fun byRoute(route: String?): AppModule? = route?.let(byRoute::get)
 

@@ -265,26 +265,3 @@ class SyncEngine(
         const val NOT_CONFIGURED = "Синхронизация не настроена"
     }
 }
-
-/**
- * LWW с учётом tombstone.
- *
- * Локальное удаление окончательно: более свежая серверная копия его не «оживляет».
- * Свежий серверный tombstone применяется как обычное удаление (он новее локальной записи).
- */
-private fun shouldApplyRemote(localUpdatedAt: Long?, localDeletedAt: Long?, remoteUpdatedAt: Long): Boolean {
-    if (localUpdatedAt == null) return true
-    if (remoteUpdatedAt <= localUpdatedAt) return false
-    return localDeletedAt == null
-}
-
-/** Самый свежий `updatedAt` в отправляемом наборе — водяной знак отправки. */
-private fun ChangesDto.maxUpdatedAt(): Long = (
-    listOfNotNull(pair?.updatedAt) +
-        events.map { it.updatedAt } +
-        wishes.map { it.updatedAt } +
-        gifts.map { it.updatedAt } +
-        pokes.map { it.updatedAt } +
-        quizScores.map { it.updatedAt } +
-        lessons.map { it.updatedAt }
-    ).maxOrNull() ?: 0L

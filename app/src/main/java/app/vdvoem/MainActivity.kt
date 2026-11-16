@@ -14,11 +14,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.vdvoem.core.domain.settings.AppSettings
 import app.vdvoem.core.domain.settings.AppSettingsRepository
 import app.vdvoem.core.domain.settings.ThemeMode
+import app.vdvoem.core.sync.RealtimeSync
 import app.vdvoem.core.ui.theme.VdvoemTheme
 import app.vdvoem.ui.VdvoemRoot
 import org.koin.compose.koinInject
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.get
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), KoinComponent {
+
+    /** «Живая» синхронизация, пока экран виден; создаётся лениво из Koin. */
+    private val realtimeSync: RealtimeSync by lazy { get() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -44,6 +50,20 @@ class MainActivity : ComponentActivity() {
                 VdvoemRoot()
             }
         }
+    }
+
+    /**
+     * Цикл «живой» синхронизации живёт только пока экран виден: в фоне его нет,
+     * там работает обычный WorkManager-воркер.
+     */
+    override fun onStart() {
+        super.onStart()
+        runCatching { realtimeSync.start() }
+    }
+
+    override fun onStop() {
+        runCatching { realtimeSync.stop() }
+        super.onStop()
     }
 
     /**

@@ -49,7 +49,8 @@ val appKoinModule = module {
             calendarRepository = get(),
             wishRepository = get(),
             giftRepository = get(),
-            pokeRepository = get()
+            pokeRepository = get(),
+            deviceIdentity = get()
         )
     }
     viewModel { CalendarViewModel(calendarRepository = get(), pairRepository = get()) }

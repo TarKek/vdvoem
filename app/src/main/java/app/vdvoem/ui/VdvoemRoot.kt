@@ -99,6 +99,7 @@ fun VdvoemRoot(
     backupViewModel: BackupViewModel = koinViewModel()
 ) {
     val enabledIds by viewModel.enabledIds.collectAsStateWithLifecycle()
+    val orderIds by viewModel.order.collectAsStateWithLifecycle()
     val dashboardState by dashboardViewModel.state.collectAsStateWithLifecycle()
     val homePreferences: HomePreferences = koinInject()
     val pokeRepository: PokeRepository = koinInject()
@@ -198,8 +199,12 @@ fun VdvoemRoot(
         }
     }
 
-    val enabledModules = remember(enabledIds, registry) {
-        registry.modules.filter {
+    // Пользовательский порядок из магазина: известные модули идут как сохранили,
+    // остальные — по манифесту. Тот же список использует магазин.
+    val orderedModules = remember(orderIds, registry) { registry.ordered(orderIds) }
+    val effectiveOrder = remember(orderedModules) { orderedModules.map { it.manifest.id } }
+    val enabledModules = remember(enabledIds, orderedModules) {
+        orderedModules.filter {
             it.manifest.id in enabledIds &&
                 it.manifest.id != StoreModule.ID &&
                 !it.manifest.comingSoon
@@ -210,8 +215,11 @@ fun VdvoemRoot(
         .collectAsStateWithLifecycle(initialValue = HomePreferences.DEFAULT_NAV_ROUTES)
     val bottomModules = remember(enabledModules, navRoutes) {
         val byRoute = enabledModules.associateBy { it.route }
+        val position = enabledModules.withIndex().associate { (index, module) -> module.route to index }
+        // Какие вкладки выбраны — решает navRoutes, а их порядок берём из магазина.
         navRoutes.mapNotNull { byRoute[it] }
             .distinctBy { it.route }
+            .sortedBy { position[it.route] ?: Int.MAX_VALUE }
             .take(HomePreferences.NAV_SLOTS)
     }
     val overflowModules = remember(enabledModules, bottomModules) {
@@ -420,7 +428,9 @@ fun VdvoemRoot(
                 StoreScreen(
                     registry = registry,
                     enabledIds = enabledIds,
-                    onToggle = viewModel::setEnabled
+                    order = effectiveOrder,
+                    onToggle = viewModel::setEnabled,
+                    onOrderChange = viewModel::setOrder
                 )
             }
             composable(Routes.MORE) {

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wishes_module_title">Wishes</string>
+    <string name="wishes_module_description">A list of dreams and gift ideas</string>
+
+    <string name="wishes_summary">%1$s · %2$s</string>
+    <string name="wishes_summary_done">%1$d gifted</string>
+    <string name="wishes_fab">Wish</string>
+    <string name="wishes_mark_done">Mark as gifted</string>
+    <string name="wishes_action_make_gift">Give it</string>
+    <string name="wishes_gift_added">Added to gifts</string>
+    <string name="wishes_price">≈ %1$s ₽</string>
+    <string name="wishes_loading">Loading wishes…</string>
+
+    <string name="wishes_filter_label">Show</string>
+    <string name="wishes_filter_all">All</string>
+    <string name="wishes_status_wanted">Wanted</string>
+    <string name="wishes_status_reserved">Being given</string>
+    <string name="wishes_status_done">Gifted</string>
+
+    <string name="wishes_search_label">Search</string>
+    <string name="wishes_search_hint">Search by title or note</string>
+    <string name="wishes_search_reset">Clear search</string>
+    <string name="wishes_sort_button">Sort: %1$s</string>
+    <string name="wishes_sort_newest">Newest first</string>
+    <string name="wishes_sort_price">Most expensive first</string>
+    <string name="wishes_sort_priority">By priority</string>
+    <string name="wishes_sort_alphabet">Alphabetically</string>
+
+    <string name="wishes_card_edit_label">Edit wish</string>
+    <string name="wishes_card_edit_hint">Edit: %1$s</string>
+
+    <string name="wishes_search_empty_title">Nothing found</string>
+    <string name="wishes_search_empty_message">Check the spelling or clear the search — your wishes are still here.</string>
+
+    <string name="wishes_empty_title">Your wishes will appear here</string>
+    <string name="wishes_empty_message">Add something you\'d love to get — from a book to a trip.</string>
+    <string name="wishes_empty_action">Add a wish</string>
+    <string name="wishes_filter_empty_title">This list is empty</string>
+    <string name="wishes_filter_empty_message">Choose another filter — your other wishes are still here.</string>
+    <string name="wishes_filter_reset">Show all</string>
+
+    <string name="wishes_dialog_title">New wish</string>
+    <string name="wishes_dialog_edit_title">Edit wish</string>
+    <string name="wishes_action_delete">Delete wish</string>
+    <string name="wishes_delete_title">Delete this wish?</string>
+    <string name="wishes_delete_message">“%1$s” will disappear from the shared list. This can\'t be undone.</string>
+    <string name="wishes_delete_confirm">Delete</string>
+    <string name="wishes_field_title">Title</string>
+    <string name="wishes_field_title_hint">For example, headphones</string>
+    <string name="wishes_field_note">Note</string>
+    <string name="wishes_field_note_hint">Color, size, link — anything that helps you choose</string>
+    <string name="wishes_field_price">Approximate price, ₽</string>
+    <string name="wishes_field_price_hint">Digits only</string>
+    <string name="wishes_field_url">Link</string>
+    <string name="wishes_field_url_hint">https://…</string>
+    <string name="wishes_field_priority">Priority</string>
+    <string name="wishes_priority_low">Low</string>
+    <string name="wishes_priority_normal">Normal</string>
+    <string name="wishes_priority_high">High</string>
+    <string name="wishes_field_surprise">Surprise</string>
+    <string name="wishes_field_surprise_hint">Your partner won\'t see this wish</string>
+    <string name="wishes_pill_surprise">Surprise</string>
+    <string name="wishes_open_link">Open link</string>
+    <string name="wishes_save">Save</string>
+    <string name="wishes_cancel">Cancel</string>
+
+    <plurals name="wishes_count">
+        <item quantity="one">%d wish</item>
+        <item quantity="other">%d wishes</item>
+    </plurals>
+</resources>

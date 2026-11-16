@@ -1,5 +1,6 @@
 package app.vdvoem.feature.quizzes
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.vdvoem.core.domain.model.QuizScore
@@ -19,7 +20,7 @@ data class QuizOutcome(
     val score: Int,
     val maxScore: Int,
     val percent: Int,
-    val interpretation: String,
+    @StringRes val interpretationRes: Int,
     val passedAt: Long,
     /** Лучший результат за всё время, включая текущее прохождение. */
     val bestPercent: Int = percent,
@@ -134,7 +135,7 @@ class QuizzesViewModel(
                 score = quiz.score(answers),
                 maxScore = quiz.maxScore,
                 percent = percent,
-                interpretation = quiz.interpretation(percent),
+                interpretationRes = quiz.interpretationRes(percent),
                 passedAt = passedAt,
                 bestPercent = maxOf(previousBest, percent),
                 isNewRecord = previousBest > 0 && percent > previousBest

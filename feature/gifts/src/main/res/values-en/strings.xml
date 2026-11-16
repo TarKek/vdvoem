@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gifts_module_title">Gifts</string>
+    <string name="gifts_module_description">Ideas, budget and gift status</string>
+
+    <string name="gifts_hero_total">Ideas worth %1$s</string>
+    <string name="gifts_fab">Gift</string>
+
+    <string name="gifts_section_ideas">Ideas</string>
+    <string name="gifts_section_ideas_caption">What you could give. Mark it “Bought” once you buy it.</string>
+    <string name="gifts_section_ideas_empty">No ideas yet — add the first one with “+ Gift”.</string>
+    <string name="gifts_section_bought">Bought</string>
+    <string name="gifts_section_bought_caption">Already bought — waiting for the day.</string>
+    <string name="gifts_section_bought_empty">Gifts you mark as bought will show up here.</string>
+    <string name="gifts_section_given">Given</string>
+    <string name="gifts_section_given_caption">History: what you\'ve already given.</string>
+    <string name="gifts_section_given_empty">Gifts you\'ve already given will show up here.</string>
+
+    <string name="gifts_status_idea">Idea</string>
+    <string name="gifts_from_wish">From wishes</string>
+    <string name="gifts_status_bought">Bought</string>
+    <string name="gifts_status_given">Given</string>
+
+    <string name="gifts_action_bought">Mark as bought</string>
+    <string name="gifts_action_given">Mark as given</string>
+    <string name="gifts_action_to_bought">Back to bought</string>
+    <string name="gifts_delete">Delete gift</string>
+
+    <string name="gifts_empty_title">No ideas yet</string>
+    <string name="gifts_empty_message">Add your first gift idea — with a budget and a note. You\'ll have something to choose from when the day comes.</string>
+    <string name="gifts_empty_action">Add gift</string>
+
+    <string name="gifts_search_label">Search</string>
+    <string name="gifts_search_hint">Title or note</string>
+    <string name="gifts_search_reset">Clear search</string>
+    <string name="gifts_search_empty_title">Nothing found</string>
+    <string name="gifts_search_empty_message">No gifts match “%1$s”. Try another word.</string>
+    <string name="gifts_search_empty_action">Clear search</string>
+
+    <string name="gifts_sort">Sort</string>
+    <string name="gifts_sort_selected">Currently selected</string>
+    <string name="gifts_sort_newest">Newest first</string>
+    <string name="gifts_sort_budget">By budget</string>
+    <string name="gifts_sort_alphabet">By name</string>
+
+    <string name="gifts_dialog_title">New gift</string>
+    <string name="gifts_edit_title">Edit gift</string>
+    <string name="gifts_field_title">Title</string>
+    <string name="gifts_field_note">Note</string>
+    <string name="gifts_field_budget">Budget, ₽</string>
+    <string name="gifts_field_budget_hint">Optional</string>
+    <string name="gifts_field_status">Gift status</string>
+    <string name="gifts_field_status_hint">Idea — still choosing, bought — already have it, given — handed over.</string>
+    <string name="gifts_save">Save</string>
+    <string name="gifts_cancel">Cancel</string>
+
+    <string name="gifts_delete_title">Delete this gift?</string>
+    <string name="gifts_delete_message">“%1$s” will disappear from the list. This can\'t be undone.</string>
+    <string name="gifts_delete_confirm">Delete</string>
+</resources>

@@ -17,6 +17,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
@@ -26,6 +28,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -43,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import app.vdvoem.core.domain.module.AppModule
 import app.vdvoem.core.domain.module.ModuleCategory
 import app.vdvoem.core.domain.module.ModuleRegistry
@@ -52,6 +56,7 @@ import app.vdvoem.core.ui.components.SectionHeader
 import app.vdvoem.core.ui.components.VdvoemCard
 import app.vdvoem.core.ui.theme.VdvoemSizes
 import app.vdvoem.core.ui.theme.VdvoemSpacing
+import app.vdvoem.core.ui.theme.VdvoemTheme
 import java.util.Locale
 
 private data class PlannedModule(
@@ -74,10 +79,31 @@ fun StoreScreen(
     registry: ModuleRegistry,
     enabledIds: Set<String>,
     onToggle: (moduleId: String, enabled: Boolean) -> Unit,
+    order: List<String> = emptyList(),
+    onOrderChange: (List<String>) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val available = registry.modules.filter { it.manifest.id != StoreModule.ID && !it.manifest.comingSoon }
     val enabledCount = available.count { it.manifest.id in enabledIds }
+    // Переставлять можно только включённые доступные модули: выключенные в порядке не участвуют.
+    val orderIndex = order.withIndex().associate { (index, id) -> id to index }
+    val reorderable = order.filter { id ->
+        id in enabledIds && available.any { it.manifest.id == id }
+    }
+
+    fun moveModule(moduleId: String, delta: Int) {
+        val index = reorderable.indexOf(moduleId)
+        val target = index + delta
+        if (index < 0 || target !in reorderable.indices) return
+        val neighbour = reorderable[target]
+        val ids = order.toMutableList()
+        val from = ids.indexOf(moduleId)
+        val to = ids.indexOf(neighbour)
+        if (from < 0 || to < 0) return
+        ids[from] = neighbour
+        ids[to] = moduleId
+        onOrderChange(ids)
+    }
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var selectedCategory by rememberSaveable { mutableStateOf("ALL") }
     var showDisableAllDialog by rememberSaveable { mutableStateOf(false) }
@@ -156,6 +182,12 @@ fun StoreScreen(
                 )
                 Spacer(modifier = Modifier.size(VdvoemSpacing.md))
                 InfoPill(text = stringResource(R.string.store_enabled_count, enabledCount, available.size))
+                Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+                Text(
+                    text = stringResource(R.string.store_order_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
                 Spacer(modifier = Modifier.size(VdvoemSpacing.md))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -235,7 +267,10 @@ fun StoreScreen(
             }
         } else {
             ModuleCategory.entries.forEach { category ->
-                val categoryModules = visibleModules.filter { it.manifest.category == category }
+                val categoryModules = visibleModules
+                    .filter { it.manifest.category == category }
+                    // Внутри категории — пользовательский порядок (иначе порядок манифеста).
+                    .sortedBy { orderIndex[it.manifest.id] ?: Int.MAX_VALUE }
                 if (categoryModules.isEmpty()) return@forEach
 
                 item(key = "header_${category.name}") {
@@ -245,9 +280,15 @@ fun StoreScreen(
                     )
                 }
                 items(categoryModules, key = { it.manifest.id }) { module ->
+                    val enabled = module.manifest.id in enabledIds
+                    val position = reorderable.indexOf(module.manifest.id)
                     ModuleRow(
                         module = module,
-                        enabled = module.manifest.id in enabledIds,
+                        enabled = enabled,
+                        canMoveUp = enabled && position > 0,
+                        canMoveDown = enabled && position in 0 until reorderable.lastIndex,
+                        onMoveUp = { moveModule(module.manifest.id, -1) },
+                        onMoveDown = { moveModule(module.manifest.id, 1) },
                         onToggle = { checked -> onToggle(module.manifest.id, checked) }
                     )
                 }
@@ -278,6 +319,10 @@ fun StoreScreen(
 private fun ModuleRow(
     module: AppModule,
     enabled: Boolean,
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
     onToggle: (Boolean) -> Unit
 ) {
     VdvoemCard {
@@ -299,8 +344,59 @@ private fun ModuleRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            // Переставлять можно только включённые модули: выключенные в порядке не участвуют.
+            if (enabled) {
+                MoveButtons(
+                    canMoveUp = canMoveUp,
+                    canMoveDown = canMoveDown,
+                    onMoveUp = onMoveUp,
+                    onMoveDown = onMoveDown
+                )
+            }
             Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
             Switch(checked = enabled, onCheckedChange = onToggle)
+        }
+    }
+}
+
+/** Сдвоенные стрелки «выше/ниже»: одна позиция за нажатие. */
+@Composable
+private fun MoveButtons(
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.Center) {
+        IconButton(
+            onClick = onMoveUp,
+            enabled = canMoveUp,
+            modifier = Modifier.size(VdvoemSizes.avatarSm)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.KeyboardArrowUp,
+                contentDescription = stringResource(R.string.store_move_up),
+                tint = if (canMoveUp) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = DISABLED_ALPHA)
+                }
+            )
+        }
+        IconButton(
+            onClick = onMoveDown,
+            enabled = canMoveDown,
+            modifier = Modifier.size(VdvoemSizes.avatarSm)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.KeyboardArrowDown,
+                contentDescription = stringResource(R.string.store_move_down),
+                tint = if (canMoveDown) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = DISABLED_ALPHA)
+                }
+            )
         }
     }
 }
@@ -354,4 +450,15 @@ private fun ModuleCategory.titleRes(): Int = when (this) {
     ModuleCategory.TOGETHER -> R.string.store_category_together
     ModuleCategory.PERSONAL -> R.string.store_category_personal
     ModuleCategory.FUN -> R.string.store_category_fun
+}
+
+/** Прозрачность стрелки, когда двигать некуда. */
+private const val DISABLED_ALPHA = 0.38f
+
+@Preview(name = "Стрелки порядка")
+@Composable
+private fun MoveButtonsPreview() {
+    VdvoemTheme {
+        MoveButtons(canMoveUp = true, canMoveDown = false, onMoveUp = {}, onMoveDown = {})
+    }
 }

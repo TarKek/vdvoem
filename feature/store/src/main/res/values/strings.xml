@@ -5,6 +5,9 @@
     <string name="store_hero_title">Соберите приложение под себя</string>
     <string name="store_hero_text">Включайте только то, что нужно вам двоим. Настройки сохраняются, выключенный модуль можно вернуть в любой момент.</string>
     <string name="store_enabled_count">Включено %1$d из %2$d</string>
+    <string name="store_order_hint">Стрелки у включённых модулей меняют их порядок — он же используется во вкладках приложения.</string>
+    <string name="store_move_up">Переместить выше</string>
+    <string name="store_move_down">Переместить ниже</string>
     <string name="store_filter_all">Все</string>
     <string name="store_filter_core">Ядро</string>
     <string name="store_filter_together">Вдвоём</string>
