@@ -13,6 +13,11 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+import java.time.Instant
+import java.time.Year
+import java.time.ZoneId
 import java.util.UUID
 
 /** Порядок сортировки списка подарков. */
@@ -28,10 +33,17 @@ data class GiftsUiState(
     val query: String = "",
     val sort: GiftSort = GiftSort.NEWEST,
     /** Есть хотя бы один подарок без учёта поиска. */
-    val hasGifts: Boolean = false
+    val hasGifts: Boolean = false,
+    /** Годовой бюджет на подарки; `null` — не задан. */
+    val yearlyBudget: Long? = null,
+    /** Потрачено в этом календарном году: купленные и подаренные подарки. */
+    val spentThisYear: Long = 0
 ) {
     /** Подарков нет вообще — показываем приглашение добавить первый. */
     val isEmpty: Boolean get() = !hasGifts
+
+    /** Остаток годового бюджета; `null`, если бюджет не задан. */
+    val remaining: Long? get() = yearlyBudget?.minus(spentThisYear)
 
     /** Подарки есть, но под поиск ничего не подошло. */
     val isSearchEmpty: Boolean get() = hasGifts && ideas.isEmpty() && bought.isEmpty() && given.isEmpty()
@@ -40,22 +52,29 @@ data class GiftsUiState(
 class GiftsViewModel(
     private val giftRepository: GiftRepository,
     private val pairRepository: PairRepository
-) : ViewModel() {
+) : ViewModel(), KoinComponent {
+
+    private val budgetPreferences: GiftBudgetPreferences by inject()
 
     private val query = MutableStateFlow("")
     private val sort = MutableStateFlow(GiftSort.NEWEST)
 
     val state: StateFlow<GiftsUiState> = combine(
         giftRepository.observeGifts(),
+        budgetPreferences.budget,
         query,
         sort
-    ) { gifts, currentQuery, currentSort ->
-        buildState(gifts, currentQuery, currentSort)
+    ) { gifts, budget, currentQuery, currentSort ->
+        buildState(gifts, budget, currentQuery, currentSort)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = GiftsUiState()
     )
+
+    fun setBudget(value: Long?) {
+        viewModelScope.launch { budgetPreferences.setBudget(value) }
+    }
 
     fun setQuery(value: String) {
         query.value = value
@@ -119,7 +138,12 @@ class GiftsViewModel(
     private suspend fun loadGift(id: String): Gift? =
         giftRepository.observeGifts().first().firstOrNull { it.id == id }
 
-    private fun buildState(gifts: List<Gift>, query: String, sort: GiftSort): GiftsUiState {
+    private fun buildState(
+        gifts: List<Gift>,
+        budget: Long?,
+        query: String,
+        sort: GiftSort
+    ): GiftsUiState {
         val needle = query.trim()
         val visible = gifts
             .filter { it.matches(needle) }
@@ -136,7 +160,9 @@ class GiftsViewModel(
             givenBudget = given.sumOf { it.budget ?: 0L },
             query = query,
             sort = sort,
-            hasGifts = gifts.isNotEmpty()
+            hasGifts = gifts.isNotEmpty(),
+            yearlyBudget = budget,
+            spentThisYear = gifts.filter { it.isSpentThisYear() }.sumOf { it.budget ?: 0L }
         )
     }
 
@@ -147,6 +173,13 @@ class GiftsViewModel(
 
 private fun Gift.matches(needle: String): Boolean =
     needle.isEmpty() || title.contains(needle, ignoreCase = true) || note.contains(needle, ignoreCase = true)
+
+/** Подарок считается потраченным в этом году, если он куплен или подарен в текущем календарном году. */
+private fun Gift.isSpentThisYear(): Boolean {
+    if (status != GiftStatus.BOUGHT && status != GiftStatus.GIVEN) return false
+    val year = Instant.ofEpochMilli(updatedAt).atZone(ZoneId.systemDefault()).year
+    return year == Year.now().value
+}
 
 private val GiftSort.comparator: Comparator<Gift>
     get() = when (this) {

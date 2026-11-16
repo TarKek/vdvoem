@@ -6,6 +6,17 @@
     <string name="gifts_hero_total">Ideas worth %1$s</string>
     <string name="gifts_fab">Gift</string>
 
+    <string name="gifts_budget_title">Yearly budget</string>
+    <string name="gifts_budget_hint">Set a sum for gifts this year — we\'ll show what\'s left.</string>
+    <string name="gifts_budget_set">Set budget</string>
+    <string name="gifts_budget_edit">Edit budget</string>
+    <string name="gifts_budget_spent_of">Spent %1$s of %2$s</string>
+    <string name="gifts_budget_remaining">%1$s left</string>
+    <string name="gifts_budget_over">Over by %1$s</string>
+    <string name="gifts_budget_field">Sum for the year</string>
+    <string name="gifts_budget_clear">Remove</string>
+    <string name="gifts_currency">₽</string>
+
     <string name="gifts_section_ideas">Ideas</string>
     <string name="gifts_section_ideas_caption">What you could give. Mark it “Bought” once you buy it.</string>
     <string name="gifts_section_ideas_empty">No ideas yet — add the first one with “+ Gift”.</string>

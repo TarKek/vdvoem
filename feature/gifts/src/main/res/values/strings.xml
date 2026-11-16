@@ -6,6 +6,17 @@
     <string name="gifts_hero_total">Идей на %1$s</string>
     <string name="gifts_fab">Подарок</string>
 
+    <string name="gifts_budget_title">Бюджет на год</string>
+    <string name="gifts_budget_hint">Задайте сумму на подарки в этом году — покажем, сколько осталось.</string>
+    <string name="gifts_budget_set">Задать бюджет</string>
+    <string name="gifts_budget_edit">Изменить бюджет</string>
+    <string name="gifts_budget_spent_of">Потрачено %1$s из %2$s</string>
+    <string name="gifts_budget_remaining">Осталось %1$s</string>
+    <string name="gifts_budget_over">Перерасход %1$s</string>
+    <string name="gifts_budget_field">Сумма на год</string>
+    <string name="gifts_budget_clear">Убрать</string>
+    <string name="gifts_currency">₽</string>
+
     <string name="gifts_section_ideas">Идеи</string>
     <string name="gifts_section_ideas_caption">Что можно подарить. Отметьте «Куплено», когда купите.</string>
     <string name="gifts_section_ideas_empty">Идей пока нет — добавьте первую кнопкой «+ Подарок».</string>

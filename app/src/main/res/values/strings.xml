@@ -96,6 +96,10 @@
     <string name="widget_tests_description">Быстрый вход в тесты для двоих</string>
     <string name="widget_modules_description">Сколько модулей включено</string>
     <string name="widget_cycle_title">Цикл</string>
+    <string name="widget_together_title">Вместе</string>
+    <string name="widget_together_description">Сколько дней вы вместе — с даты из карточки пары</string>
+    <string name="widget_together_since">с %1$s</string>
+    <string name="widget_together_empty">Укажи дату пары</string>
     <string name="widget_cycle_no_data">Нет данных</string>
     <string name="widget_picker_title">Виджеты на главной</string>
     <string name="widget_picker_text">Добавляйте виджеты, меняйте их порядок и настраивайте каждый счётчик отдельно.</string>

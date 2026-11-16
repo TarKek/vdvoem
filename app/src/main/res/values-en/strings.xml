@@ -90,6 +90,10 @@
     <string name="widget_tests_description">Quick access to quizzes for two</string>
     <string name="widget_modules_description">How many modules are on</string>
     <string name="widget_cycle_title">Cycle</string>
+    <string name="widget_together_title">Together</string>
+    <string name="widget_together_description">Days together, counted from the date in your pair card</string>
+    <string name="widget_together_since">since %1$s</string>
+    <string name="widget_together_empty">Set your pair date</string>
     <string name="widget_cycle_no_data">No data</string>
     <string name="widget_picker_title">Widgets on Home</string>
     <string name="widget_picker_text">Add widgets, reorder them and tune each counter separately.</string>

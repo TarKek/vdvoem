@@ -10,6 +10,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.vdvoem.core.domain.module.AppModule
 import app.vdvoem.core.domain.module.ModuleCategory
 import app.vdvoem.core.domain.module.ModuleManifest
+import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.module.Module
 import org.koin.dsl.module
@@ -40,6 +41,7 @@ class GiftsModule : AppModule {
             onQueryChange = viewModel::setQuery,
             onResetQuery = viewModel::resetQuery,
             onSortChange = viewModel::setSort,
+            onSetBudget = viewModel::setBudget,
             modifier = modifier
         )
     }
@@ -47,4 +49,5 @@ class GiftsModule : AppModule {
 
 val giftsFeatureModule: Module = module {
     single { GiftsModule() }
+    single { GiftBudgetPreferences(context = androidContext()) }
 }

@@ -190,6 +190,7 @@ fun DashboardScreen(
                 enabledModules = modules.size,
                 cycleStats = cycleStats,
                 onOpenCycle = onOpenCycle,
+                onOpenPair = onOpenPairEditor,
                 onOpenCalendar = onOpenCalendar,
                 onOpenWishes = onOpenWishes,
                 onOpenGifts = onOpenGifts,
@@ -489,6 +490,7 @@ private fun WidgetGrid(
     enabledModules: Int,
     cycleStats: CycleStats?,
     onOpenCycle: () -> Unit,
+    onOpenPair: () -> Unit,
     onOpenCalendar: () -> Unit,
     onOpenWishes: () -> Unit,
     onOpenGifts: () -> Unit,
@@ -587,6 +589,38 @@ private fun WidgetGrid(
                             onClick = onOpenQuizzes,
                             modifier = Modifier.weight(1f)
                         )
+                        HomePreferences.WIDGET_TOGETHER -> {
+                            val since = pair?.sinceMillis ?: 0L
+                            val days = if (since > 0L) {
+                                Dates.daysUntil(Dates.toLocalDate(since))
+                            } else {
+                                0L
+                            }
+                            WidgetCard(
+                                icon = Icons.Filled.Favorite,
+                                title = stringResource(R.string.widget_together_title),
+                                value = if (since > 0L) {
+                                    pluralStringResource(
+                                        R.plurals.dashboard_days_word,
+                                        days.toInt().coerceAtLeast(0),
+                                        days.toInt().coerceAtLeast(0)
+                                    )
+                                } else {
+                                    stringResource(R.string.widget_together_empty)
+                                },
+                                onClick = onOpenPair,
+                                caption = if (since > 0L) {
+                                    stringResource(
+                                        R.string.widget_together_since,
+                                        Dates.format(Dates.toLocalDate(since))
+                                    )
+                                } else {
+                                    null
+                                },
+                                highlight = true,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                         HomePreferences.WIDGET_CYCLE -> {
                             val info = cycleStats?.takeIf { it.lastPeriodStart != null }
                             val caption = if (info == null) null else {
@@ -782,6 +816,12 @@ private val widgetCatalog = listOf(
         R.string.dashboard_modules_title,
         R.string.widget_modules_description,
         Icons.Filled.Star
+    ),
+    WidgetEntry(
+        HomePreferences.WIDGET_TOGETHER,
+        R.string.widget_together_title,
+        R.string.widget_together_description,
+        Icons.Filled.Favorite
     )
 )
 

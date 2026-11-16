@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.AlertDialog
@@ -32,6 +33,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -72,6 +74,7 @@ fun GiftsScreen(
     onQueryChange: (String) -> Unit,
     onResetQuery: () -> Unit,
     onSortChange: (GiftSort) -> Unit,
+    onSetBudget: (Long?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
@@ -109,6 +112,14 @@ fun GiftsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
+
+            item(key = "budget") {
+                GiftBudgetCard(
+                    budget = state.yearlyBudget,
+                    spent = state.spentThisYear,
+                    onSetBudget = onSetBudget
+                )
             }
 
             if (state.hasGifts) {
@@ -241,6 +252,147 @@ fun GiftsScreen(
             }
         )
     }
+}
+
+/** Компактная карточка годового бюджета: сумма, прогресс и остаток. */
+@Composable
+private fun GiftBudgetCard(
+    budget: Long?,
+    spent: Long,
+    onSetBudget: (Long?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var showDialog by remember { mutableStateOf(false) }
+
+    VdvoemCard(modifier = modifier) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.gifts_budget_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f)
+            )
+            if (budget != null) {
+                IconButton(onClick = { showDialog = true }) {
+                    Icon(
+                        imageVector = Icons.Filled.Edit,
+                        contentDescription = stringResource(R.string.gifts_budget_edit),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(VdvoemSizes.iconMd)
+                    )
+                }
+            }
+        }
+
+        if (budget == null) {
+            Text(
+                text = stringResource(R.string.gifts_budget_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+            FilledTonalButton(onClick = { showDialog = true }) {
+                Text(
+                    text = stringResource(R.string.gifts_budget_set),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        } else {
+            val remaining = budget - spent
+            Text(
+                text = stringResource(
+                    R.string.gifts_budget_spent_of,
+                    formatRubles(spent),
+                    formatRubles(budget)
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+            LinearProgressIndicator(
+                progress = { (spent.toFloat() / budget.toFloat()).coerceIn(0f, 1f) },
+                modifier = Modifier.fillMaxWidth(),
+                color = if (remaining < 0) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+            Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
+            Text(
+                text = if (remaining < 0) {
+                    stringResource(R.string.gifts_budget_over, formatRubles(-remaining))
+                } else {
+                    stringResource(R.string.gifts_budget_remaining, formatRubles(remaining))
+                },
+                style = MaterialTheme.typography.labelLarge,
+                color = if (remaining < 0) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                }
+            )
+        }
+    }
+
+    if (showDialog) {
+        BudgetDialog(
+            current = budget,
+            onDismiss = { showDialog = false },
+            onConfirm = { value ->
+                onSetBudget(value)
+                showDialog = false
+            },
+            onClear = {
+                onSetBudget(null)
+                showDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun BudgetDialog(
+    current: Long?,
+    onDismiss: () -> Unit,
+    onConfirm: (Long) -> Unit,
+    onClear: () -> Unit
+) {
+    var text by rememberSaveable(current) { mutableStateOf(current?.toString().orEmpty()) }
+    val value = text.toLongOrNull()?.takeIf { it > 0L }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.gifts_budget_title)) },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { input -> if (input.all(Char::isDigit)) text = input },
+                label = { Text(stringResource(R.string.gifts_budget_field)) },
+                suffix = { Text(stringResource(R.string.gifts_currency)) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { value?.let(onConfirm) },
+                enabled = value != null
+            ) { Text(stringResource(R.string.gifts_save)) }
+        },
+        dismissButton = {
+            if (current == null) {
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.gifts_cancel)) }
+            } else {
+                TextButton(onClick = onClear) { Text(stringResource(R.string.gifts_budget_clear)) }
+            }
+        }
+    )
 }
 
 @Composable
@@ -591,8 +743,21 @@ private fun GiftsScreenPreview() {
             onDelete = {},
             onQueryChange = {},
             onResetQuery = {},
-            onSortChange = {}
+            onSortChange = {},
+            onSetBudget = {}
         )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun GiftBudgetCardPreview() {
+    VdvoemTheme {
+        Column(verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)) {
+            GiftBudgetCard(budget = 50000, spent = 23500, onSetBudget = {})
+            GiftBudgetCard(budget = 10000, spent = 12500, onSetBudget = {})
+            GiftBudgetCard(budget = null, spent = 0, onSetBudget = {})
+        }
     }
 }
 
