@@ -49,5 +49,5 @@ class QuizzesModule : AppModule {
 val quizzesFeatureModule: Module = module {
     single { QuizResultStore(context = androidContext()) }
     single { QuizzesModule() }
-    viewModel { QuizzesViewModel(resultsStore = get()) }
+    viewModel { QuizzesViewModel(resultsStore = get(), scoreRepository = get()) }
 }

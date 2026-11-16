@@ -61,3 +61,24 @@ interface PokeDao {
     @Upsert
     suspend fun upsert(poke: PokeEntity)
 }
+
+@Dao
+interface QuizScoreDao {
+    @Query("SELECT * FROM quiz_scores WHERE deletedAt IS NULL ORDER BY passedAt DESC")
+    fun observeAll(): Flow<List<QuizScoreEntity>>
+
+    @Upsert
+    suspend fun upsert(score: QuizScoreEntity)
+}
+
+@Dao
+interface LessonDao {
+    @Query("SELECT * FROM lessons WHERE deletedAt IS NULL ORDER BY weekday, startMinute")
+    fun observeAll(): Flow<List<LessonEntity>>
+
+    @Upsert
+    suspend fun upsert(lesson: LessonEntity)
+
+    @Query("UPDATE lessons SET deletedAt = :now, updatedAt = :now WHERE id = :id")
+    suspend fun softDelete(id: String, now: Long)
+}

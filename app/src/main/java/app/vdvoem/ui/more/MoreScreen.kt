@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -42,6 +43,12 @@ fun MoreScreen(
     pairLabel: String? = null,
     onExport: () -> Unit,
     onImport: () -> Unit,
+    updateVersion: String? = null,
+    updateChecking: Boolean = false,
+    updateDownloading: Boolean = false,
+    updateFailed: Boolean = false,
+    appVersion: String = "",
+    onUpdateClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -161,6 +168,36 @@ fun MoreScreen(
                 icon = {
                     Icon(
                         imageVector = Icons.Filled.Add,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(VdvoemSizes.iconMd)
+                    )
+                }
+            )
+        }
+
+        item(key = "more_update_header") {
+            SectionHeader(
+                title = stringResource(R.string.more_update_section),
+                modifier = Modifier.padding(top = VdvoemSpacing.sm)
+            )
+        }
+
+        item(key = "more_update") {
+            val description = when {
+                updateDownloading -> stringResource(R.string.more_update_downloading)
+                updateChecking -> stringResource(R.string.more_update_checking)
+                updateVersion != null -> stringResource(R.string.more_update_available, updateVersion)
+                updateFailed -> stringResource(R.string.more_update_error)
+                else -> stringResource(R.string.more_update_current, appVersion)
+            }
+            ModuleRow(
+                title = stringResource(R.string.more_update_title),
+                description = description,
+                onClick = onUpdateClick,
+                icon = {
+                    Icon(
+                        imageVector = Icons.Filled.Refresh,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(VdvoemSizes.iconMd)

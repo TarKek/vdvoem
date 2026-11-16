@@ -5,6 +5,7 @@ import app.vdvoem.core.domain.model.Gift
 import app.vdvoem.core.domain.model.GiftStatus
 import app.vdvoem.core.domain.model.Pair
 import app.vdvoem.core.domain.model.Poke
+import app.vdvoem.core.domain.model.QuizScore
 import app.vdvoem.core.domain.model.Wish
 import app.vdvoem.core.domain.model.WishStatus
 
@@ -106,6 +107,26 @@ object SyncMappers {
         pairId = pairId?.takeIf { it.isNotBlank() } ?: fallbackPairId,
         text = text,
         createdAt = if (createdAt > 0) createdAt else updatedAt,
+        updatedAt = updatedAt,
+        deletedAt = deletedAt
+    )
+
+    fun QuizScore.toDto(): QuizScoreDto = QuizScoreDto(
+        id = id,
+        quizId = quizId,
+        percent = percent,
+        passedAt = passedAt,
+        updatedAt = updatedAt,
+        deletedAt = deletedAt,
+        pairId = pairId
+    )
+
+    fun QuizScoreDto.toDomain(fallbackPairId: String = ""): QuizScore = QuizScore(
+        id = id,
+        pairId = pairId?.takeIf { it.isNotBlank() } ?: fallbackPairId,
+        quizId = quizId,
+        percent = percent.coerceIn(0, 100),
+        passedAt = if (passedAt > 0) passedAt else updatedAt,
         updatedAt = updatedAt,
         deletedAt = deletedAt
     )

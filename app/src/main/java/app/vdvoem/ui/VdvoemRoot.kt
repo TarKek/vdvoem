@@ -52,6 +52,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import app.vdvoem.R
+import app.vdvoem.BuildConfig
+import app.vdvoem.update.UpdateChecker
+import app.vdvoem.update.UpdateInfo
 import app.vdvoem.core.data.LocalChangeSignal
 import app.vdvoem.core.domain.model.Poke
 import app.vdvoem.core.domain.module.ModuleRegistry
@@ -103,9 +106,27 @@ fun VdvoemRoot(
     val widgets by homePreferences.widgets
         .collectAsStateWithLifecycle(initialValue = HomePreferences.DEFAULT_WIDGETS)
     val lastPoke = dashboardState.lastPoke?.text
+    val sentPokeIds by homePreferences.sentPokeIds
+        .collectAsStateWithLifecycle(initialValue = emptySet())
     val syncStatus by syncController.status.collectAsStateWithLifecycle(initialValue = SyncStatus.Idle)
     val syncing = syncStatus is SyncStatus.Running
     val navController = rememberNavController()
+
+    // Автообновление: при запуске смотрим последний релиз на GitHub.
+    var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
+    var updateChecking by remember { mutableStateOf(false) }
+    var updateDownloading by remember { mutableStateOf(false) }
+    var updateFailed by remember { mutableStateOf(false) }
+
+    suspend fun checkUpdates() {
+        updateChecking = true
+        val result = runCatching { UpdateChecker.check(BuildConfig.VERSION_NAME) }
+        updateInfo = result.getOrNull()
+        updateFailed = result.isFailure
+        updateChecking = false
+    }
+
+    LaunchedEffect(Unit) { checkUpdates() }
 
     // Любая локальная правка (событие, желание, подарок, сердечко) сразу уезжает на сервер:
     // раньше приходилось ждать ближайший фоновый проход и казалось, что синка нет.
@@ -354,6 +375,8 @@ fun VdvoemRoot(
                     onOpenPairEditor = { pairDialogOpen = true },
                     widgets = widgets,
                     lastPoke = lastPoke,
+                    pokes = dashboardState.pokes,
+                    sentPokeIds = sentPokeIds,
                     refreshing = syncing,
                     onRefresh = { syncController.syncInBackground() },
                     onWidgetsChange = { list ->
@@ -364,9 +387,11 @@ fun VdvoemRoot(
                     },
                     onSendPoke = { text ->
                         scope.launch {
+                            val pokeId = UUID.randomUUID().toString()
+                            homePreferences.addSentPokeId(pokeId)
                             pokeRepository.save(
                                 Poke(
-                                    id = UUID.randomUUID().toString(),
+                                    id = pokeId,
                                     pairId = dashboardState.pair?.id.orEmpty(),
                                     text = text
                                 )
@@ -397,7 +422,41 @@ fun VdvoemRoot(
                         ?.takeIf { it.sinceMillis > 0 && it.nameA.isNotBlank() && it.nameB.isNotBlank() }
                         ?.let { "${it.nameA} и ${it.nameB}" },
                     onExport = { exportLauncher.launch("vdvoem-backup.json") },
-                    onImport = { importLauncher.launch(arrayOf("*/*")) }
+                    onImport = { importLauncher.launch(arrayOf("*/*")) },
+                    appVersion = BuildConfig.VERSION_NAME,
+                    updateVersion = updateInfo?.version,
+                    updateChecking = updateChecking,
+                    updateDownloading = updateDownloading,
+                    updateFailed = updateFailed,
+                    onUpdateClick = {
+                        val available = updateInfo
+                        if (available == null) {
+                            scope.launch { checkUpdates() }
+                        } else {
+                            scope.launch {
+                                updateDownloading = true
+                                updateFailed = false
+                                val downloaded = runCatching {
+                                    UpdateChecker.download(context, available.apkUrl)
+                                }
+                                downloaded
+                                    .onSuccess { apk ->
+                                        if (!UpdateChecker.install(context, apk)) {
+                                            snackbarHostState.showSnackbar(
+                                                context.getString(R.string.more_update_permission)
+                                            )
+                                        }
+                                    }
+                                    .onFailure {
+                                        updateFailed = true
+                                        snackbarHostState.showSnackbar(
+                                            context.getString(R.string.more_update_failed)
+                                        )
+                                    }
+                                updateDownloading = false
+                            }
+                        }
+                    }
                 )
             }
             composable(Routes.CONNECT) {

@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import app.vdvoem.core.domain.model.QuizScore
 import app.vdvoem.core.ui.components.InfoPill
 import app.vdvoem.core.ui.components.SectionHeader
 import app.vdvoem.core.ui.components.VdvoemCard
@@ -72,6 +73,7 @@ fun QuizzesScreen(
     when {
         quiz == null -> QuizList(
             results = state.results,
+            partnerScores = state.partnerScores,
             onStart = onStart,
             modifier = modifier
         )
@@ -99,6 +101,7 @@ fun QuizzesScreen(
 @Composable
 private fun QuizList(
     results: Map<String, QuizResult>,
+    partnerScores: Map<String, QuizScore> = emptyMap(),
     onStart: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -131,6 +134,7 @@ private fun QuizList(
             QuizCard(
                 quiz = quiz,
                 result = results[quiz.id],
+                partnerResult = partnerScores[quiz.id],
                 onStart = { onStart(quiz.id) }
             )
         }
@@ -171,6 +175,7 @@ private fun QuizzesHero() {
 private fun QuizCard(
     quiz: Quiz,
     result: QuizResult?,
+    partnerResult: QuizScore? = null,
     onStart: () -> Unit
 ) {
     val minutes = quiz.estimatedMinutes()
@@ -225,6 +230,16 @@ private fun QuizCard(
                 stringResource(R.string.quizzes_not_passed)
             }
         )
+        if (partnerResult != null) {
+            Spacer(modifier = Modifier.height(VdvoemSpacing.xs))
+            InfoPill(
+                text = stringResource(
+                    R.string.quizzes_partner_best,
+                    partnerResult.percent,
+                    formatPassedAt(partnerResult.passedAt)
+                )
+            )
+        }
     }
 }
 

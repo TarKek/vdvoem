@@ -24,7 +24,8 @@ data class DashboardUiState(
     val eventCount: Int = 0,
     val wishCount: Int = 0,
     val giftCount: Int = 0,
-    val lastPoke: Poke? = null
+    val lastPoke: Poke? = null,
+    val pokes: List<Poke> = emptyList()
 )
 
 class DashboardViewModel(
@@ -58,7 +59,8 @@ class DashboardViewModel(
             eventCount = events.size,
             wishCount = wishes.size,
             giftCount = gifts.size,
-            lastPoke = pokes.firstOrNull()
+            lastPoke = pokes.firstOrNull(),
+            pokes = pokes
         )
     }.stateIn(
         scope = viewModelScope,

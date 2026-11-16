@@ -78,6 +78,11 @@
     <string name="pair_birthday_b_value">День рождения партнёра: %1$s</string>
 
     <string name="dashboard_poke_last">Последнее сердечко: %1$s</string>
+    <string name="poke_history_title">История сердечек</string>
+    <string name="poke_history_open">История сердечек</string>
+    <string name="poke_history_empty">Пока ни одного сердечка — отправь первое</string>
+    <string name="poke_history_mine">Ты</string>
+    <string name="poke_history_partner">Партнёр</string>
     <string name="poke_notification_title">Тебе сердечко</string>
     <string name="poke_notification_channel">Сердечки</string>
     <string name="poke_notification_channel_text">Сообщения от партнёра</string>
@@ -110,6 +115,7 @@
     <string name="countdown_direction_since">Сколько прошло</string>
     <string name="countdown_custom_title">Своя подпись (необязательно)</string>
     <string name="countdown_preview">%1$s · %2$s · %3$s</string>
+    <string name="widget_countdown_since_date">с %1$s</string>
     <string name="countdown_preview_passed">уже прошло</string>
     <plurals name="widget_days_passed">
         <item quantity="one">%d день назад</item>
@@ -137,6 +143,16 @@
     <string name="more_data_title">Данные</string>
     <string name="more_export_text">Резервная копия пары, событий, желаний и подарков в файл</string>
     <string name="more_import_text">Добавит записи из копии, текущие данные останутся</string>
+    <string name="more_update_section">Обновления</string>
+    <string name="more_update_title">Обновления</string>
+    <string name="more_update_current">Версия %1$s · нажми, чтобы проверить обновление</string>
+    <string name="more_update_checking">Проверяем обновления…</string>
+    <string name="more_update_available">Доступна версия %1$s · нажми, чтобы скачать</string>
+    <string name="more_update_downloading">Скачиваем обновление…</string>
+    <string name="more_update_error">Не удалось проверить обновления · нажми, чтобы повторить</string>
+    <string name="more_update_failed">Не удалось скачать обновление</string>
+    <string name="more_update_no_app">Нет приложения для установки APK</string>
+    <string name="more_update_permission">Разрешите установку обновлений — и нажмите ещё раз</string>
 
     <string name="dashboard_modules_title">Ваши модули</string>
     <string name="dashboard_modules_all">Все</string>

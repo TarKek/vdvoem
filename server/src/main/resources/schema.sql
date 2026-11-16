@@ -65,6 +65,18 @@ CREATE TABLE IF NOT EXISTS pokes (
 );
 CREATE INDEX IF NOT EXISTS idx_pokes_pair_updated ON pokes (pair_id, updated_at);
 
+-- Результаты тестов пары: процент и время прохождения.
+CREATE TABLE IF NOT EXISTS quiz_scores (
+    id         UUID PRIMARY KEY,
+    pair_id    UUID NOT NULL REFERENCES pairs (id) ON DELETE CASCADE,
+    quiz_id    TEXT NOT NULL,
+    percent    INT NOT NULL,
+    passed_at  BIGINT NOT NULL,
+    updated_at BIGINT NOT NULL,
+    deleted_at BIGINT
+);
+CREATE INDEX IF NOT EXISTS idx_quiz_scores_pair_updated ON quiz_scores (pair_id, updated_at);
+
 -- Вложения (фото, видео, голосовые): метаданные синкаются, файл лежит на диске по storage_key.
 CREATE TABLE IF NOT EXISTS attachments (
     id          UUID PRIMARY KEY,

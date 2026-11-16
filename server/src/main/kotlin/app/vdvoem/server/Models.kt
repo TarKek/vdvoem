@@ -61,7 +61,18 @@ data class ChangesDto(
     val events: List<EventDto> = emptyList(),
     val wishes: List<WishDto> = emptyList(),
     val gifts: List<GiftDto> = emptyList(),
-    val pokes: List<PokeDto> = emptyList()
+    val pokes: List<PokeDto> = emptyList(),
+    @SerialName("quizScores") val quizScores: List<QuizScoreDto> = emptyList()
+)
+
+@Serializable
+data class QuizScoreDto(
+    val id: String,
+    @SerialName("quizId") val quizId: String,
+    val percent: Int,
+    @SerialName("passedAt") val passedAt: Long,
+    @SerialName("updatedAt") val updatedAt: Long,
+    @SerialName("deletedAt") val deletedAt: Long? = null
 )
 
 @Serializable

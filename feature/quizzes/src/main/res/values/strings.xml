@@ -22,6 +22,7 @@
 
     <string name="quizzes_best_and_last">Лучший: %1$d%% · последний %2$s</string>
     <string name="quizzes_not_passed">Ещё не проходили</string>
+    <string name="quizzes_partner_best">Партнёр: %1$d%% · %2$s</string>
 
     <string name="quizzes_result_title">Ваш результат</string>
     <string name="quizzes_result_percent">%1$d%%</string>

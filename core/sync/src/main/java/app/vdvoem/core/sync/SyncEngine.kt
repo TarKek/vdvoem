@@ -5,11 +5,13 @@ import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.model.Gift
 import app.vdvoem.core.domain.model.Pair
 import app.vdvoem.core.domain.model.Poke
+import app.vdvoem.core.domain.model.QuizScore
 import app.vdvoem.core.domain.model.Wish
 import app.vdvoem.core.domain.repository.CalendarRepository
 import app.vdvoem.core.domain.repository.GiftRepository
 import app.vdvoem.core.domain.repository.PairRepository
 import app.vdvoem.core.domain.repository.PokeRepository
+import app.vdvoem.core.domain.repository.QuizScoreRepository
 import app.vdvoem.core.domain.repository.WishRepository
 import app.vdvoem.core.sync.SyncMappers.toDomain
 import app.vdvoem.core.sync.SyncMappers.toDto
@@ -41,6 +43,7 @@ class SyncEngine(
     private val wishRepository: WishRepository,
     private val giftRepository: GiftRepository,
     private val pokeRepository: PokeRepository,
+    private val quizScoreRepository: QuizScoreRepository,
     private val statusHolder: SyncStatusHolder,
     /** Колбэк «пришло новое сердечко от партнёра»: уведомление рисует слой приложения. */
     private val pokeReceiver: suspend (List<Poke>) -> Unit = {}
@@ -84,6 +87,8 @@ class SyncEngine(
             }
             if (incomingPokes.isNotEmpty()) pokeReceiver(incomingPokes)
 
+            applied += applyQuizScores(remote.quizScores, pairId)
+
             var pushed = 0
             if (!outgoing.isEmpty) {
                 pushed = outgoing.size
@@ -97,6 +102,8 @@ class SyncEngine(
                     if (applyPoke(poke, pairId)) incomingPokes += poke.toDomain(fallbackPairId = pairId)
                 }
                 if (incomingPokes.isNotEmpty()) pokeReceiver(incomingPokes)
+
+                applied += applyQuizScores(response.quizScores, pairId)
 
                 // Отмечаем, что именно уже уехало: следующая отправка считается
                 // не от серверного времени, а от локального «водяного знака».
@@ -189,6 +196,21 @@ class SyncEngine(
         return true
     }
 
+    /** Применяет результаты тестов партнёра; возвращает число новых записей. */
+    private suspend fun applyQuizScores(remote: List<QuizScoreDto>, pairId: String): Int {
+        if (remote.isEmpty()) return 0
+        val localById = quizScoreRepository.observe().first().associateBy { it.id }
+        var applied = 0
+        remote.forEach { dto ->
+            val local = localById[dto.id]
+            if (local == null || dto.updatedAt > local.updatedAt) {
+                quizScoreRepository.save(dto.toDomain(fallbackPairId = pairId))
+                applied++
+            }
+        }
+        return applied
+    }
+
     // --- сбор локальных изменений ---
 
     private suspend fun collectLocalChanges(pushedBefore: Long): ChangesDto {
@@ -201,13 +223,16 @@ class SyncEngine(
             .filter { it.updatedAt > pushedBefore }
         val pokes: List<Poke> = pokeRepository.observe().first()
             .filter { it.updatedAt > pushedBefore }
+        val quizScores: List<QuizScore> = quizScoreRepository.observe().first()
+            .filter { it.updatedAt > pushedBefore }
 
         return ChangesDto(
             pair = localPair?.toDto(),
             events = events.map { it.toDto() },
             wishes = wishes.map { it.toDto() },
             gifts = gifts.map { it.toDto() },
-            pokes = pokes.map { it.toDto() }
+            pokes = pokes.map { it.toDto() },
+            quizScores = quizScores.map { it.toDto() }
         )
     }
 
@@ -223,5 +248,6 @@ private fun ChangesDto.maxUpdatedAt(): Long = (
         events.map { it.updatedAt } +
         wishes.map { it.updatedAt } +
         gifts.map { it.updatedAt } +
-        pokes.map { it.updatedAt }
+        pokes.map { it.updatedAt } +
+        quizScores.map { it.updatedAt }
     ).maxOrNull() ?: 0L

@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -76,6 +77,21 @@ class QuizResultStore(private val context: Context) {
             }.toMap()
         }
 
+    /** Идентификаторы прохождений, сделанных на этом телефоне — чтобы отличать свои от партнёрских. */
+    val ownScoreIds: Flow<Set<String>> = context.quizPreferences.data
+        .catch { throwable ->
+            if (throwable is IOException) emit(emptyPreferences()) else throw throwable
+        }
+        .map { preferences -> preferences[ownScoreIdsKey].orEmpty() }
+
+    suspend fun addOwnScoreId(id: String) {
+        context.quizPreferences.edit { preferences ->
+            val current = preferences[ownScoreIdsKey].orEmpty()
+            preferences[ownScoreIdsKey] =
+                (current + id).toList().takeLast(MAX_OWN_IDS).toSet()
+        }
+    }
+
     /** Добавляет прохождение в историю, оставляя последние [MAX_ATTEMPTS] записей. */
     suspend fun save(quizId: String, percent: Int, passedAt: Long) {
         val key = stringPreferencesKey(KEY_PREFIX + quizId)
@@ -109,6 +125,8 @@ class QuizResultStore(private val context: Context) {
         const val MAX_ATTEMPTS = 5
 
         private const val TAG = "Quizzes"
+        private val ownScoreIdsKey = stringSetPreferencesKey("own_score_ids")
+        private const val MAX_OWN_IDS = 200
         private const val KEY_PREFIX = "result_"
         private const val SEPARATOR = "|"
         private const val ENTRY_SEPARATOR = ";"

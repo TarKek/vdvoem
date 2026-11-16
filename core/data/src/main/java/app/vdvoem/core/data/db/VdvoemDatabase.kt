@@ -11,9 +11,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         EventEntity::class,
         WishEntity::class,
         GiftEntity::class,
-        PokeEntity::class
+        PokeEntity::class,
+        QuizScoreEntity::class,
+        LessonEntity::class
     ],
-    version = 4,
+    version = 6,
     exportSchema = false
 )
 abstract class VdvoemDatabase : RoomDatabase() {
@@ -22,6 +24,8 @@ abstract class VdvoemDatabase : RoomDatabase() {
     abstract fun wishDao(): WishDao
     abstract fun giftDao(): GiftDao
     abstract fun pokeDao(): PokeDao
+    abstract fun quizScoreDao(): QuizScoreDao
+    abstract fun lessonDao(): LessonDao
 
     companion object {
         const val NAME = "vdvoem.db"
@@ -80,6 +84,49 @@ abstract class VdvoemDatabase : RoomDatabase() {
                         `pairId` TEXT NOT NULL,
                         `text` TEXT NOT NULL,
                         `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        `deletedAt` INTEGER,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
+        /** v4 → v5: результаты тестов, чтобы партнёр видел их тоже. */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `quiz_scores` (
+                        `id` TEXT NOT NULL,
+                        `pairId` TEXT NOT NULL,
+                        `quizId` TEXT NOT NULL,
+                        `percent` INTEGER NOT NULL,
+                        `passedAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        `deletedAt` INTEGER,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
+        /** v5 → v6: расписание уроков. */
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `lessons` (
+                        `id` TEXT NOT NULL,
+                        `pairId` TEXT NOT NULL,
+                        `subject` TEXT NOT NULL,
+                        `weekday` INTEGER NOT NULL,
+                        `startMinute` INTEGER NOT NULL,
+                        `endMinute` INTEGER NOT NULL,
+                        `room` TEXT NOT NULL,
+                        `teacher` TEXT NOT NULL,
                         `updatedAt` INTEGER NOT NULL,
                         `deletedAt` INTEGER,
                         PRIMARY KEY(`id`)

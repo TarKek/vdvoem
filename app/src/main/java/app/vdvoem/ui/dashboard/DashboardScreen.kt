@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -68,6 +69,7 @@ import androidx.compose.ui.unit.dp
 import app.vdvoem.R
 import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.model.Pair
+import app.vdvoem.core.domain.model.Poke
 import app.vdvoem.core.domain.module.AppModule
 import app.vdvoem.core.domain.time.Dates
 import app.vdvoem.core.ui.components.InfoPill
@@ -80,6 +82,9 @@ import app.vdvoem.data.HomePreferences
 import app.vdvoem.data.HomeWidget
 import kotlin.math.absoluteValue
 import app.vdvoem.ui.presents.PresentsModule
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -92,6 +97,8 @@ fun DashboardScreen(
     giftCount: Int,
     widgets: List<HomeWidget>,
     lastPoke: String?,
+    pokes: List<Poke> = emptyList(),
+    sentPokeIds: Set<String> = emptySet(),
     refreshing: Boolean = false,
     onRefresh: () -> Unit = {},
     onWidgetsChange: (List<HomeWidget>) -> Unit,
@@ -107,6 +114,7 @@ fun DashboardScreen(
     modifier: Modifier = Modifier
 ) {
     var showPokeDialog by rememberSaveable { mutableStateOf(false) }
+    var showPokeHistory by rememberSaveable { mutableStateOf(false) }
     var showWidgetPicker by rememberSaveable { mutableStateOf(false) }
     var configWidgetId by rememberSaveable { mutableStateOf<String?>(null) }
     val enabledRoutes = remember(modules) { modules.map { it.route }.toSet() }
@@ -136,6 +144,20 @@ fun DashboardScreen(
                 onEditPair = onOpenPairEditor,
                 onPoke = { showPokeDialog = true }
             )
+        }
+
+        if (pokes.isNotEmpty()) {
+            item(key = "poke_history") {
+                TextButton(onClick = { showPokeHistory = true }) {
+                    Icon(
+                        imageVector = Icons.Filled.Favorite,
+                        contentDescription = null,
+                        modifier = Modifier.size(VdvoemSizes.iconSm)
+                    )
+                    Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
+                    Text(stringResource(R.string.poke_history_title))
+                }
+            }
         }
 
         item(key = "widgets_header") {
@@ -214,7 +236,19 @@ fun DashboardScreen(
             onSend = { text ->
                 onSendPoke(text)
                 showPokeDialog = false
+            },
+            onOpenHistory = {
+                showPokeDialog = false
+                showPokeHistory = true
             }
+        )
+    }
+
+    if (showPokeHistory) {
+        PokeHistorySheet(
+            pokes = pokes,
+            sentPokeIds = sentPokeIds,
+            onDismiss = { showPokeHistory = false }
         )
     }
 }
@@ -503,6 +537,16 @@ private fun WidgetGrid(
                                     )
                                 },
                                 onClick = { onConfigure(widget.id) },
+                                caption = result?.let { countdown ->
+                                    if (widget.config.isSince) {
+                                        stringResource(
+                                            R.string.widget_countdown_since_date,
+                                            Dates.format(countdown.date)
+                                        )
+                                    } else {
+                                        Dates.format(countdown.date)
+                                    }
+                                },
                                 highlight = true,
                                 modifier = Modifier.weight(1f)
                             )
@@ -573,6 +617,7 @@ private fun WidgetCard(
     value: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    caption: String? = null,
     titleLines: Int = 1,
     dashed: Boolean = false,
     highlight: Boolean = false
@@ -622,6 +667,20 @@ private fun WidgetCard(
                     MaterialTheme.colorScheme.onTertiaryContainer
                 } else {
                     MaterialTheme.colorScheme.onSurface
+                }
+            )
+        }
+
+        if (!caption.isNullOrBlank()) {
+            Text(
+                text = caption,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = if (highlight) {
+                    MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.75f)
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
                 }
             )
         }
@@ -940,7 +999,8 @@ private fun RadioOption(
 @Composable
 private fun PokeDialog(
     onDismiss: () -> Unit,
-    onSend: (String) -> Unit
+    onSend: (String) -> Unit,
+    onOpenHistory: () -> Unit = {}
 ) {
     var text by remember { mutableStateOf("") }
     val quickMessages = listOf(
@@ -974,6 +1034,12 @@ private fun PokeDialog(
                     label = { Text(stringResource(R.string.poke_field)) },
                     modifier = Modifier.fillMaxWidth()
                 )
+                TextButton(
+                    onClick = onOpenHistory,
+                    modifier = Modifier.align(Alignment.Start)
+                ) {
+                    Text(stringResource(R.string.poke_history_title))
+                }
             }
         },
         confirmButton = {
@@ -990,6 +1056,82 @@ private fun PokeDialog(
             }
         }
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PokeHistorySheet(
+    pokes: List<Poke>,
+    sentPokeIds: Set<String>,
+    onDismiss: () -> Unit
+) {
+    val formatter = remember { SimpleDateFormat("d MMMM, HH:mm", Locale("ru")) }
+
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = VdvoemSpacing.screenHorizontal)
+                .padding(bottom = VdvoemSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)
+        ) {
+            Text(
+                text = stringResource(R.string.poke_history_title),
+                style = MaterialTheme.typography.titleLarge
+            )
+            if (pokes.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.poke_history_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 460.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.xs)
+                ) {
+                    pokes.forEach { poke ->
+                        val mine = poke.id in sentPokeIds
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = VdvoemSpacing.xs),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = poke.text,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Text(
+                                    text = "${if (mine) stringResource(R.string.poke_history_mine) else stringResource(R.string.poke_history_partner)} · " +
+                                        formatter.format(Date(poke.createdAt)),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Filled.Favorite,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(VdvoemSizes.iconSm)
+                            )
+                        }
+                        HorizontalDivider()
+                    }
+                }
+            }
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text(stringResource(R.string.connect_done))
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

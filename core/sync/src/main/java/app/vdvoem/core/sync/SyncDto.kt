@@ -16,11 +16,13 @@ data class ChangesDto(
     val wishes: List<WishDto> = emptyList(),
     val gifts: List<GiftDto> = emptyList(),
     val pokes: List<PokeDto> = emptyList(),
+    val quizScores: List<QuizScoreDto> = emptyList(),
     /** Серверное время ответа — из него берётся следующий `since`. */
     val serverTime: Long = 0L
 ) {
     val size: Int
-        get() = (if (pair != null) 1 else 0) + events.size + wishes.size + gifts.size + pokes.size
+        get() = (if (pair != null) 1 else 0) + events.size + wishes.size + gifts.size + pokes.size +
+            quizScores.size
 
     val isEmpty: Boolean
         get() = size == 0
@@ -79,6 +81,17 @@ data class PokeDto(
     val id: String,
     val text: String,
     val createdAt: Long = 0L,
+    val updatedAt: Long = 0L,
+    val deletedAt: Long? = null,
+    val pairId: String? = null
+)
+
+@Serializable
+data class QuizScoreDto(
+    val id: String,
+    val quizId: String,
+    val percent: Int = 0,
+    val passedAt: Long = 0L,
     val updatedAt: Long = 0L,
     val deletedAt: Long? = null,
     val pairId: String? = null

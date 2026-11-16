@@ -28,6 +28,21 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
+      # Ключ подписи общий с локальными сборками: иначе Android не даёт обновить
+      # приложение поверх версии, подписанной другим ключом.
+      - name: Set up signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.VDVOEM_KEYSTORE_BASE64 }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/signing"
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/signing/app.keystore"
+          {
+            echo "VDVOEM_STORE_FILE=$RUNNER_TEMP/signing/app.keystore"
+            echo "VDVOEM_STORE_PASSWORD=${{ secrets.VDVOEM_STORE_PASSWORD }}"
+            echo "VDVOEM_KEY_ALIAS=${{ secrets.VDVOEM_KEY_ALIAS }}"
+            echo "VDVOEM_KEY_PASSWORD=${{ secrets.VDVOEM_KEY_PASSWORD }}"
+          } >> "$GITHUB_ENV"
+
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug --console=plain
 

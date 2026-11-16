@@ -25,6 +25,7 @@ class HomePreferences(private val context: Context) {
     private val widgetsKey = stringPreferencesKey("widgets_json")
     private val legacyWidgetIdsKey = stringSetPreferencesKey("widget_ids")
     private val lastPokeKey = stringPreferencesKey("last_poke")
+    private val sentPokeIdsKey = stringSetPreferencesKey("sent_poke_ids")
 
     /** Если пользователь ещё ничего не настраивал — показываем набор по умолчанию. */
     val widgets: Flow<List<HomeWidget>> = context.homeDataStore.data
@@ -38,6 +39,20 @@ class HomePreferences(private val context: Context) {
             if (e is IOException) emit(emptyPreferences()) else throw e
         }
         .map { prefs -> prefs[lastPokeKey] }
+
+    /** Идентификаторы сердечек, отправленных с этого телефона — чтобы отличать их в истории. */
+    val sentPokeIds: Flow<Set<String>> = context.homeDataStore.data
+        .catch { e ->
+            if (e is IOException) emit(emptyPreferences()) else throw e
+        }
+        .map { prefs -> prefs[sentPokeIdsKey].orEmpty() }
+
+    suspend fun addSentPokeId(id: String) {
+        context.homeDataStore.edit { prefs ->
+            val current = prefs[sentPokeIdsKey].orEmpty()
+            prefs[sentPokeIdsKey] = (current + id).toList().takeLast(MAX_SENT_POKE_IDS).toSet()
+        }
+    }
 
     suspend fun setWidgets(widgets: List<HomeWidget>) {
         context.homeDataStore.edit { prefs ->
@@ -104,6 +119,9 @@ class HomePreferences(private val context: Context) {
         "$type-${UUID.randomUUID().toString().take(8)}"
 
     companion object {
+        /** Сколько идентификаторов отправленных сердечек помнить локально. */
+        private const val MAX_SENT_POKE_IDS = 200
+
         const val WIDGET_COUNTDOWN = "countdown"
         const val WIDGET_EVENT = "event"
         const val WIDGET_WISHES = "wishes"

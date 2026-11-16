@@ -1,8 +1,23 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
+
+// Один ключ подписи для CI и локальных сборок: иначе Android отказывается обновлять
+// приложение поверх версии с другим ключом («Приложение не обновлено»).
+// Локально — keystore.properties в корне (в git не попадает), в CI — переменные окружения.
+val signingProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+
+fun signingValue(property: String, env: String): String? =
+    System.getenv(env) ?: signingProperties.getProperty(property)
+
+val storeFilePath = signingValue("storeFile", "VDVOEM_STORE_FILE")
 
 android {
     namespace = "app.vdvoem"
@@ -12,17 +27,30 @@ android {
         applicationId = "app.vdvoem"
         minSdk = 26
         targetSdk = 35
-        versionCode = 11
-        versionName = "0.7.2"
+        versionCode = 12
+        versionName = "0.7.3"
+    }
+
+    signingConfigs {
+        if (storeFilePath != null) {
+            create("vdvoem") {
+                storeFile = file(storeFilePath)
+                storePassword = signingValue("storePassword", "VDVOEM_STORE_PASSWORD")
+                keyAlias = signingValue("keyAlias", "VDVOEM_KEY_ALIAS")
+                keyPassword = signingValue("keyPassword", "VDVOEM_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
         debug {
             isMinifyEnabled = false
+            if (storeFilePath != null) signingConfig = signingConfigs.getByName("vdvoem")
         }
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (storeFilePath != null) signingConfig = signingConfigs.getByName("vdvoem")
         }
     }
 

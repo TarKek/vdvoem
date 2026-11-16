@@ -34,6 +34,7 @@ val syncModule: Module = module {
             wishRepository = get(),
             giftRepository = get(),
             pokeRepository = get(),
+            quizScoreRepository = get(),
             statusHolder = get(),
             pokeReceiver = { pokes -> get<IncomingPokeHandler>().onIncoming(pokes) }
         )

@@ -2,6 +2,8 @@ package app.vdvoem.feature.quizzes
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.vdvoem.core.domain.model.QuizScore
+import app.vdvoem.core.domain.repository.QuizScoreRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -9,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 /** Итог прохождения: процент, баллы и трактовка. */
 data class QuizOutcome(
@@ -26,6 +29,7 @@ data class QuizOutcome(
 
 data class QuizzesUiState(
     val results: Map<String, QuizResult> = emptyMap(),
+    val partnerScores: Map<String, QuizScore> = emptyMap(),
     val activeQuiz: Quiz? = null,
     val questionIndex: Int = 0,
     val answers: List<Int> = emptyList(),
@@ -41,15 +45,26 @@ private data class QuizSession(
 )
 
 class QuizzesViewModel(
-    private val resultsStore: QuizResultStore
+    private val resultsStore: QuizResultStore,
+    private val scoreRepository: QuizScoreRepository
 ) : ViewModel() {
 
     private val session = MutableStateFlow(QuizSession())
 
     val state: StateFlow<QuizzesUiState> =
-        combine(resultsStore.results, session.asStateFlow()) { results, current ->
+        combine(
+            resultsStore.results,
+            resultsStore.ownScoreIds,
+            scoreRepository.observe(),
+            session.asStateFlow()
+        ) { results, ownIds, scores, current ->
+            val partner = scores
+                .filterNot { it.id in ownIds }
+                .groupBy { it.quizId }
+                .mapValues { (_, list) -> list.maxByOrNull { it.percent }!! }
             QuizzesUiState(
                 results = results,
+                partnerScores = partner,
                 activeQuiz = current.quiz,
                 questionIndex = current.questionIndex,
                 answers = current.answers,
@@ -127,6 +142,16 @@ class QuizzesViewModel(
         )
         viewModelScope.launch {
             resultsStore.save(quizId = quiz.id, percent = percent, passedAt = passedAt)
+            val scoreId = UUID.randomUUID().toString()
+            resultsStore.addOwnScoreId(scoreId)
+            scoreRepository.save(
+                QuizScore(
+                    id = scoreId,
+                    quizId = quiz.id,
+                    percent = percent,
+                    passedAt = passedAt
+                )
+            )
         }
     }
 

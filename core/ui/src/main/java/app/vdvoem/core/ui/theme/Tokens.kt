@@ -39,6 +39,6 @@ object VdvoemSizes {
     /** Тонкая обводка: аватары, разделители. */
     val borderThin = 1.dp
     val widgetWidth = 168.dp
-    val widgetHeight = 112.dp
+    val widgetHeight = 128.dp
     val heroBadge = 44.dp
 }

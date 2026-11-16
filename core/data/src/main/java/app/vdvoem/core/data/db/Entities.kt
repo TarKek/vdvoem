@@ -60,3 +60,28 @@ data class PokeEntity(
     val updatedAt: Long,
     val deletedAt: Long? = null
 )
+
+@Entity(tableName = "quiz_scores")
+data class QuizScoreEntity(
+    @PrimaryKey val id: String,
+    val pairId: String,
+    val quizId: String,
+    val percent: Int,
+    val passedAt: Long,
+    val updatedAt: Long,
+    val deletedAt: Long? = null
+)
+
+@Entity(tableName = "lessons")
+data class LessonEntity(
+    @PrimaryKey val id: String,
+    val pairId: String,
+    val subject: String,
+    val weekday: Int,
+    val startMinute: Int,
+    val endMinute: Int,
+    val room: String,
+    val teacher: String,
+    val updatedAt: Long,
+    val deletedAt: Long? = null
+)
