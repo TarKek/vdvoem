@@ -4,7 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.vdvoem.core.domain.repository.CalendarRepository
 import app.vdvoem.core.domain.repository.GiftRepository
+import app.vdvoem.core.domain.repository.LessonRepository
 import app.vdvoem.core.domain.repository.PairRepository
+import app.vdvoem.core.domain.repository.PokeRepository
+import app.vdvoem.core.domain.repository.QuizScoreRepository
 import app.vdvoem.core.domain.repository.WishRepository
 import app.vdvoem.sync.PairBackup
 import kotlinx.coroutines.Dispatchers
@@ -24,7 +27,10 @@ class BackupViewModel(
     private val pairRepository: PairRepository,
     private val calendarRepository: CalendarRepository,
     private val wishRepository: WishRepository,
-    private val giftRepository: GiftRepository
+    private val giftRepository: GiftRepository,
+    private val pokeRepository: PokeRepository,
+    private val quizScoreRepository: QuizScoreRepository,
+    private val lessonRepository: LessonRepository
 ) : ViewModel() {
 
     suspend fun buildExport(): String = withContext(Dispatchers.IO) {
@@ -33,7 +39,10 @@ class BackupViewModel(
                 pair = pairRepository.current(),
                 events = calendarRepository.observeEvents().first(),
                 wishes = wishRepository.observeWishes().first(),
-                gifts = giftRepository.observeGifts().first()
+                gifts = giftRepository.observeGifts().first(),
+                pokes = pokeRepository.observe().first(),
+                quizScores = quizScoreRepository.observe().first(),
+                lessons = lessonRepository.observe().first()
             )
         )
     }
@@ -50,10 +59,13 @@ class BackupViewModel(
         snapshot.events.forEach { calendarRepository.upsert(it) }
         snapshot.wishes.forEach { wishRepository.upsert(it) }
         snapshot.gifts.forEach { giftRepository.upsert(it) }
+        snapshot.pokes.forEach { pokeRepository.save(it) }
+        snapshot.quizScores.forEach { quizScoreRepository.save(it) }
+        snapshot.lessons.forEach { lessonRepository.save(it) }
 
         ImportResult(
             ok = true,
-            imported = snapshot.events.size + snapshot.wishes.size + snapshot.gifts.size
+            imported = snapshot.total
         )
     }
 }

@@ -3,7 +3,10 @@ package app.vdvoem.sync
 import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.model.Gift
 import app.vdvoem.core.domain.model.GiftStatus
+import app.vdvoem.core.domain.model.Lesson
 import app.vdvoem.core.domain.model.Pair
+import app.vdvoem.core.domain.model.Poke
+import app.vdvoem.core.domain.model.QuizScore
 import app.vdvoem.core.domain.model.Wish
 import app.vdvoem.core.domain.model.WishStatus
 import org.junit.Test
@@ -21,8 +24,19 @@ class PairBackupTest {
         pair: Pair? = null,
         events: List<CalendarEvent> = emptyList(),
         wishes: List<Wish> = emptyList(),
-        gifts: List<Gift> = emptyList()
-    ) = PairBackup.Snapshot(pair = pair, events = events, wishes = wishes, gifts = gifts)
+        gifts: List<Gift> = emptyList(),
+        pokes: List<Poke> = emptyList(),
+        quizScores: List<QuizScore> = emptyList(),
+        lessons: List<Lesson> = emptyList()
+    ) = PairBackup.Snapshot(
+        pair = pair,
+        events = events,
+        wishes = wishes,
+        gifts = gifts,
+        pokes = pokes,
+        quizScores = quizScores,
+        lessons = lessons
+    )
 
     @Test
     fun `empty snapshot survives round trip`() {
@@ -35,6 +49,9 @@ class PairBackupTest {
         assertEquals(emptyList(), restored?.events)
         assertEquals(emptyList(), restored?.wishes)
         assertEquals(emptyList(), restored?.gifts)
+        assertEquals(emptyList(), restored?.pokes)
+        assertEquals(emptyList(), restored?.quizScores)
+        assertEquals(emptyList(), restored?.lessons)
     }
 
     @Test
@@ -104,6 +121,38 @@ class PairBackupTest {
                     status = GiftStatus.IDEA,
                     updatedAt = 1_700_000_000_006L
                 )
+            ),
+            pokes = listOf(
+                Poke(
+                    id = "poke-1",
+                    pairId = "pair-1",
+                    text = "Доброе утро",
+                    createdAt = 1_700_000_000_007L,
+                    updatedAt = 1_700_000_000_007L
+                )
+            ),
+            quizScores = listOf(
+                QuizScore(
+                    id = "score-1",
+                    pairId = "pair-1",
+                    quizId = "who-am-i",
+                    percent = 87,
+                    passedAt = 1_700_000_000_008L,
+                    updatedAt = 1_700_000_000_008L
+                )
+            ),
+            lessons = listOf(
+                Lesson(
+                    id = "lesson-1",
+                    pairId = "pair-1",
+                    subject = "Математика",
+                    weekday = 1,
+                    startMinute = 540,
+                    endMinute = 585,
+                    room = "204",
+                    teacher = "Иванова",
+                    updatedAt = 1_700_000_000_009L
+                )
             )
         )
 
@@ -117,6 +166,9 @@ class PairBackupTest {
         assertEquals(2, restored?.gifts?.size)
         assertEquals(WishStatus.RESERVED, restored?.wishes?.first()?.status)
         assertEquals(GiftStatus.BOUGHT, restored?.gifts?.first()?.status)
+        assertEquals(1, restored?.pokes?.size)
+        assertEquals(1, restored?.quizScores?.size)
+        assertEquals(1, restored?.lessons?.size)
     }
 
     @Test
@@ -148,7 +200,146 @@ class PairBackupTest {
         assertTrue(raw.contains("\"events\""))
         assertTrue(raw.contains("\"wishes\""))
         assertTrue(raw.contains("\"gifts\""))
+        assertTrue(raw.contains("\"pokes\""))
+        assertTrue(raw.contains("\"quizScores\""))
+        assertTrue(raw.contains("\"lessons\""))
         assertTrue(raw.contains("\"A\""))
+    }
+
+    @Test
+    fun `pokes scores and lessons survive round trip in both directions`() {
+        val original = snapshot(
+            pokes = listOf(Poke(id = "p1", pairId = "pair", text = "Скучаю")),
+            quizScores = listOf(QuizScore(id = "s1", pairId = "pair", quizId = "q1", percent = 100)),
+            lessons = listOf(
+                Lesson(id = "l1", pairId = "pair", subject = "Физика", weekday = 3, startMinute = 600, endMinute = 645)
+            )
+        )
+
+        val restored = PairBackup.parse(PairBackup.export(original))
+
+        assertEquals(original, restored)
+        assertEquals("Скучаю", restored?.pokes?.first()?.text)
+        assertEquals(100, restored?.quizScores?.first()?.percent)
+        assertEquals(3, restored?.lessons?.first()?.weekday)
+        assertEquals("10:00–10:45", restored?.lessons?.first()?.timeRange)
+    }
+
+    @Test
+    fun `tombstones and optional fields are preserved`() {
+        val original = snapshot(
+            pokes = listOf(
+                Poke(id = "p1", pairId = "pair", text = "Удалено", deletedAt = 1_700_000_000_010L)
+            ),
+            quizScores = listOf(
+                QuizScore(
+                    id = "s1",
+                    pairId = "pair",
+                    quizId = "q1",
+                    percent = 40,
+                    passedAt = 1_700_000_000_011L,
+                    updatedAt = 1_700_000_000_012L,
+                    deletedAt = 1_700_000_000_012L
+                )
+            ),
+            lessons = listOf(
+                Lesson(
+                    id = "l1",
+                    pairId = "pair",
+                    subject = "Химия",
+                    weekday = 5,
+                    startMinute = 480,
+                    endMinute = 525,
+                    updatedAt = 1_700_000_000_013L,
+                    deletedAt = 1_700_000_000_013L
+                )
+            )
+        )
+
+        val restored = PairBackup.parse(PairBackup.export(original))
+
+        assertEquals(original, restored)
+        assertEquals(1_700_000_000_010L, restored?.pokes?.first()?.deletedAt)
+        assertEquals(1_700_000_000_012L, restored?.quizScores?.first()?.deletedAt)
+        assertEquals(1_700_000_000_013L, restored?.lessons?.first()?.deletedAt)
+    }
+
+    @Test
+    fun `old file without new lists still imports`() {
+        // Файл, выгруженный до появления сердечек, тестов и уроков.
+        val raw = """
+            {
+              "version": 1,
+              "exportedAt": 1700000000000,
+              "pair": {
+                "id": "p1",
+                "nameA": "Аня",
+                "nameB": "Борис",
+                "sinceMillis": 1600000000000,
+                "birthdayA": null,
+                "birthdayB": 1610000000000,
+                "updatedAt": 1700000000000
+              },
+              "events": [
+                {"id": "e1", "pairId": "p1", "title": "Годовщина", "dateMillis": 1650000000000, "annual": true, "updatedAt": 1700000000001}
+              ],
+              "wishes": [
+                {"id": "w1", "pairId": "p1", "title": "Наушники", "note": "чёрные", "priceEstimate": 15000, "status": "RESERVED", "updatedAt": 1700000000002}
+              ],
+              "gifts": [
+                {"id": "g1", "pairId": "p1", "title": "Свитер", "note": "", "budget": null, "status": "BOUGHT", "updatedAt": 1700000000003}
+              ]
+            }
+        """.trimIndent()
+
+        val restored = PairBackup.parse(raw)
+
+        assertEquals("p1", restored?.pair?.id)
+        assertEquals(1, restored?.events?.size)
+        assertEquals(1, restored?.wishes?.size)
+        assertEquals(1, restored?.gifts?.size)
+        assertEquals(emptyList(), restored?.pokes)
+        assertEquals(emptyList(), restored?.quizScores)
+        assertEquals(emptyList(), restored?.lessons)
+    }
+
+    @Test
+    fun `new entities tolerate missing optional fields`() {
+        val raw = """
+            {
+              "version": 1,
+              "pokes": [
+                {"id": "p1"}
+              ],
+              "quizScores": [
+                {"id": "s1"}
+              ],
+              "lessons": [
+                {"id": "l1"}
+              ]
+            }
+        """.trimIndent()
+
+        val restored = PairBackup.parse(raw)
+
+        val poke = restored?.pokes?.single()
+        assertEquals("", poke?.pairId)
+        assertEquals("", poke?.text)
+        assertEquals(0L, poke?.createdAt)
+        assertEquals(0L, poke?.updatedAt)
+        assertNull(poke?.deletedAt)
+
+        val score = restored?.quizScores?.single()
+        assertEquals("", score?.quizId)
+        assertEquals(0, score?.percent)
+        assertNull(score?.deletedAt)
+
+        val lesson = restored?.lessons?.single()
+        assertEquals("", lesson?.subject)
+        assertEquals(1, lesson?.weekday)
+        assertEquals(0, lesson?.startMinute)
+        assertEquals(0, lesson?.endMinute)
+        assertNull(lesson?.deletedAt)
     }
 
     @Test

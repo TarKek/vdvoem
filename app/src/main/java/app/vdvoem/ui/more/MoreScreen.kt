@@ -1,6 +1,8 @@
 package app.vdvoem.ui.more
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,16 +17,24 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import app.vdvoem.R
 import app.vdvoem.core.domain.module.AppModule
+import app.vdvoem.data.HomePreferences
 import app.vdvoem.core.ui.components.SectionHeader
 import app.vdvoem.core.ui.components.VdvoemCard
 import app.vdvoem.core.ui.theme.VdvoemSizes
@@ -41,6 +51,9 @@ fun MoreScreen(
     onOpenStore: () -> Unit,
     onOpenConnect: () -> Unit,
     pairLabel: String? = null,
+    bottomModules: List<AppModule> = emptyList(),
+    navModules: List<AppModule> = emptyList(),
+    onNavRoutesChange: (List<String>) -> Unit = {},
     onExport: () -> Unit,
     onImport: () -> Unit,
     updateVersion: String? = null,
@@ -51,6 +64,16 @@ fun MoreScreen(
     onUpdateClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    var navSheetOpen by rememberSaveable { mutableStateOf(false) }
+    if (navSheetOpen) {
+        NavTabsSheet(
+            selected = bottomModules.map { it.route },
+            available = navModules,
+            onChange = onNavRoutesChange,
+            onDismiss = { navSheetOpen = false }
+        )
+    }
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(
@@ -176,6 +199,30 @@ fun MoreScreen(
             )
         }
 
+        item(key = "more_nav_header") {
+            SectionHeader(
+                title = stringResource(R.string.more_nav_section),
+                modifier = Modifier.padding(top = VdvoemSpacing.sm)
+            )
+        }
+
+        item(key = "more_nav") {
+            val current = bottomModules.map { stringResource(it.manifest.titleRes) }.joinToString(", ")
+            ModuleRow(
+                title = stringResource(R.string.more_nav_title),
+                description = stringResource(R.string.more_nav_text, current),
+                onClick = { navSheetOpen = true },
+                icon = {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.List,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(VdvoemSizes.iconMd)
+                    )
+                }
+            )
+        }
+
         item(key = "more_update_header") {
             SectionHeader(
                 title = stringResource(R.string.more_update_section),
@@ -204,6 +251,91 @@ fun MoreScreen(
                     )
                 }
             )
+        }
+    }
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun NavTabsSheet(
+    selected: List<String>,
+    available: List<AppModule>,
+    onChange: (List<String>) -> Unit,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    start = VdvoemSpacing.screenHorizontal,
+                    end = VdvoemSpacing.screenHorizontal,
+                    bottom = VdvoemSpacing.xl
+                )
+        ) {
+            Text(
+                text = stringResource(R.string.nav_sheet_title),
+                style = MaterialTheme.typography.titleLarge
+            )
+            Text(
+                text = stringResource(R.string.nav_sheet_text),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = VdvoemSpacing.xs)
+            )
+
+            available.forEach { module ->
+                val route = module.route
+                val checked = route in selected
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            // Больше двух нельзя: новый раздел вытесняет самый старый выбор.
+                            val next = if (checked) {
+                                selected - route
+                            } else {
+                                (selected + route).takeLast(HomePreferences.NAV_SLOTS)
+                            }
+                            onChange(next)
+                        }
+                        .padding(vertical = VdvoemSpacing.sm),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = module.icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(VdvoemSizes.iconMd)
+                    )
+                    Spacer(modifier = Modifier.size(VdvoemSpacing.md))
+                    Text(
+                        text = stringResource(module.manifest.titleRes),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Checkbox(
+                        checked = checked,
+                        onCheckedChange = {
+                            val next = if (checked) {
+                                selected - route
+                            } else {
+                                (selected + route).takeLast(HomePreferences.NAV_SLOTS)
+                            }
+                            onChange(next)
+                        }
+                    )
+                }
+            }
+
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .padding(top = VdvoemSpacing.sm)
+            ) {
+                Text(stringResource(R.string.nav_sheet_done))
+            }
         }
     }
 }

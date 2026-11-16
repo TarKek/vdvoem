@@ -3,7 +3,10 @@ package app.vdvoem.sync
 import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.model.Gift
 import app.vdvoem.core.domain.model.GiftStatus
+import app.vdvoem.core.domain.model.Lesson
 import app.vdvoem.core.domain.model.Pair
+import app.vdvoem.core.domain.model.Poke
+import app.vdvoem.core.domain.model.QuizScore
 import app.vdvoem.core.domain.model.Wish
 import app.vdvoem.core.domain.model.WishStatus
 import org.json.JSONArray
@@ -24,8 +27,15 @@ object PairBackup {
         val pair: Pair?,
         val events: List<CalendarEvent>,
         val wishes: List<Wish>,
-        val gifts: List<Gift>
-    )
+        val gifts: List<Gift>,
+        val pokes: List<Poke> = emptyList(),
+        val quizScores: List<QuizScore> = emptyList(),
+        val lessons: List<Lesson> = emptyList()
+    ) {
+        /** Сколько записей реально переносится — для сообщения «Загружено записей». */
+        val total: Int
+            get() = events.size + wishes.size + gifts.size + pokes.size + quizScores.size + lessons.size
+    }
 
     fun export(snapshot: Snapshot): String {
         val root = JSONObject()
@@ -90,6 +100,53 @@ object PairBackup {
             }
         })
 
+        root.put("pokes", JSONArray().apply {
+            snapshot.pokes.forEach { poke ->
+                put(
+                    JSONObject()
+                        .put("id", poke.id)
+                        .put("pairId", poke.pairId)
+                        .put("text", poke.text)
+                        .put("createdAt", poke.createdAt)
+                        .put("updatedAt", poke.updatedAt)
+                        .put("deletedAt", poke.deletedAt ?: JSONObject.NULL)
+                )
+            }
+        })
+
+        root.put("quizScores", JSONArray().apply {
+            snapshot.quizScores.forEach { score ->
+                put(
+                    JSONObject()
+                        .put("id", score.id)
+                        .put("pairId", score.pairId)
+                        .put("quizId", score.quizId)
+                        .put("percent", score.percent)
+                        .put("passedAt", score.passedAt)
+                        .put("updatedAt", score.updatedAt)
+                        .put("deletedAt", score.deletedAt ?: JSONObject.NULL)
+                )
+            }
+        })
+
+        root.put("lessons", JSONArray().apply {
+            snapshot.lessons.forEach { lesson ->
+                put(
+                    JSONObject()
+                        .put("id", lesson.id)
+                        .put("pairId", lesson.pairId)
+                        .put("subject", lesson.subject)
+                        .put("weekday", lesson.weekday)
+                        .put("startMinute", lesson.startMinute)
+                        .put("endMinute", lesson.endMinute)
+                        .put("room", lesson.room)
+                        .put("teacher", lesson.teacher)
+                        .put("updatedAt", lesson.updatedAt)
+                        .put("deletedAt", lesson.deletedAt ?: JSONObject.NULL)
+                )
+            }
+        })
+
         return root.toString(2)
     }
 
@@ -143,6 +200,41 @@ object PairBackup {
                     budget = json.optLongOrNull("budget"),
                     status = enumOrDefault(json.optString("status"), GiftStatus.IDEA),
                     updatedAt = json.optLong("updatedAt", 0L)
+                )
+            },
+            pokes = root.optJSONArray("pokes").mapObjects { json ->
+                Poke(
+                    id = json.getString("id"),
+                    pairId = json.optString("pairId"),
+                    text = json.optString("text"),
+                    createdAt = json.optLong("createdAt", 0L),
+                    updatedAt = json.optLong("updatedAt", 0L),
+                    deletedAt = json.optLongOrNull("deletedAt")
+                )
+            },
+            quizScores = root.optJSONArray("quizScores").mapObjects { json ->
+                QuizScore(
+                    id = json.getString("id"),
+                    pairId = json.optString("pairId"),
+                    quizId = json.optString("quizId"),
+                    percent = json.optInt("percent", 0),
+                    passedAt = json.optLong("passedAt", 0L),
+                    updatedAt = json.optLong("updatedAt", 0L),
+                    deletedAt = json.optLongOrNull("deletedAt")
+                )
+            },
+            lessons = root.optJSONArray("lessons").mapObjects { json ->
+                Lesson(
+                    id = json.getString("id"),
+                    pairId = json.optString("pairId"),
+                    subject = json.optString("subject"),
+                    weekday = json.optInt("weekday", 1),
+                    startMinute = json.optInt("startMinute", 0),
+                    endMinute = json.optInt("endMinute", 0),
+                    room = json.optString("room"),
+                    teacher = json.optString("teacher"),
+                    updatedAt = json.optLong("updatedAt", 0L),
+                    deletedAt = json.optLongOrNull("deletedAt")
                 )
             }
         )

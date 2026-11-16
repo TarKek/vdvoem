@@ -64,7 +64,10 @@ val appKoinModule = module {
             pairRepository = get(),
             calendarRepository = get(),
             wishRepository = get(),
-            giftRepository = get()
+            giftRepository = get(),
+            pokeRepository = get(),
+            quizScoreRepository = get(),
+            lessonRepository = get()
         )
     }
 }

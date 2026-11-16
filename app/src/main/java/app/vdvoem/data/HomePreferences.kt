@@ -26,6 +26,7 @@ class HomePreferences(private val context: Context) {
     private val legacyWidgetIdsKey = stringSetPreferencesKey("widget_ids")
     private val lastPokeKey = stringPreferencesKey("last_poke")
     private val sentPokeIdsKey = stringSetPreferencesKey("sent_poke_ids")
+    private val navRoutesKey = stringPreferencesKey("nav_routes")
 
     /** Если пользователь ещё ничего не настраивал — показываем набор по умолчанию. */
     val widgets: Flow<List<HomeWidget>> = context.homeDataStore.data
@@ -104,6 +105,36 @@ class HomePreferences(private val context: Context) {
         context.homeDataStore.edit { prefs -> prefs[lastPokeKey] = text }
     }
 
+    /**
+     * Маршруты двух сменных вкладок нижней панели.
+     *
+     * «Главная» и «Ещё» закреплены и здесь не хранятся. Если сохранённых маршрутов
+     * не хватает или они пустые — добираем значениями по умолчанию.
+     */
+    val navRoutes: Flow<List<String>> = context.homeDataStore.data
+        .catch { e ->
+            if (e is IOException) emit(emptyPreferences()) else throw e
+        }
+        .map { prefs -> readNavRoutes(prefs) }
+
+    suspend fun setNavRoutes(routes: List<String>) {
+        context.homeDataStore.edit { prefs ->
+            prefs[navRoutesKey] = routes
+                .filter { it.isNotBlank() }
+                .distinct()
+                .take(NAV_SLOTS)
+                .joinToString(",")
+        }
+    }
+
+    private fun readNavRoutes(prefs: Preferences): List<String> {
+        val raw = prefs[navRoutesKey] ?: return DEFAULT_NAV_ROUTES
+        return raw.split(',')
+            .filter { it.isNotBlank() }
+            .distinct()
+            .take(NAV_SLOTS)
+    }
+
     private fun readWidgets(prefs: Preferences): List<HomeWidget> {
         val stored = prefs[widgetsKey]?.let { HomeWidgetCodec.decode(it) }
         val widgets = when {
@@ -121,6 +152,11 @@ class HomePreferences(private val context: Context) {
     companion object {
         /** Сколько идентификаторов отправленных сердечек помнить локально. */
         private const val MAX_SENT_POKE_IDS = 200
+
+        /** Сколько сменных вкладок в нижней панели (плюс закреплённые «Главная» и «Ещё»). */
+        const val NAV_SLOTS = 2
+
+        val DEFAULT_NAV_ROUTES = listOf("presents", "timetable")
 
         const val WIDGET_COUNTDOWN = "countdown"
         const val WIDGET_EVENT = "event"

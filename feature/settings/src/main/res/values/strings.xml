@@ -19,7 +19,7 @@
     <string name="settings_section_data">Данные</string>
     <string name="settings_section_data_hint">Всё хранится только на этом телефоне.</string>
     <string name="settings_data_backup_title">Резервная копия</string>
-    <string name="settings_data_backup_text">Сохраняет календарь, желания и подарки в файл — пригодится при смене телефона. Открывается в меню «⋮» на главном экране → «Сохранить данные в файл».</string>
+    <string name="settings_data_backup_text">Сохраняет календарь, желания, подарки, сердечки, результаты тестов и уроки в файл — пригодится при смене телефона. Открывается в меню «⋮» на главном экране → «Сохранить данные в файл».</string>
     <string name="settings_data_restore_title">Восстановление</string>
     <string name="settings_data_restore_text">Загружает данные из файла: «⋮» → «Загрузить данные из файла». Общие записи пары при этом не теряются.</string>
     <string name="settings_data_storage_title">Где хранятся данные</string>

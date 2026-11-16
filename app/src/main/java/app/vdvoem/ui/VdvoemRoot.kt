@@ -205,9 +205,19 @@ fun VdvoemRoot(
                 !it.manifest.comingSoon
         }
     }
-    // Material 3: в нижней навигации не больше пяти пунктов — поэтому «Ещё».
-    val bottomModules = remember(enabledModules) { enabledModules.take(3) }
-    val overflowModules = remember(enabledModules) { enabledModules.drop(3) }
+    // «Главная» и «Ещё» закреплены, между ними — две настраиваемые вкладки (не больше четырёх всего).
+    val navRoutes by homePreferences.navRoutes
+        .collectAsStateWithLifecycle(initialValue = HomePreferences.DEFAULT_NAV_ROUTES)
+    val bottomModules = remember(enabledModules, navRoutes) {
+        val byRoute = enabledModules.associateBy { it.route }
+        navRoutes.mapNotNull { byRoute[it] }
+            .distinctBy { it.route }
+            .take(HomePreferences.NAV_SLOTS)
+    }
+    val overflowModules = remember(enabledModules, bottomModules) {
+        val inBottomBar = bottomModules.map { it.route }.toSet()
+        enabledModules.filterNot { it.route in inBottomBar }
+    }
     val enabledRoutes = remember(enabledModules) { enabledModules.map { it.route }.toSet() }
 
     /**
@@ -419,6 +429,11 @@ fun VdvoemRoot(
                     onOpenModule = { module -> openTab(module.route) },
                     onOpenStore = { openTab(Routes.STORE) },
                     onOpenConnect = { navController.navigate(Routes.CONNECT) { launchSingleTop = true } },
+                    bottomModules = bottomModules,
+                    navModules = enabledModules,
+                    onNavRoutesChange = { routes ->
+                        scope.launch { homePreferences.setNavRoutes(routes) }
+                    },
                     pairLabel = dashboardState.pair
                         ?.takeIf { it.sinceMillis > 0 && it.nameA.isNotBlank() && it.nameB.isNotBlank() }
                         ?.let { "${it.nameA} и ${it.nameB}" },

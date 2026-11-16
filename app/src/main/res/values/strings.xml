@@ -222,5 +222,11 @@
     <string name="more_sync_section">Синхронизация</string>
     <string name="more_sync_title">Подключить пару</string>
     <string name="more_sync_text">Общие данные на двух телефонах через свой сервер</string>
+    <string name="more_nav_section">Навигация</string>
+    <string name="more_nav_title">Нижняя панель</string>
+    <string name="more_nav_text">%1$s · нажми, чтобы выбрать разделы</string>
+    <string name="nav_sheet_title">Нижняя панель</string>
+    <string name="nav_sheet_text">Два раздела между «Главной» и «Ещё». Отметь не больше двух — новый выбор заменит самый старый, остальные модули останутся здесь, в «Ещё».</string>
+    <string name="nav_sheet_done">Готово</string>
     <string name="more_sync_connected_text">Пара подключена: данные общие на двух телефонах</string>
 </resources>
