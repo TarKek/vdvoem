@@ -5,7 +5,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
-import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -94,21 +93,6 @@ object UpdateChecker {
         }
         connection.disconnect()
         target
-    }
-
-    /** Открывает системный установщик для скачанного APK. */
-    fun install(context: Context, apk: File): Boolean {
-        if (!canInstall(context)) {
-            requestInstallPermission(context)
-            return false
-        }
-        val uri = FileProvider.getUriForFile(context, "${context.packageName}.updates", apk)
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, "application/vnd.android.package-archive")
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        context.startActivity(intent)
-        return true
     }
 
     /** Разрешена ли установка APK из этого приложения. */

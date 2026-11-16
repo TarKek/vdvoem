@@ -53,6 +53,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import app.vdvoem.R
 import app.vdvoem.BuildConfig
+import app.vdvoem.update.ApkInstaller
 import app.vdvoem.update.UpdateChecker
 import app.vdvoem.update.UpdateInfo
 import app.vdvoem.core.data.LocalChangeSignal
@@ -441,10 +442,19 @@ fun VdvoemRoot(
                                 }
                                 downloaded
                                     .onSuccess { apk ->
-                                        if (!UpdateChecker.install(context, apk)) {
-                                            snackbarHostState.showSnackbar(
-                                                context.getString(R.string.more_update_permission)
-                                            )
+                                        when {
+                                            !UpdateChecker.canInstall(context) -> {
+                                                UpdateChecker.requestInstallPermission(context)
+                                                snackbarHostState.showSnackbar(
+                                                    context.getString(R.string.more_update_permission)
+                                                )
+                                            }
+                                            !ApkInstaller.install(context, apk) -> {
+                                                updateFailed = true
+                                                snackbarHostState.showSnackbar(
+                                                    context.getString(R.string.more_update_failed)
+                                                )
+                                            }
                                         }
                                     }
                                     .onFailure {
