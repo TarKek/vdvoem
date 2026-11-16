@@ -9,6 +9,7 @@ import app.vdvoem.feature.quizzes.QuizzesModule
 import app.vdvoem.feature.settings.SettingsModule
 import app.vdvoem.feature.settings.SettingsViewModel
 import app.vdvoem.feature.store.StoreModule
+import app.vdvoem.feature.timetable.TimetableModule
 import app.vdvoem.feature.wishes.WishesViewModel
 import app.vdvoem.data.HomePreferences
 import app.vdvoem.notify.PokeNotifier
@@ -36,6 +37,7 @@ val appKoinModule = module {
                 get<PresentsModule>(),
                 get<SettingsModule>(),
                 get<QuizzesModule>(),
+                get<TimetableModule>(),
                 get<StoreModule>()
             )
         )

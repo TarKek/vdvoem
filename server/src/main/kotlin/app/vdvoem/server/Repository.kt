@@ -204,7 +204,31 @@ class Repository(private val dataSource: DataSource) {
             }
         }
 
-        ChangesDto(pair = pair, events = events, wishes = wishes, gifts = gifts, pokes = pokes, quizScores = quizScores)
+        val lessons = connection.prepareStatement(
+            "SELECT id, subject, weekday, start_minute, end_minute, room, teacher, updated_at, deleted_at " +
+                "FROM lessons WHERE pair_id = ? AND updated_at > ? ORDER BY weekday, start_minute"
+        ).use { statement ->
+            statement.setObject(1, java.util.UUID.fromString(pairId))
+            statement.setLong(2, since)
+            statement.executeQuery().use { rows ->
+                buildList {
+                    while (rows.next()) add(
+                        LessonDto(
+                            id = rows.getString(1), subject = rows.getString(2),
+                            weekday = rows.getInt(3), startMinute = rows.getInt(4),
+                            endMinute = rows.getInt(5), room = rows.getString(6),
+                            teacher = rows.getString(7), updatedAt = rows.getLong(8),
+                            deletedAt = rows.getLong(9).takeUnless { rows.wasNull() }
+                        )
+                    )
+                }
+            }
+        }
+
+        ChangesDto(
+            pair = pair, events = events, wishes = wishes, gifts = gifts, pokes = pokes,
+            quizScores = quizScores, lessons = lessons
+        )
     }
 
     fun push(pairId: String, changes: ChangesDto): Int = dataSource.connection.use { connection ->
@@ -347,6 +371,35 @@ class Repository(private val dataSource: DataSource) {
                     statement.setLong(6, score.updatedAt)
                     if (score.deletedAt != null) statement.setLong(7, score.deletedAt)
                     else statement.setNull(7, java.sql.Types.BIGINT)
+                    statement.executeUpdate()
+                }
+            }
+
+            changes.lessons.forEach { lesson ->
+                applied += tx.prepareStatement(
+                    """
+                    INSERT INTO lessons (id, pair_id, subject, weekday, start_minute, end_minute,
+                        room, teacher, updated_at, deleted_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT (id) DO UPDATE SET subject = EXCLUDED.subject,
+                        weekday = EXCLUDED.weekday, start_minute = EXCLUDED.start_minute,
+                        end_minute = EXCLUDED.end_minute, room = EXCLUDED.room,
+                        teacher = EXCLUDED.teacher, updated_at = EXCLUDED.updated_at,
+                        deleted_at = EXCLUDED.deleted_at
+                    WHERE EXCLUDED.updated_at > lessons.updated_at
+                    """.trimIndent()
+                ).use { statement ->
+                    statement.setObject(1, java.util.UUID.fromString(lesson.id))
+                    statement.setObject(2, java.util.UUID.fromString(pairId))
+                    statement.setString(3, lesson.subject)
+                    statement.setInt(4, lesson.weekday)
+                    statement.setInt(5, lesson.startMinute)
+                    statement.setInt(6, lesson.endMinute)
+                    statement.setString(7, lesson.room)
+                    statement.setString(8, lesson.teacher)
+                    statement.setLong(9, lesson.updatedAt)
+                    if (lesson.deletedAt != null) statement.setLong(10, lesson.deletedAt)
+                    else statement.setNull(10, java.sql.Types.BIGINT)
                     statement.executeUpdate()
                 }
             }

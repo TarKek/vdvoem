@@ -3,6 +3,7 @@ package app.vdvoem.core.sync
 import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.model.Gift
 import app.vdvoem.core.domain.model.GiftStatus
+import app.vdvoem.core.domain.model.Lesson
 import app.vdvoem.core.domain.model.Pair
 import app.vdvoem.core.domain.model.Poke
 import app.vdvoem.core.domain.model.QuizScore
@@ -91,6 +92,32 @@ object SyncMappers {
         budget = budget,
         status = runCatching { GiftStatus.valueOf(status) }.getOrDefault(GiftStatus.IDEA),
         updatedAt = updatedAt
+    )
+
+    fun Lesson.toDto(): LessonDto = LessonDto(
+        id = id,
+        subject = subject,
+        weekday = weekday.coerceIn(1, 7),
+        startMinute = startMinute,
+        endMinute = endMinute,
+        room = room,
+        teacher = teacher,
+        updatedAt = updatedAt,
+        deletedAt = deletedAt,
+        pairId = pairId
+    )
+
+    fun LessonDto.toDomain(fallbackPairId: String = ""): Lesson = Lesson(
+        id = id,
+        pairId = pairId?.takeIf { it.isNotBlank() } ?: fallbackPairId,
+        subject = subject,
+        weekday = weekday.coerceIn(1, 7),
+        startMinute = startMinute.coerceIn(0, 24 * 60),
+        endMinute = endMinute.coerceIn(0, 24 * 60),
+        room = room,
+        teacher = teacher,
+        updatedAt = updatedAt,
+        deletedAt = deletedAt
     )
 
     fun Poke.toDto(): PokeDto = PokeDto(

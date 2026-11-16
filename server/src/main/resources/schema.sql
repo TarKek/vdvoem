@@ -77,6 +77,21 @@ CREATE TABLE IF NOT EXISTS quiz_scores (
 );
 CREATE INDEX IF NOT EXISTS idx_quiz_scores_pair_updated ON quiz_scores (pair_id, updated_at);
 
+-- Расписание уроков пары: день недели (1 = понедельник), время в минутах от полуночи.
+CREATE TABLE IF NOT EXISTS lessons (
+    id           UUID PRIMARY KEY,
+    pair_id      UUID NOT NULL REFERENCES pairs (id) ON DELETE CASCADE,
+    subject      TEXT NOT NULL DEFAULT '',
+    weekday      INT NOT NULL,
+    start_minute INT NOT NULL,
+    end_minute   INT NOT NULL,
+    room         TEXT NOT NULL DEFAULT '',
+    teacher      TEXT NOT NULL DEFAULT '',
+    updated_at   BIGINT NOT NULL,
+    deleted_at   BIGINT
+);
+CREATE INDEX IF NOT EXISTS idx_lessons_pair_updated ON lessons (pair_id, updated_at);
+
 -- Вложения (фото, видео, голосовые): метаданные синкаются, файл лежит на диске по storage_key.
 CREATE TABLE IF NOT EXISTS attachments (
     id          UUID PRIMARY KEY,

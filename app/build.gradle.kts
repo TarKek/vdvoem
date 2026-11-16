@@ -27,8 +27,8 @@ android {
         applicationId = "app.vdvoem"
         minSdk = 26
         targetSdk = 35
-        versionCode = 15
-        versionName = "0.7.6"
+        versionCode = 16
+        versionName = "0.7.7"
     }
 
     signingConfigs {
@@ -99,6 +99,7 @@ dependencies {
     implementation(project(":feature:store"))
     implementation(project(":feature:settings"))
     implementation(project(":feature:quizzes"))
+    implementation(project(":feature:timetable"))
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 

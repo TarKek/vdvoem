@@ -11,6 +11,7 @@ import app.vdvoem.feature.gifts.giftsFeatureModule
 import app.vdvoem.feature.quizzes.quizzesFeatureModule
 import app.vdvoem.feature.settings.settingsFeatureModule
 import app.vdvoem.feature.store.storeFeatureModule
+import app.vdvoem.feature.timetable.timetableFeatureModule
 import app.vdvoem.feature.wishes.wishesFeatureModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -35,6 +36,7 @@ class VdvoemApplication : Application() {
                 giftsFeatureModule,
                 settingsFeatureModule,
                 quizzesFeatureModule,
+                timetableFeatureModule,
                 storeFeatureModule
             )
         }
