@@ -45,7 +45,8 @@ object Storage {
 
     fun attachmentKey(sha256: String): String = "attachments/$sha256"
 
-    fun pluginKey(pluginId: String, version: String): String = "plugins/$pluginId/$version.apk"
+    fun pluginKey(pluginId: String, version: String, sha256: String): String =
+        "plugins/$pluginId/$version-$sha256.apk"
 
     /** Копирует поток в tmp-файл, считая sha256; бросает TooLargeException при превышении лимита. */
     fun receive(input: InputStream, limit: Long): IncomingFile {

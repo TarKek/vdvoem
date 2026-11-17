@@ -3,6 +3,23 @@
 Живой файл: сюда пишем решения, найденные подводные камни и следующие шаги.
 Продуктовые требования — в [ROADMAP.md](ROADMAP.md).
 
+## 2026-11-17 — аудит синхронизации, приватности и стабильности
+
+- Три независимых аудита нашли критические проблемы: утечку записей старой пары, потерю офлайн-правок
+  из-за timestamp-watermark и часов, IDOR на сервере, потерю tombstones, раскрытие сюрпризов через sync/backup.
+- Sync переведён на серверные монотонные `revision`/cursor и per-record acknowledgements в DataStore;
+  outgoing фильтруется по текущему `pairId`, pairing сериализован с sync. На сервере owner-check во всех upsert,
+  отзыв устройства при leave, лимиты sync/WS, device-binding для приватных сюрпризов.
+- Исправлены удаления events/lessons/cycle, LWW tombstones, атомарный и LWW-aware backup, приватность wishes/gifts,
+  даты покупки подарков, атомарное wish→gift. Room обновлён до v10: v9 — приватность/даты подарков,
+  v10 — date-only в UTC без сдвига при смене часового пояса.
+- Исправлены yearly/background reminders, FGS timeout, запуск push после pairing, обновление виджета,
+  ввод веса, прогноз цикла, all-day export, рекорды тестов, микрофон/плеер, счётчики, редакторы и доступность.
+- Release APK запрещает cleartext и публикуется из `assembleRelease`; updater выбирает только `*-release.apk`.
+  Для production-sync нужно настроить HTTPS/WSS с доверенным сертификатом; текущий HTTP по IP доступен только debug.
+- Проверка: Android `testDebugUnitTest`, `assembleDebug`, `assembleRelease`; server `test build`.
+  На устройстве после этого пакета ещё нужны migration/sync smoke-test и скриншоты; у server пока нет unit-тестов.
+
 ## Состояние на 2026-11-14
 
 - Есть только документация: `README.md`, `ROADMAP.md`, `AGENTS.md`, `NOTES.md`. Кода приложения ещё нет.

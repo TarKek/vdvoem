@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface CalendarRepository {
     fun observeEvents(): Flow<List<CalendarEvent>>
+    fun observeEventsIncludingDeleted(): Flow<List<CalendarEvent>>
     suspend fun upsert(event: CalendarEvent)
     suspend fun delete(id: String)
 }

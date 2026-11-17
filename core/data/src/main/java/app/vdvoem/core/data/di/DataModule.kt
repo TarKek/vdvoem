@@ -9,6 +9,7 @@ import app.vdvoem.core.data.repository.RoomPairRepository
 import app.vdvoem.core.data.repository.RoomPokeRepository
 import app.vdvoem.core.data.repository.RoomQuizScoreRepository
 import app.vdvoem.core.data.repository.RoomLessonRepository
+import app.vdvoem.core.data.repository.RoomWishGiftConverter
 import app.vdvoem.core.data.repository.RoomWishRepository
 import app.vdvoem.core.data.settings.DataStoreAppSettingsRepository
 import app.vdvoem.core.data.settings.DataStoreModuleSettingsRepository
@@ -21,6 +22,7 @@ import app.vdvoem.core.domain.repository.ModuleSettingsRepository
 import app.vdvoem.core.domain.repository.PairRepository
 import app.vdvoem.core.domain.repository.PokeRepository
 import app.vdvoem.core.domain.repository.QuizScoreRepository
+import app.vdvoem.core.domain.repository.WishGiftConverter
 import app.vdvoem.core.domain.repository.WishRepository
 import app.vdvoem.core.domain.settings.AppSettingsRepository
 import org.koin.android.ext.koin.androidContext
@@ -43,7 +45,9 @@ val dataModule = module {
                 VdvoemDatabase.MIGRATION_4_5,
                 VdvoemDatabase.MIGRATION_5_6,
                 VdvoemDatabase.MIGRATION_6_7,
-                VdvoemDatabase.MIGRATION_7_8
+                VdvoemDatabase.MIGRATION_7_8,
+                VdvoemDatabase.MIGRATION_8_9,
+                VdvoemDatabase.MIGRATION_9_10
             )
             .build()
     }
@@ -61,6 +65,7 @@ val dataModule = module {
     single<CalendarRepository> { RoomCalendarRepository(get()) }
     single<WishRepository> { RoomWishRepository(get()) }
     single<GiftRepository> { RoomGiftRepository(get()) }
+    single<WishGiftConverter> { RoomWishGiftConverter(get(), get(), get(), get()) }
     single<PokeRepository> { RoomPokeRepository(get()) }
     single<QuizScoreRepository> { RoomQuizScoreRepository(get()) }
     single<LessonRepository> { RoomLessonRepository(get()) }

@@ -111,6 +111,9 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     // JVM-тесты чистой логики: только тестовая конфигурация.
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")
     // org.json в JVM-тестах не заглушка из android.jar, а рабочая реализация.

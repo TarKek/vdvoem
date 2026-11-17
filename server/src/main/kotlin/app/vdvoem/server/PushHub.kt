@@ -35,6 +35,7 @@ object PushHub {
             capacity = OUTGOING_CAPACITY,
             onBufferOverflow = BufferOverflow.DROP_OLDEST
         )
+        internal val revoked = kotlinx.coroutines.CompletableDeferred<Unit>()
     }
 
     private val byPair = HashMap<String, MutableSet<Connection>>()
@@ -42,9 +43,14 @@ object PushHub {
     /** Подключить устройство к паре. */
     fun register(pairId: String, tokenHash: String): Connection {
         val connection = Connection(pairId, tokenHash)
-        synchronized(Lock) {
-            byPair.getOrPut(pairId) { HashSet() }.add(connection)
+        val previous = synchronized(Lock) {
+            val connections = byPair.getOrPut(pairId) { HashSet() }
+            val replaced = connections.filter { it.tokenHash == tokenHash }
+            connections.removeAll(replaced.toSet())
+            connections.add(connection)
+            replaced
         }
+        previous.forEach { it.revoked.complete(Unit) }
         return connection
     }
 
@@ -61,6 +67,13 @@ object PushHub {
     /** Сколько устройств пары сейчас на связи (для логов и тестов). */
     fun connectionCount(pairId: String): Int = synchronized(Lock) {
         byPair[pairId]?.size ?: 0
+    }
+
+    fun revokeToken(tokenHash: String) {
+        val targets = synchronized(Lock) {
+            byPair.values.flatMap { connections -> connections.filter { it.tokenHash == tokenHash } }
+        }
+        targets.forEach { it.revoked.complete(Unit) }
     }
 
     /**

@@ -40,3 +40,8 @@ screens/
 server/.gradle/
 server/build/
 server/.env
+server/.kotlin/
+
+# Python (skills)
+__pycache__/
+*.py[cod]

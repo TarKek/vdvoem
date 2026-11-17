@@ -17,5 +17,9 @@ data class Gift(
     val status: GiftStatus = GiftStatus.IDEA,
     val updatedAt: Long = System.currentTimeMillis(),
     val wishId: String? = null,
-    val deletedAt: Long? = null
+    val deletedAt: Long? = null,
+    val surprise: Boolean = false,
+    val ownerDeviceId: String = "",
+    val boughtAt: Long? = null,
+    val givenAt: Long? = null
 )

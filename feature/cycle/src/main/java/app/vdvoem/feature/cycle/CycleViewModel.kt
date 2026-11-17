@@ -72,7 +72,8 @@ data class CycleDayDraft(
     val mood: String = "",
     val weight: String = "",
     val note: String = "",
-    val hasRecord: Boolean = false
+    val hasRecord: Boolean = false,
+    val weightError: Boolean = false
 )
 
 /** Открытая шторка: выбор месячных или запись конкретного дня. */
@@ -180,6 +181,12 @@ class CycleViewModel(
         val draft = (sheet.value as? CycleSheet.Day)?.draft ?: return
         val existing = lastDays.firstOrNull { Dates.toLocalDate(it.dateMillis) == draft.date }
         val flow = if (draft.period) draft.flow else Flow.NONE
+        val weightText = draft.weight.trim()
+        val weight = weightText.replace(',', '.').toFloatOrNull()
+        if (weightText.isNotEmpty() && (weight == null || !weight.isFinite() || weight !in 20f..300f)) {
+            updateDraft { it.copy(weightError = true) }
+            return
+        }
         val record = CycleDay(
             id = existing?.id ?: UUID.randomUUID().toString(),
             pairId = pairIdFor(existing),
@@ -188,7 +195,7 @@ class CycleViewModel(
             flow = flow,
             symptoms = draft.symptoms.toList().sorted(),
             mood = draft.mood,
-            weight = draft.weight.trim().replace(',', '.').toFloatOrNull(),
+            weight = weight,
             note = draft.note.trim(),
             updatedAt = System.currentTimeMillis()
         )
@@ -402,7 +409,10 @@ class CycleViewModel(
 
     private fun CycleDay.isEmptyRecord(): Boolean = !hasAnyContent()
 
-    private fun CycleDay.tombstone(): CycleDay = copy(deletedAt = System.currentTimeMillis())
+    private fun CycleDay.tombstone(): CycleDay {
+        val now = System.currentTimeMillis()
+        return copy(updatedAt = now, deletedAt = now)
+    }
 
     private fun formatWeight(value: Float): String =
         String.format(Locale.getDefault(), "%.1f", value)

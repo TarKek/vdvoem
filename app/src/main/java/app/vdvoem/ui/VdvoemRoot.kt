@@ -36,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
@@ -62,6 +63,7 @@ import app.vdvoem.core.domain.module.ModuleRegistry
 import app.vdvoem.core.domain.repository.PokeRepository
 import app.vdvoem.core.sync.SyncController
 import app.vdvoem.core.sync.SyncStatus
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import app.vdvoem.core.ui.theme.VdvoemSizes
@@ -79,6 +81,7 @@ import app.vdvoem.ui.presents.PresentsTabController
 import app.vdvoem.ui.sync.BackupViewModel
 import app.vdvoem.ui.sync.ImportResult
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import java.util.UUID
@@ -156,18 +159,20 @@ fun VdvoemRoot(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    var pairDialogOpen by remember { mutableStateOf(false) }
+    var pairDialogOpen by rememberSaveable { mutableStateOf(false) }
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
-            val json = backupViewModel.buildExport()
             val saved = runCatching {
-                context.contentResolver.openOutputStream(uri)?.use { out ->
-                    out.write(json.toByteArray())
-                } ?: error("output stream is null")
+                withContext(Dispatchers.IO) {
+                    val json = backupViewModel.buildExport()
+                    context.contentResolver.openOutputStream(uri)?.use { out ->
+                        out.write(json.toByteArray())
+                    } ?: error("output stream is null")
+                }
             }.isSuccess
             snackbarHostState.showSnackbar(
                 context.getString(
@@ -182,15 +187,17 @@ fun VdvoemRoot(
     ) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
-            val text = runCatching {
-                context.contentResolver.openInputStream(uri)
-                    ?.bufferedReader()
-                    ?.use { it.readText() }
-            }.getOrNull()
-            val result = if (text.isNullOrBlank()) {
-                ImportResult(ok = false)
-            } else {
-                backupViewModel.import(text)
+            val result = withContext(Dispatchers.IO) {
+                val text = runCatching {
+                    context.contentResolver.openInputStream(uri)
+                        ?.bufferedReader()
+                        ?.use { it.readText() }
+                }.getOrNull()
+                if (text.isNullOrBlank()) {
+                    ImportResult(ok = false)
+                } else {
+                    backupViewModel.import(text)
+                }
             }
             snackbarHostState.showSnackbar(
                 if (result.ok) {
@@ -495,7 +502,7 @@ fun VdvoemRoot(
                                                     context.getString(R.string.more_update_permission)
                                                 )
                                             }
-                                            !ApkInstaller.install(context, apk) -> {
+                                            !withContext(Dispatchers.IO) { ApkInstaller.install(context, apk) } -> {
                                                 updateFailed = true
                                                 snackbarHostState.showSnackbar(
                                                     context.getString(R.string.more_update_failed)

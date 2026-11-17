@@ -224,8 +224,8 @@ fun Route.adminRoutes(media: MediaRepository) {
             }
 
             val previous = media.pluginFile(pluginId)?.storageKey
-            val storageKey = Storage.pluginKey(pluginId, version)
-            Storage.commit(file, storageKey, replace = true)
+            val storageKey = Storage.pluginKey(pluginId, version, file.sha256)
+            Storage.commit(file, storageKey, replace = false)
 
             val plugin = media.publish(
                 NewPlugin(

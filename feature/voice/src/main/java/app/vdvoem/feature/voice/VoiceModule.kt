@@ -2,10 +2,13 @@ package app.vdvoem.feature.voice
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.vdvoem.core.domain.module.AppModule
 import app.vdvoem.core.domain.module.ModuleCategory
@@ -43,6 +46,12 @@ class VoiceModule : AppModule {
     @Composable
     override fun Screen(modifier: Modifier) {
         val viewModel: VoiceViewModel = koinViewModel()
+        LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+            if (viewModel.state.value.isRecording) viewModel.stopRecording()
+        }
+        DisposableEffect(viewModel) {
+            onDispose { if (viewModel.state.value.isRecording) viewModel.stopRecording() }
+        }
         val state by viewModel.state.collectAsStateWithLifecycle()
         VoiceScreen(
             state = state,

@@ -51,7 +51,11 @@ data class GiftDto(
     @SerialName("updatedAt") val updatedAt: Long,
     @SerialName("deletedAt") val deletedAt: Long? = null,
     /** Желание, из которого вырос подарок. */
-    @SerialName("wishId") val wishId: String? = null
+    @SerialName("wishId") val wishId: String? = null,
+    val surprise: Boolean = false,
+    val ownerDeviceId: String = "",
+    val boughtAt: Long? = null,
+    val givenAt: Long? = null
 )
 
 @Serializable

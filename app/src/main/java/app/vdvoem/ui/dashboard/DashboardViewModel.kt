@@ -65,6 +65,10 @@ class DashboardViewModel(
         val visibleWishes = wishes.filterNot { wish ->
             wish.surprise && wish.ownerDeviceId.isNotEmpty() && wish.ownerDeviceId != myDevice
         }
+        val visibleGifts = gifts.filter { gift ->
+            !gift.surprise || gift.status == app.vdvoem.core.domain.model.GiftStatus.GIVEN ||
+                gift.ownerDeviceId == myDevice
+        }
         val today = Dates.today()
         val dated = events.map { event ->
             event to Dates.nextOccurrence(event.dateMillis, event.annual, today)
@@ -80,7 +84,7 @@ class DashboardViewModel(
             nextEvent = (upcoming ?: latestPast)?.first,
             eventCount = events.size,
             wishCount = visibleWishes.size,
-            giftCount = gifts.size,
+            giftCount = visibleGifts.size,
             lastPoke = pokes.firstOrNull(),
             pokes = pokes
         )

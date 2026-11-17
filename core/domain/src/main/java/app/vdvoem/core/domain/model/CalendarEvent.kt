@@ -7,5 +7,6 @@ data class CalendarEvent(
     val title: String,
     val dateMillis: Long,
     val annual: Boolean = false,
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+    val deletedAt: Long? = null
 )

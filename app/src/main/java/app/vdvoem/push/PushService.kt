@@ -83,6 +83,14 @@ class PushService : Service(), KoinComponent {
         return START_STICKY
     }
 
+    override fun onTimeout(startId: Int) {
+        stopSelf(startId)
+    }
+
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        stopSelf(startId)
+    }
+
     override fun onDestroy() {
         client?.close()
         client = null

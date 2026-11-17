@@ -18,7 +18,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         CycleDayEntity::class,
         CycleSettingsEntity::class
     ],
-    version = 8,
+    version = 10,
     exportSchema = false
 )
 @TypeConverters(CycleConverters::class)
@@ -197,6 +197,31 @@ abstract class VdvoemDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
+            }
+        }
+
+        /** v8 → v9: приватность подарков-сюрпризов и фактические даты покупки/вручения. */
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `gifts` ADD COLUMN `surprise` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `gifts` ADD COLUMN `owner_device_id` TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE `gifts` ADD COLUMN `bought_at` INTEGER")
+                db.execSQL("ALTER TABLE `gifts` ADD COLUMN `given_at` INTEGER")
+                db.execSQL("UPDATE `gifts` SET `bought_at` = `updatedAt` WHERE `status` IN ('BOUGHT', 'GIVEN')")
+                db.execSQL("UPDATE `gifts` SET `given_at` = `updatedAt` WHERE `status` = 'GIVEN'")
+            }
+        }
+
+        /** v9 → v10: date-only значения переезжают с локальной на UTC-полночь. */
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                fun utcMidnight(column: String) =
+                    "(CAST(strftime('%s', `$column` / 1000, 'unixepoch', 'localtime', 'start of day') AS INTEGER) * 1000)"
+                db.execSQL("UPDATE `pair` SET `sinceMillis` = ${utcMidnight("sinceMillis")}")
+                db.execSQL("UPDATE `pair` SET `birthdayA` = ${utcMidnight("birthdayA")} WHERE `birthdayA` IS NOT NULL")
+                db.execSQL("UPDATE `pair` SET `birthdayB` = ${utcMidnight("birthdayB")} WHERE `birthdayB` IS NOT NULL")
+                db.execSQL("UPDATE `events` SET `dateMillis` = ${utcMidnight("dateMillis")}")
+                db.execSQL("UPDATE `cycle_days` SET `dateMillis` = ${utcMidnight("dateMillis")}")
             }
         }
     }

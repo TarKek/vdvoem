@@ -31,8 +31,8 @@ class SyncLwwTest {
     }
 
     @Test
-    fun `locally deleted record is not resurrected`() {
-        assertFalse(
+    fun `newer remote record wins over local tombstone`() {
+        assertTrue(
             shouldApplyRemote(localUpdatedAt = 10, localDeletedAt = 10, remoteUpdatedAt = 99)
         )
     }

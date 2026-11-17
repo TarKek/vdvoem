@@ -17,8 +17,7 @@ import java.util.UUID
 /**
  * Локальные настройки синхронизации.
  *
- * [lastServerTime] — метка `serverTime` последнего успешного ответа сервера. Именно она
- * уходит в `since`, часы телефона не используются (см. docs/SYNC_API.md).
+ * [lastServerTime] — непрозрачный курсор последнего успешного ответа сервера.
  */
 data class SyncSettings(
     val serverUrl: String = "",
@@ -94,6 +93,45 @@ class SyncSettingsStore(private val context: Context) {
         context.syncDataStore.edit { it[KEY_LAST_PUSHED_AT] = time }
     }
 
+    /** Подтверждённые сервером версии записей; обратная сторона persistent outbox. */
+    suspend fun acknowledgements(pairId: String): Map<String, Long> {
+        val prefix = "$pairId/"
+        return decodeAcknowledgements(context.syncDataStore.data.first()[KEY_ACKNOWLEDGED].orEmpty())
+            .filterKeys { it.startsWith(prefix) }
+    }
+
+    /** Отмечает только фактически отправленные/полученные версии, не глобальный timestamp. */
+    suspend fun markPushed(pairId: String, changes: ChangesDto) {
+        val stamps = buildMap {
+            changes.pair?.let { put(syncAckKey(pairId, "pair", it.id), it.updatedAt) }
+            changes.events.forEach { put(syncAckKey(pairId, "event", it.id), it.updatedAt) }
+            changes.wishes.forEach { put(syncAckKey(pairId, "wish", it.id), it.updatedAt) }
+            changes.gifts.forEach { put(syncAckKey(pairId, "gift", it.id), it.updatedAt) }
+            changes.pokes.forEach { put(syncAckKey(pairId, "poke", it.id), it.updatedAt) }
+            changes.quizScores.forEach { put(syncAckKey(pairId, "quiz", it.id), it.updatedAt) }
+            changes.lessons.forEach { put(syncAckKey(pairId, "lesson", it.id), it.updatedAt) }
+            changes.cycleDays.forEach { put(syncAckKey(pairId, "cycleDay", it.id), it.updatedAt) }
+            changes.cycleSettings.forEach { put(syncAckKey(pairId, "cycleSettings", it.id), it.updatedAt) }
+        }
+        if (stamps.isEmpty()) return
+        context.syncDataStore.edit { prefs ->
+            val current = decodeAcknowledgements(prefs[KEY_ACKNOWLEDGED].orEmpty())
+            prefs[KEY_ACKNOWLEDGED] = encodeAcknowledgements(current + stamps)
+        }
+    }
+
+    private fun decodeAcknowledgements(raw: String): Map<String, Long> = buildMap {
+        raw.lineSequence().forEach { line ->
+            val separator = line.lastIndexOf('\t')
+            if (separator <= 0) return@forEach
+            val timestamp = line.substring(separator + 1).toLongOrNull() ?: return@forEach
+            put(line.substring(0, separator), timestamp)
+        }
+    }
+
+    private fun encodeAcknowledgements(stamps: Map<String, Long>): String =
+        stamps.entries.joinToString("\n") { "${it.key}\t${it.value}" }
+
     /**
      * Id установки: генерируется один раз при первом обращении и дальше не меняется.
      * Нужен, чтобы «сюрприз» автора оставался видимым только на его устройстве.
@@ -145,7 +183,10 @@ class SyncSettingsStore(private val context: Context) {
         val KEY_INVITE_CODE = stringPreferencesKey("invite_code")
         val KEY_LAST_SERVER_TIME = longPreferencesKey("last_server_time")
         val KEY_LAST_PUSHED_AT = longPreferencesKey("last_pushed_at")
+        val KEY_ACKNOWLEDGED = stringPreferencesKey("acknowledged_sync_versions")
         val KEY_ENABLED = booleanPreferencesKey("enabled")
         val KEY_LOCAL_DEVICE_ID = stringPreferencesKey("local_device_id")
     }
 }
+
+internal fun syncAckKey(pairId: String, type: String, id: String): String = "$pairId/$type/$id"

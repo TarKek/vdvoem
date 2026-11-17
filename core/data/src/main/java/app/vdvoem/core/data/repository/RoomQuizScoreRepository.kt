@@ -15,6 +15,9 @@ class RoomQuizScoreRepository(
     override fun observe(): Flow<List<QuizScore>> =
         dao.observeAll().map { list -> list.map { it.toDomain() } }
 
+    override fun observeIncludingDeleted(): Flow<List<QuizScore>> =
+        dao.observeAllIncludingDeleted().map { list -> list.map { it.toDomain() } }
+
     override suspend fun save(score: QuizScore) {
         dao.upsert(score.toEntity())
         LocalChangeSignal.notifyLocalWrite()

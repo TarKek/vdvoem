@@ -33,6 +33,9 @@ object VdvoemSizes {
     val avatarLg = 56.dp
     val avatarXl = 76.dp
 
+    /** Минимальная доступная область нажатия. */
+    val touchTarget = 48.dp
+
     /** Круглая кнопка аккаунта пары в шапке главного экрана. */
     val avatarAccount = 36.dp
 

@@ -26,7 +26,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Make gradlew executable
-        run: chmod +x gradlew
+        run: chmod +x gradlew server/gradlew
 
       # Ключ подписи общий с локальными сборками: иначе Android не даёт обновить
       # приложение поверх версии, подписанной другим ключом.
@@ -43,6 +43,12 @@ jobs:
             echo "VDVOEM_KEY_PASSWORD=${{ secrets.VDVOEM_KEY_PASSWORD }}"
           } >> "$GITHUB_ENV"
 
+      - name: Run tests
+        run: ./gradlew testDebugUnitTest --console=plain
+
+      - name: Build release APK
+        run: ./gradlew :app:assembleRelease --console=plain
+
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug --console=plain
 
@@ -50,8 +56,9 @@ jobs:
         run: |
           VERSION=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
           mkdir -p artifacts
+          cp app/build/outputs/apk/release/app-release.apk "artifacts/vdvoem-${VERSION}-release.apk"
           cp app/build/outputs/apk/debug/app-debug.apk "artifacts/vdvoem-${VERSION}-debug.apk"
-          echo "APK: vdvoem-${VERSION}-debug.apk"
+          echo "APK: vdvoem-${VERSION}-release.apk"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -64,5 +71,5 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/*.apk
+          files: artifacts/*-release.apk
           generate_release_notes: true

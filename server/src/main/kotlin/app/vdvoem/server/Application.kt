@@ -43,7 +43,7 @@ fun Application.configureServer(repository: Repository, mediaRepository: MediaRe
     install(WebSockets) {
         pingPeriodMillis = 20_000L
         timeoutMillis = 60_000L
-        maxFrameSize = Long.MAX_VALUE
+        maxFrameSize = 64 * 1024L
         masking = false
     }
     configureRouting(repository, mediaRepository)

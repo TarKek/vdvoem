@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 /** Расписание уроков: local-first, всё через этот репозиторий (нужно для синка). */
 interface LessonRepository {
     fun observe(): Flow<List<Lesson>>
+    fun observeIncludingDeleted(): Flow<List<Lesson>>
 
     suspend fun save(lesson: Lesson)
 

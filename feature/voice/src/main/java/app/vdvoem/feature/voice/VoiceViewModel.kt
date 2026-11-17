@@ -54,6 +54,7 @@ class VoiceViewModel(
     fun startRecording() {
         if (_state.value.isRecording) return
         player.stop()
+        _state.value = _state.value.copy(playingId = null)
         if (!recorder.start()) {
             _state.value = _state.value.copy(errorRes = R.string.voice_error_record)
             return
@@ -124,8 +125,11 @@ class VoiceViewModel(
 
     fun confirmDelete() {
         val note = _state.value.pendingDelete ?: return
-        if (_state.value.playingId == note.id) player.stop()
-        _state.value = _state.value.copy(pendingDelete = null, playingId = null)
+        if (_state.value.playingId == note.id) {
+            player.stop()
+            _state.value = _state.value.copy(playingId = null)
+        }
+        _state.value = _state.value.copy(pendingDelete = null)
         viewModelScope.launch { store.delete(note) }
     }
 

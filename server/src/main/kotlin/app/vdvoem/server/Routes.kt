@@ -6,6 +6,7 @@ import io.ktor.server.application.install
 import io.ktor.server.application.call
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.request.receive
+import io.ktor.server.request.receiveText
 import io.ktor.server.response.respond
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -13,6 +14,9 @@ import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.util.UUID
 
 private const val TOKEN_PREFIX = "Bearer "
 
@@ -32,13 +36,15 @@ fun Application.configureRouting(repository: Repository, mediaRepository: MediaR
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("names are required"))
                     return@post
                 }
-                val (pairId, token, inviteCode) = repository.createPair(request)
+                val (pairId, token, inviteCode) = withContext(Dispatchers.IO) {
+                    repository.createPair(request)
+                }
                 call.respond(AuthResponse(pairId, token, inviteCode))
             }
 
             post("/pairs/join") {
                 val request = call.receive<JoinPairRequest>()
-                val result = repository.join(request.inviteCode)
+                val result = withContext(Dispatchers.IO) { repository.join(request.inviteCode) }
                 if (result == null) {
                     call.respond(HttpStatusCode.NotFound, ErrorResponse("invite code not found"))
                 } else {
@@ -46,30 +52,68 @@ fun Application.configureRouting(repository: Repository, mediaRepository: MediaR
                 }
             }
 
+            post("/pairs/leave") {
+                val token = call.bearerToken()
+                val revoked = token != null && withContext(Dispatchers.IO) {
+                    repository.revokeDevice(token)
+                }
+                if (!revoked) {
+                    call.respond(HttpStatusCode.Unauthorized, ErrorResponse("unauthorized"))
+                    return@post
+                }
+                PushHub.revokeToken(Db.hash(token!!))
+                call.respond(HttpStatusCode.NoContent)
+            }
+
             get("/sync") {
                 val token = call.bearerToken()
-                val pairId = token?.let(repository::authenticate)
-                if (pairId == null) {
+                val device = withContext(Dispatchers.IO) {
+                    token?.let { repository.authenticateSyncDevice(it, call.request.headers["X-Device-Id"].orEmpty()) }
+                }
+                if (device == null) {
                     call.respond(HttpStatusCode.Unauthorized, ErrorResponse("unauthorized"))
                     return@get
                 }
+                val pairId = device.pairId
                 val since = call.request.queryParameters["since"]?.toLongOrNull() ?: 0L
-                call.respond(SyncResponse(System.currentTimeMillis(), repository.pull(pairId, since)))
+                val (cursor, changes) = withContext(Dispatchers.IO) {
+                    val cursor = repository.currentCursor(pairId)
+                    // Старые клиенты присылают epoch-millis: один раз делаем полный pull.
+                    val effectiveSince = since.coerceAtLeast(0L).takeIf { it <= cursor } ?: 0L
+                    cursor to repository.pull(pairId, effectiveSince, device.deviceId)
+                }
+                call.respond(SyncResponse(cursor, changes))
             }
 
             post("/sync") {
                 val token = call.bearerToken()
-                val pairId = token?.let(repository::authenticate)
-                if (pairId == null) {
+                val device = withContext(Dispatchers.IO) {
+                    token?.let { repository.authenticateSyncDevice(it, call.request.headers["X-Device-Id"].orEmpty()) }
+                }
+                if (device == null) {
                     call.respond(HttpStatusCode.Unauthorized, ErrorResponse("unauthorized"))
                     return@post
                 }
-                val request = call.receive<PushRequest>()
-                val now = System.currentTimeMillis()
-                val applied = repository.push(pairId, request.changes)
-                // Успешная запись — сразу будим второй телефон пары (сбой пуша не влияет на ответ).
-                PushHub.notifyPair(pairId, exceptTokenHash = token?.let(Db::hash))
-                call.respond(PushResponse(now, applied))
+                val pairId = device.pairId
+                val raw = call.receiveText()
+                if (raw.length > MAX_SYNC_BODY_CHARS) {
+                    call.respond(HttpStatusCode.PayloadTooLarge, ErrorResponse("sync body too large"))
+                    return@post
+                }
+                val request = Json { ignoreUnknownKeys = true }.decodeFromString<PushRequest>(raw)
+                val validationError = validateSyncRequest(pairId, device.deviceId, request.changes)
+                if (validationError != null) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse(validationError))
+                    return@post
+                }
+                val (cursor, changes) = withContext(Dispatchers.IO) {
+                    repository.push(pairId, device.deviceId, request.changes)
+                    val cursor = repository.currentCursor(pairId)
+                    val effectiveSince = request.baseTime.coerceAtLeast(0L).takeIf { it <= cursor } ?: 0L
+                    cursor to repository.pull(pairId, effectiveSince, device.deviceId)
+                }
+                PushHub.notifyPair(pairId, exceptTokenHash = token?.let(Db::hash), serverTime = cursor)
+                call.respond(SyncResponse(cursor, changes))
             }
         }
 
@@ -85,6 +129,45 @@ private fun Application.installJson() {
             explicitNulls = false
         })
     }
+}
+
+private const val MAX_SYNC_BODY_CHARS = 2_000_000
+private const val MAX_SYNC_CHANGES = 5_000
+private const val MAX_CLOCK_SKEW_MILLIS = 24L * 60 * 60 * 1000
+
+private fun validateSyncRequest(pairId: String, deviceId: String, changes: ChangesDto): String? {
+    val ids = buildList {
+        changes.pair?.let { add(it.id) }
+        changes.events.forEach { add(it.id) }
+        changes.wishes.forEach { add(it.id) }
+        changes.gifts.forEach { add(it.id) }
+        changes.pokes.forEach { add(it.id) }
+        changes.quizScores.forEach { add(it.id) }
+        changes.lessons.forEach { add(it.id) }
+        changes.cycleDays.forEach { add(it.id) }
+        changes.cycleSettings.forEach { add(it.id) }
+    }
+    if (ids.size > MAX_SYNC_CHANGES) return "too many changes"
+    if (ids.any { runCatching { UUID.fromString(it) }.isFailure }) return "invalid entity id"
+    if (changes.pair != null && changes.pair.id != pairId) return "pair id mismatch"
+    if (deviceId.isBlank() && (changes.wishes.any { it.surprise } || changes.gifts.any { it.surprise })) {
+        return "device identity required for surprises"
+    }
+
+    val timestamps = buildList {
+        changes.pair?.let { add(it.updatedAt) }
+        changes.events.forEach { add(it.updatedAt) }
+        changes.wishes.forEach { add(it.updatedAt) }
+        changes.gifts.forEach { add(it.updatedAt) }
+        changes.pokes.forEach { add(it.updatedAt) }
+        changes.quizScores.forEach { add(it.updatedAt) }
+        changes.lessons.forEach { add(it.updatedAt) }
+        changes.cycleDays.forEach { add(it.updatedAt) }
+        changes.cycleSettings.forEach { add(it.updatedAt) }
+    }
+    val newestAllowed = System.currentTimeMillis() + MAX_CLOCK_SKEW_MILLIS
+    if (timestamps.any { it < 0L || it > newestAllowed }) return "invalid updatedAt"
+    return null
 }
 
 fun io.ktor.server.application.ApplicationCall.bearerToken(): String? {

@@ -84,24 +84,35 @@ class PendingChanges(
             _pending.value = 0
             return@withLock 0
         }
-        val pushedAt = settings.lastPushedAt
-        val total = runCatching { countLocal(pushedAt) }.getOrElse { 0 }
+        val pairId = settings.pairId
+        val acknowledged = settingsStore.acknowledgements(pairId)
+        val total = runCatching { countLocal(pairId, acknowledged) }.getOrElse { 0 }
         _pending.value = total
         total
     }
 
-    private suspend fun countLocal(pushedAt: Long): Int {
+    private suspend fun countLocal(pairId: String, acknowledged: Map<String, Long>): Int {
+        fun isPending(type: String, id: String, updatedAt: Long): Boolean =
+            acknowledged[syncAckKey(pairId, type, id)] != updatedAt
+
         var total = 0
-        if ((pairRepository.current()?.updatedAt ?: 0L) > pushedAt) total++
-        total += calendarRepository.observeEvents().first().count { it.updatedAt > pushedAt }
-        // Tombstone тоже считаем: удаление — такое же изменение, которое надо отправить.
-        total += wishRepository.observeWishesIncludingDeleted().first().count { it.updatedAt > pushedAt }
-        total += giftRepository.observeGiftsIncludingDeleted().first().count { it.updatedAt > pushedAt }
-        total += pokeRepository.observe().first().count { it.updatedAt > pushedAt }
-        total += quizScoreRepository.observe().first().count { it.updatedAt > pushedAt }
-        total += lessonRepository.observe().first().count { it.updatedAt > pushedAt }
-        total += cycleRepository.observeDaysIncludingDeleted().first().count { it.updatedAt > pushedAt }
-        total += cycleRepository.observeSettingsIncludingDeleted().first().count { it.updatedAt > pushedAt }
+        if (pairRepository.current()?.let { it.id == pairId && isPending("pair", it.id, it.updatedAt) } == true) total++
+        total += calendarRepository.observeEventsIncludingDeleted().first()
+            .count { it.pairId == pairId && isPending("event", it.id, it.updatedAt) }
+        total += wishRepository.observeWishesIncludingDeleted().first()
+            .count { it.pairId == pairId && isPending("wish", it.id, it.updatedAt) }
+        total += giftRepository.observeGiftsIncludingDeleted().first()
+            .count { it.pairId == pairId && isPending("gift", it.id, it.updatedAt) }
+        total += pokeRepository.observe().first()
+            .count { it.pairId == pairId && isPending("poke", it.id, it.updatedAt) }
+        total += quizScoreRepository.observe().first()
+            .count { it.pairId == pairId && isPending("quiz", it.id, it.updatedAt) }
+        total += lessonRepository.observeIncludingDeleted().first()
+            .count { it.pairId == pairId && isPending("lesson", it.id, it.updatedAt) }
+        total += cycleRepository.observeDaysIncludingDeleted().first()
+            .count { it.pairId == pairId && isPending("cycleDay", it.id, it.updatedAt) }
+        total += cycleRepository.observeSettingsIncludingDeleted().first()
+            .count { it.pairId == pairId && isPending("cycleSettings", it.id, it.updatedAt) }
         return total
     }
 }

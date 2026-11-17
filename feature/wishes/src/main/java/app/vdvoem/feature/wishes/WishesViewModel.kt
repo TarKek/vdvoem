@@ -3,12 +3,10 @@ package app.vdvoem.feature.wishes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.vdvoem.core.domain.device.DeviceIdentity
-import app.vdvoem.core.domain.model.Gift
-import app.vdvoem.core.domain.model.GiftStatus
 import app.vdvoem.core.domain.model.Wish
 import app.vdvoem.core.domain.model.WishStatus
-import app.vdvoem.core.domain.repository.GiftRepository
 import app.vdvoem.core.domain.repository.PairRepository
+import app.vdvoem.core.domain.repository.WishGiftConverter
 import app.vdvoem.core.domain.repository.WishRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -33,7 +31,7 @@ data class WishesUiState(
 class WishesViewModel(
     private val wishRepository: WishRepository,
     private val pairRepository: PairRepository,
-    private val giftRepository: GiftRepository,
+    private val wishGiftConverter: WishGiftConverter,
     private val deviceIdentity: DeviceIdentity
 ) : ViewModel() {
 
@@ -162,25 +160,7 @@ class WishesViewModel(
      * лишний `observeWishes().first()` больше не нужен.
      */
     fun makeGift(wish: Wish) {
-        viewModelScope.launch {
-            // Берём актуальную версию из списка: карточка могла устареть.
-            val current = state.value.wishes.firstOrNull { it.id == wish.id } ?: wish
-            val pairId = current.pairId.ifBlank { pairRepository.current()?.id ?: LOCAL_PAIR_ID }
-            val now = System.currentTimeMillis()
-            giftRepository.upsert(
-                Gift(
-                    id = UUID.randomUUID().toString(),
-                    pairId = pairId,
-                    title = current.title,
-                    note = NOTE_FROM_WISH,
-                    budget = current.priceEstimate,
-                    status = GiftStatus.IDEA,
-                    updatedAt = now,
-                    wishId = current.id
-                )
-            )
-            wishRepository.upsert(current.copy(status = WishStatus.RESERVED, updatedAt = now))
-        }
+        viewModelScope.launch { wishGiftConverter.convert(wish.id) }
     }
 
     /** Свой сюрприз виден всегда, чужой — никогда. */

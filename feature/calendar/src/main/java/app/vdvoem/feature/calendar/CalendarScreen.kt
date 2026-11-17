@@ -57,6 +57,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -91,8 +92,9 @@ fun CalendarScreen(
     onLeadDaysChange: (Int) -> Unit = {},
     onReminderHourChange: (Int) -> Unit = {}
 ) {
-    var editorOpen by remember { mutableStateOf(false) }
-    var editing by remember { mutableStateOf<EventUi?>(null) }
+    var editorOpen by rememberSaveable { mutableStateOf(false) }
+    var editingId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editing = state.events.firstOrNull { it.id == editingId }
     var pendingDelete by remember { mutableStateOf<EventUi?>(null) }
 
     val context = LocalContext.current
@@ -132,7 +134,7 @@ fun CalendarScreen(
     }
 
     val startCreate = {
-        editing = null
+        editingId = null
         editorOpen = true
     }
 
@@ -214,7 +216,7 @@ fun CalendarScreen(
                         event = event,
                         onAddToCalendar = { addToPhoneCalendar(event) },
                         onEdit = {
-                            editing = event
+                            editingId = event.id
                             editorOpen = true
                         }
                     )
@@ -552,12 +554,12 @@ private fun EventDialog(
     onSave: (title: String, dateMillis: Long, annual: Boolean) -> Unit,
     onDelete: (() -> Unit)?
 ) {
-    var title by remember(event?.id) { mutableStateOf(event?.title.orEmpty()) }
-    var dateMillis by remember(event?.id) {
+    var title by rememberSaveable(event?.id) { mutableStateOf(event?.title.orEmpty()) }
+    var dateMillis by rememberSaveable(event?.id) {
         mutableLongStateOf(event?.dateMillis ?: Dates.startOfDay(Dates.today()))
     }
-    var annual by remember(event?.id) { mutableStateOf(event?.annual ?: false) }
-    var showPicker by remember(event?.id) { mutableStateOf(false) }
+    var annual by rememberSaveable(event?.id) { mutableStateOf(event?.annual ?: false) }
+    var showPicker by rememberSaveable(event?.id) { mutableStateOf(false) }
     val canSave = title.isNotBlank()
 
     AlertDialog(
@@ -704,7 +706,7 @@ private fun DeleteEventDialog(
     )
 }
 
-private const val MILLIS_PER_HOUR = 60L * 60L * 1000L
+private const val MILLIS_PER_DAY = 24L * 60L * 60L * 1000L
 
 /**
  * Кладёт событие в календарь телефона через ACTION_INSERT: без OAuth, без разрешений и без записи
@@ -717,7 +719,7 @@ private fun insertIntoPhoneCalendar(context: Context, event: EventUi): Boolean {
     val intent = Intent(Intent.ACTION_INSERT)
         .setData(CalendarContract.Events.CONTENT_URI)
         .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, begin)
-        .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, begin + MILLIS_PER_HOUR)
+        .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, begin + MILLIS_PER_DAY)
         .putExtra(CalendarContract.EXTRA_EVENT_ALL_DAY, true)
         .putExtra(CalendarContract.Events.TITLE, event.title)
         .putExtra(CalendarContract.Events.DESCRIPTION, description)

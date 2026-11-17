@@ -56,7 +56,11 @@ data class GiftEntity(
     val updatedAt: Long,
     val deletedAt: Long? = null,
     /** Желание, из которого вырос подарок; null — подарок добавлен вручную. */
-    @ColumnInfo(name = "wish_id") val wishId: String? = null
+    @ColumnInfo(name = "wish_id") val wishId: String? = null,
+    @ColumnInfo(defaultValue = "0") val surprise: Boolean = false,
+    @ColumnInfo(name = "owner_device_id", defaultValue = "''") val ownerDeviceId: String = "",
+    @ColumnInfo(name = "bought_at") val boughtAt: Long? = null,
+    @ColumnInfo(name = "given_at") val givenAt: Long? = null
 )
 
 @Entity(tableName = "pokes")

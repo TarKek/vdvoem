@@ -22,21 +22,26 @@ object ApkInstaller {
         val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
         val sessionId = installer.createSession(params)
         installer.openSession(sessionId).use { session ->
-            apk.inputStream().use { input ->
-                session.openWrite("base.apk", 0, apk.length()).use { output ->
-                    input.copyTo(output)
-                    session.fsync(output)
+            try {
+                apk.inputStream().use { input ->
+                    session.openWrite("base.apk", 0, apk.length()).use { output ->
+                        input.copyTo(output)
+                        session.fsync(output)
+                    }
                 }
+                val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+                val pending = PendingIntent.getBroadcast(
+                    context,
+                    sessionId,
+                    Intent(context, InstallResultReceiver::class.java)
+                        .setAction(InstallResultReceiver.ACTION_INSTALL_RESULT),
+                    flags
+                )
+                session.commit(pending.intentSender)
+            } catch (error: Throwable) {
+                session.abandon()
+                throw error
             }
-            val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-            val pending = PendingIntent.getBroadcast(
-                context,
-                sessionId,
-                Intent(context, InstallResultReceiver::class.java)
-                    .setAction(InstallResultReceiver.ACTION_INSTALL_RESULT),
-                flags
-            )
-            session.commit(pending.intentSender)
         }
         true
     }.getOrDefault(false)

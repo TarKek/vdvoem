@@ -1,0 +1,11 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "agents": {
+    "general": {
+      "model": "iishko/kimi-k3.1-pro"
+    },
+    "explore": {
+      "model": "iishko/kimi-k3.1-pro"
+    }
+  }
+}

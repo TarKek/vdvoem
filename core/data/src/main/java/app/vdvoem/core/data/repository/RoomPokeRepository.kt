@@ -15,6 +15,9 @@ class RoomPokeRepository(
     override fun observe(): Flow<List<Poke>> =
         dao.observeAll().map { list -> list.map { it.toDomain() } }
 
+    override fun observeIncludingDeleted(): Flow<List<Poke>> =
+        dao.observeAllIncludingDeleted().map { list -> list.map { it.toDomain() } }
+
     override suspend fun save(poke: Poke) {
         dao.upsert(poke.toEntity())
         LocalChangeSignal.notifyLocalWrite()

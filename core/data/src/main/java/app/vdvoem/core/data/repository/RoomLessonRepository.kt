@@ -15,6 +15,9 @@ class RoomLessonRepository(
     override fun observe(): Flow<List<Lesson>> =
         dao.observeAll().map { list -> list.map { it.toDomain() } }
 
+    override fun observeIncludingDeleted(): Flow<List<Lesson>> =
+        dao.observeAllIncludingDeleted().map { list -> list.map { it.toDomain() } }
+
     override suspend fun save(lesson: Lesson) {
         dao.upsert(lesson.toEntity())
         LocalChangeSignal.notifyLocalWrite()

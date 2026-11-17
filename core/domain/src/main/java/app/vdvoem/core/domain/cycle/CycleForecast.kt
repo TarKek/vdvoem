@@ -95,7 +95,7 @@ fun buildForecast(
 
     // Текущий цикл — последнее начало не позже сегодняшнего дня. Если все начала
     // в будущем (пользователь отметил дату заранее), берём ближайшее.
-    val lastStart = starts.lastOrNull { !it.isAfter(today) } ?: starts.lastOrNull()
+    val lastStart = starts.lastOrNull { !it.isAfter(today) }
 
     val currentDay = if (lastStart == null) {
         1
@@ -105,6 +105,7 @@ fun buildForecast(
     }
 
     val nextPeriodStart = lastStart?.plusDays(averageLength.toLong())
+        ?: starts.firstOrNull { it.isAfter(today) }
     val ovulationDate = nextPeriodStart?.minusDays(LUTEAL_PHASE_DAYS.toLong())
     val fertileStart = ovulationDate?.minusDays(FERTILE_WINDOW_DAYS.toLong())
     val fertileEnd = ovulationDate?.plusDays(FERTILE_WINDOW_DAYS.toLong())

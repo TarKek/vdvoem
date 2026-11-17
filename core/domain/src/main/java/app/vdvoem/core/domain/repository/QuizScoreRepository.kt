@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 interface QuizScoreRepository {
     /** Все результаты пары, свежие сверху. */
     fun observe(): Flow<List<QuizScore>>
+    fun observeIncludingDeleted(): Flow<List<QuizScore>>
 
     suspend fun save(score: QuizScore)
 }

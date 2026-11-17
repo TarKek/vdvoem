@@ -184,4 +184,7 @@
         <item>ПМС — это гормоны, а не характер. Снизьте темп без вины.</item>
         <item>Соль задерживает воду — отсюда отёки и тяжесть.</item>
     </string-array>
+    <string name="cycle_error_weight">Введите вес от 20 до 300 кг</string>
+    <string name="cycle_previous_month">Предыдущий месяц</string>
+    <string name="cycle_next_month">Следующий месяц</string>
 </resources>

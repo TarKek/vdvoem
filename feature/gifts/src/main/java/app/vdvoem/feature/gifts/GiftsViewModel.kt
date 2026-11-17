@@ -2,6 +2,7 @@ package app.vdvoem.feature.gifts
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.vdvoem.core.domain.device.DeviceIdentity
 import app.vdvoem.core.domain.model.Gift
 import app.vdvoem.core.domain.model.GiftStatus
 import app.vdvoem.core.domain.repository.GiftRepository
@@ -55,6 +56,12 @@ class GiftsViewModel(
 ) : ViewModel(), KoinComponent {
 
     private val budgetPreferences: GiftBudgetPreferences by inject()
+    private val deviceIdentity: DeviceIdentity by inject()
+    private val deviceId = MutableStateFlow("")
+
+    init {
+        viewModelScope.launch { deviceId.value = deviceIdentity.deviceId() }
+    }
 
     private val query = MutableStateFlow("")
     private val sort = MutableStateFlow(GiftSort.NEWEST)
@@ -63,9 +70,11 @@ class GiftsViewModel(
         giftRepository.observeGifts(),
         budgetPreferences.budget,
         query,
-        sort
-    ) { gifts, budget, currentQuery, currentSort ->
-        buildState(gifts, budget, currentQuery, currentSort)
+        sort,
+        deviceId
+    ) { gifts, budget, currentQuery, currentSort, localDeviceId ->
+        val visibleGifts = gifts.filter { it.isVisible(localDeviceId) }
+        buildState(visibleGifts, budget, currentQuery, currentSort)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -117,6 +126,8 @@ class GiftsViewModel(
                     note = note.trim(),
                     budget = budget,
                     status = status,
+                    boughtAt = if (status != GiftStatus.IDEA) gift.boughtAt ?: System.currentTimeMillis() else null,
+                    givenAt = if (status == GiftStatus.GIVEN) gift.givenAt ?: System.currentTimeMillis() else null,
                     updatedAt = System.currentTimeMillis()
                 )
             )
@@ -126,7 +137,14 @@ class GiftsViewModel(
     fun setStatus(id: String, status: GiftStatus) {
         viewModelScope.launch {
             val gift = loadGift(id) ?: return@launch
-            giftRepository.upsert(gift.copy(status = status, updatedAt = System.currentTimeMillis()))
+            giftRepository.upsert(
+                gift.copy(
+                    status = status,
+                    boughtAt = if (status != GiftStatus.IDEA) gift.boughtAt ?: System.currentTimeMillis() else null,
+                    givenAt = if (status == GiftStatus.GIVEN) gift.givenAt ?: System.currentTimeMillis() else null,
+                    updatedAt = System.currentTimeMillis()
+                )
+            )
         }
     }
 
@@ -171,13 +189,17 @@ class GiftsViewModel(
     }
 }
 
+private fun Gift.isVisible(localDeviceId: String): Boolean =
+    !surprise || status == GiftStatus.GIVEN || ownerDeviceId == localDeviceId
+
 private fun Gift.matches(needle: String): Boolean =
     needle.isEmpty() || title.contains(needle, ignoreCase = true) || note.contains(needle, ignoreCase = true)
 
 /** Подарок считается потраченным в этом году, если он куплен или подарен в текущем календарном году. */
 private fun Gift.isSpentThisYear(): Boolean {
     if (status != GiftStatus.BOUGHT && status != GiftStatus.GIVEN) return false
-    val year = Instant.ofEpochMilli(updatedAt).atZone(ZoneId.systemDefault()).year
+    val spentAt = if (status == GiftStatus.GIVEN) givenAt ?: boughtAt ?: updatedAt else boughtAt ?: updatedAt
+    val year = Instant.ofEpochMilli(spentAt).atZone(ZoneId.systemDefault()).year
     return year == Year.now().value
 }
 

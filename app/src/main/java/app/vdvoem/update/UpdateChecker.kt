@@ -11,6 +11,7 @@ import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.UUID
 
 /** Доступное обновление: версия и прямая ссылка на APK из GitHub Releases. */
 data class UpdateInfo(
@@ -57,7 +58,7 @@ object UpdateChecker {
                     add(asset.optString("browser_download_url"))
                 }
             }
-        }.firstOrNull { it.isNotBlank() } ?: return@withContext null
+        }.firstOrNull { it.endsWith("-release.apk", ignoreCase = true) } ?: return@withContext null
 
         UpdateInfo(version = tag, apkUrl = apkUrl, notes = json.optString("body"))
     }
@@ -81,18 +82,27 @@ object UpdateChecker {
     /** Скачивает APK в кэш приложения и возвращает файл. */
     suspend fun download(context: Context, url: String): File = withContext(Dispatchers.IO) {
         val directory = File(context.cacheDir, "updates").apply { mkdirs() }
-        val target = File(directory, "vdvoem-update.apk")
+        val id = UUID.randomUUID().toString()
+        val target = File(directory, "vdvoem-update-$id.apk")
+        val partial = File(directory, "$id.part")
         val connection = (URL(url).openConnection() as HttpURLConnection).apply {
             instanceFollowRedirects = true
             connectTimeout = 15_000
             readTimeout = 60_000
             setRequestProperty("User-Agent", "vdvoem-android")
         }
-        connection.inputStream.use { input ->
-            target.outputStream().use { output -> input.copyTo(output) }
+        try {
+            connection.inputStream.use { input ->
+                partial.outputStream().use { output -> input.copyTo(output) }
+            }
+            if (!partial.renameTo(target)) throw java.io.IOException("Не удалось завершить загрузку APK")
+            target
+        } catch (error: Throwable) {
+            partial.delete()
+            throw error
+        } finally {
+            connection.disconnect()
         }
-        connection.disconnect()
-        target
     }
 
     /** Разрешена ли установка APK из этого приложения. */

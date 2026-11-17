@@ -15,8 +15,7 @@ class RoomPairRepository(
     override fun observe(): Flow<Pair?> = dao.observe().map { it?.toDomain() }
 
     override suspend fun save(pair: Pair) {
-        val existing = dao.current()
-        dao.upsert(pair.copy(id = existing?.id ?: pair.id).toEntity())
+        dao.replace(pair.toEntity())
         LocalChangeSignal.notifyLocalWrite()
     }
 

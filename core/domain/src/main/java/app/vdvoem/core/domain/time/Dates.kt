@@ -2,7 +2,6 @@ package app.vdvoem.core.domain.time
 
 import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -10,18 +9,18 @@ import java.util.Locale
 
 /**
  * Работа с датами в одном месте: экраны не должны знать про UTC-полуночи DatePicker
- * и пересчёт годовщин. Даты хранятся как epoch millis на начало дня в системной зоне.
+ * и пересчёт годовщин. Дата без времени хранится как UTC-полночь и не зависит от пояса.
  */
 object Dates {
 
-    private val ruFormat: DateTimeFormatter =
-        DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("ru"))
+    private val dateFormat: DateTimeFormatter
+        get() = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.getDefault())
 
     fun toLocalDate(epochMillis: Long): LocalDate =
-        Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+        Instant.ofEpochMilli(epochMillis).atZone(ZoneOffset.UTC).toLocalDate()
 
     fun startOfDay(date: LocalDate): Long =
-        date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
 
     fun today(): LocalDate = LocalDate.now()
 
@@ -44,7 +43,7 @@ object Dates {
     fun daysUntil(target: LocalDate, from: LocalDate = today()): Long =
         ChronoUnit.DAYS.between(from, target)
 
-    fun format(date: LocalDate): String = date.format(ruFormat)
+    fun format(date: LocalDate): String = date.format(dateFormat)
 
     /** DatePicker отдаёт полночь по UTC — переводим в локальную полночь и обратно. */
     fun fromPickerMillis(utcMillis: Long): Long {

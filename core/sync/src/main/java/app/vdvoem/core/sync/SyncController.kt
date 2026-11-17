@@ -62,6 +62,7 @@ class SyncController(
         } catch (error: Exception) {
             return SyncResult.Error(error.message ?: "Не удалось создать пару", error)
         }
+        engine.awaitIdle()
         settingsStore.saveCredentials(
             pairId = credentials.pairId,
             deviceToken = credentials.deviceToken,
@@ -78,6 +79,7 @@ class SyncController(
         } catch (error: Exception) {
             return SyncResult.Error(error.message ?: "Не удалось вступить в пару", error)
         }
+        engine.awaitIdle()
         settingsStore.saveCredentials(
             pairId = credentials.pairId,
             deviceToken = credentials.deviceToken,
@@ -90,7 +92,14 @@ class SyncController(
     /** Выход из пары на этом устройстве: задачи сняты, пара забыта, адрес сервера остаётся. */
     suspend fun leavePair() {
         scheduler.cancelPeriodic()
-        settingsStore.clearCredentials()
+        engine.awaitIdle()
+        val credentials = settingsStore.current()
+        try {
+            if (credentials.isConfigured) api.leavePair(credentials)
+        } finally {
+            engine.awaitIdle()
+            settingsStore.clearCredentials()
+        }
     }
 
     /** Запустить синхронизацию в фоне (не дожидаясь результата). */

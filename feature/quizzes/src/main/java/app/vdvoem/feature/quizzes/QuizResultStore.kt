@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -25,7 +26,8 @@ data class QuizAttempt(
  */
 data class QuizResult(
     val quizId: String,
-    val attempts: List<QuizAttempt> = emptyList()
+    val attempts: List<QuizAttempt> = emptyList(),
+    val storedBestPercent: Int? = null
 ) {
     val hasAttempts: Boolean
         get() = attempts.isNotEmpty()
@@ -37,7 +39,7 @@ data class QuizResult(
         get() = attempts.lastOrNull()?.passedAt ?: 0L
 
     val bestPercent: Int
-        get() = attempts.maxOfOrNull { it.percent } ?: 0
+        get() = maxOf(storedBestPercent ?: 0, attempts.maxOfOrNull { it.percent } ?: 0)
 
     val bestPassedAt: Long
         get() = attempts.firstOrNull { it.percent == bestPercent }?.passedAt ?: 0L
@@ -70,9 +72,11 @@ class QuizResultStore(private val context: Context) {
                 if (!name.startsWith(KEY_PREFIX)) return@mapNotNull null
                 val attempts = parseAttempts(value as? String) ?: return@mapNotNull null
                 if (attempts.isEmpty()) return@mapNotNull null
-                name.removePrefix(KEY_PREFIX) to QuizResult(
-                    quizId = name.removePrefix(KEY_PREFIX),
-                    attempts = attempts
+                val quizId = name.removePrefix(KEY_PREFIX)
+                quizId to QuizResult(
+                    quizId = quizId,
+                    attempts = attempts,
+                    storedBestPercent = preferences[intPreferencesKey(BEST_PREFIX + quizId)]
                 )
             }.toMap()
         }
@@ -95,13 +99,16 @@ class QuizResultStore(private val context: Context) {
     /** Добавляет прохождение в историю, оставляя последние [MAX_ATTEMPTS] записей. */
     suspend fun save(quizId: String, percent: Int, passedAt: Long) {
         val key = stringPreferencesKey(KEY_PREFIX + quizId)
+        val bestKey = intPreferencesKey(BEST_PREFIX + quizId)
         context.quizPreferences.edit { preferences ->
+            val safePercent = percent.coerceIn(0, 100)
             val attempts = (parseAttempts(preferences[key]).orEmpty() +
-                QuizAttempt(percent = percent.coerceIn(0, 100), passedAt = passedAt))
+                QuizAttempt(percent = safePercent, passedAt = passedAt))
                 .takeLast(MAX_ATTEMPTS)
             preferences[key] = attempts.joinToString(ENTRY_SEPARATOR) { attempt ->
                 "${attempt.percent}$SEPARATOR${attempt.passedAt}"
             }
+            preferences[bestKey] = maxOf(preferences[bestKey] ?: 0, safePercent)
         }
     }
 
@@ -128,6 +135,7 @@ class QuizResultStore(private val context: Context) {
         private val ownScoreIdsKey = stringSetPreferencesKey("own_score_ids")
         private const val MAX_OWN_IDS = 200
         private const val KEY_PREFIX = "result_"
+        private const val BEST_PREFIX = "best_"
         private const val SEPARATOR = "|"
         private const val ENTRY_SEPARATOR = ";"
     }

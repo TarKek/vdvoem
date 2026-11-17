@@ -15,6 +15,7 @@ import app.vdvoem.core.domain.model.WishStatus
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+import java.util.UUID
 
 /**
  * Переносит данные пары между устройствами файлом.
@@ -72,6 +73,7 @@ object PairBackup {
                         .put("dateMillis", event.dateMillis)
                         .put("annual", event.annual)
                         .put("updatedAt", event.updatedAt)
+                        .put("deletedAt", event.deletedAt ?: JSONObject.NULL)
                 )
             }
         })
@@ -109,6 +111,10 @@ object PairBackup {
                         .put("updatedAt", gift.updatedAt)
                         .put("deletedAt", gift.deletedAt ?: JSONObject.NULL)
                         .put("wishId", gift.wishId ?: JSONObject.NULL)
+                        .put("surprise", gift.surprise)
+                        .put("ownerDeviceId", gift.ownerDeviceId)
+                        .put("boughtAt", gift.boughtAt ?: JSONObject.NULL)
+                        .put("givenAt", gift.givenAt ?: JSONObject.NULL)
                 )
             }
         })
@@ -171,7 +177,7 @@ object PairBackup {
                         .put("flow", day.flow.name)
                         .put("symptoms", JSONArray(day.symptoms))
                         .put("mood", day.mood)
-                        .put("weight", day.weight ?: JSONObject.NULL)
+                        .put("weight", day.weight?.takeIf { it.isFinite() && it in 20f..300f } ?: JSONObject.NULL)
                         .put("note", day.note)
                         .put("updatedAt", day.updatedAt)
                         .put("deletedAt", day.deletedAt ?: JSONObject.NULL)
@@ -195,6 +201,21 @@ object PairBackup {
         return root.toString(2)
     }
 
+    fun hasValidIds(snapshot: Snapshot): Boolean = runCatching {
+        val ids = buildList {
+            snapshot.pair?.let { add(it.id) }
+            snapshot.events.forEach { add(it.id) }
+            snapshot.wishes.forEach { add(it.id) }
+            snapshot.gifts.forEach { add(it.id) }
+            snapshot.pokes.forEach { add(it.id) }
+            snapshot.quizScores.forEach { add(it.id) }
+            snapshot.lessons.forEach { add(it.id) }
+            snapshot.cycleDays.forEach { add(it.id) }
+            snapshot.cycleSettings?.let { add(it.id) }
+        }
+        ids.forEach { UUID.fromString(it) }
+    }.isSuccess
+
     /** Возвращает null, если файл не наш или повреждён. */
     fun parse(raw: String): Snapshot? {
         return try {
@@ -213,7 +234,7 @@ object PairBackup {
             )
         }
 
-        Snapshot(
+        val snapshot = Snapshot(
             pair = pair,
             events = root.optJSONArray("events").mapObjects { json ->
                 CalendarEvent(
@@ -222,7 +243,8 @@ object PairBackup {
                     title = json.getString("title"),
                     dateMillis = json.getLong("dateMillis"),
                     annual = json.optBoolean("annual", false),
-                    updatedAt = json.optLong("updatedAt", 0L)
+                    updatedAt = json.optLong("updatedAt", 0L),
+                    deletedAt = json.optLongOrNull("deletedAt")
                 )
             },
             wishes = root.optJSONArray("wishes").mapObjects { json ->
@@ -251,7 +273,11 @@ object PairBackup {
                     status = enumOrDefault(json.optString("status"), GiftStatus.IDEA),
                     updatedAt = json.optLong("updatedAt", 0L),
                     wishId = if (json.isNull("wishId")) null else json.optString("wishId").ifBlank { null },
-                    deletedAt = json.optLongOrNull("deletedAt")
+                    deletedAt = json.optLongOrNull("deletedAt"),
+                    surprise = json.optBoolean("surprise", false),
+                    ownerDeviceId = json.optString("ownerDeviceId"),
+                    boughtAt = json.optLongOrNull("boughtAt"),
+                    givenAt = json.optLongOrNull("givenAt")
                 )
             },
             pokes = root.optJSONArray("pokes").mapObjects { json ->
@@ -298,7 +324,8 @@ object PairBackup {
                     flow = enumOrDefault(json.optString("flow"), Flow.NONE),
                     symptoms = json.optJSONArray("symptoms").toStringList(),
                     mood = json.optString("mood"),
-                    weight = if (json.isNull("weight")) null else json.optDouble("weight", 0.0).toFloat(),
+                    weight = if (json.isNull("weight")) null else
+                        json.optDouble("weight", 0.0).toFloat().takeIf { it.isFinite() && it in 20f..300f },
                     note = json.optString("note"),
                     updatedAt = json.optLong("updatedAt", 0L),
                     deletedAt = json.optLongOrNull("deletedAt")
@@ -315,6 +342,7 @@ object PairBackup {
                 )
             }
         )
+        snapshot
         } catch (e: JSONException) {
             null
         }

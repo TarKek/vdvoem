@@ -58,4 +58,11 @@ val calendarFeatureModule = module {
     single { CalendarModule() }
     single { ReminderPreferences(context = androidContext()) }
     single { ReminderScheduler(context = androidContext()) }
+    single {
+        CalendarReminderObserver(
+            repository = get(),
+            preferences = get(),
+            scheduler = get()
+        )
+    }
 }

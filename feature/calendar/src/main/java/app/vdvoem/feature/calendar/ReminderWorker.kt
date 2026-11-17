@@ -9,7 +9,11 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import app.vdvoem.core.domain.repository.CalendarRepository
 import app.vdvoem.core.domain.time.Dates
+import kotlinx.coroutines.flow.first
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 /**
  * Показывает одно напоминание о событии календаря.
@@ -22,14 +26,28 @@ import app.vdvoem.core.domain.time.Dates
 class ReminderWorker(
     appContext: Context,
     params: WorkerParameters
-) : CoroutineWorker(appContext, params) {
+) : CoroutineWorker(appContext, params), KoinComponent {
+
+    private val repository: CalendarRepository by inject()
+    private val scheduler: ReminderScheduler by inject()
+    private val preferences: ReminderPreferences by inject()
 
     override suspend fun doWork(): Result {
         val context = applicationContext
         val eventId = inputData.getString(KEY_EVENT_ID) ?: return Result.failure()
-        val title = inputData.getString(KEY_TITLE)?.takeIf { it.isNotBlank() } ?: return Result.success()
+        val snapshotTitle = inputData.getString(KEY_TITLE)?.takeIf { it.isNotBlank() } ?: return Result.success()
         val dateMillis = inputData.getLong(KEY_DATE_MILLIS, 0L)
         if (dateMillis <= 0L) return Result.success()
+        val event = repository.observeEventsIncludingDeleted().first().firstOrNull { it.id == eventId }
+            ?: return Result.success()
+        val occurrence = Dates.toLocalDate(dateMillis)
+        if (event.deletedAt != null || event.title != snapshotTitle ||
+            Dates.nextOccurrence(event.dateMillis, event.annual, occurrence) != occurrence
+        ) {
+            ReminderScheduler(applicationContext).cancel(eventId)
+            return Result.success()
+        }
+        val title = event.title
 
         ensureChannel(context)
 
@@ -63,6 +81,7 @@ class ReminderWorker(
 
         return try {
             NotificationManagerCompat.from(context).notify(notificationId(eventId, inputData.getInt(KEY_OFFSET_DAYS, 0)), notification)
+            scheduler.scheduleNextAnnual(event, occurrence, preferences.settings.first())
             Result.success()
         } catch (error: SecurityException) {
             // Разрешение отозвали между проверкой и показом — повторы не помогут.

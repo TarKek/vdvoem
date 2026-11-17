@@ -63,7 +63,7 @@ val appKoinModule = module {
         )
     }
     viewModel { CalendarViewModel(calendarRepository = get(), pairRepository = get()) }
-    viewModel { WishesViewModel(wishRepository = get(), pairRepository = get(), giftRepository = get(), deviceIdentity = get()) }
+    viewModel { WishesViewModel(wishRepository = get(), pairRepository = get(), wishGiftConverter = get(), deviceIdentity = get()) }
     viewModel { GiftsViewModel(giftRepository = get(), pairRepository = get()) }
     viewModel { SettingsViewModel(repository = get()) }
     single { HomePreferences(context = androidContext()) }
@@ -78,7 +78,9 @@ val appKoinModule = module {
             pokeRepository = get(),
             quizScoreRepository = get(),
             lessonRepository = get(),
-            cycleRepository = get()
+            cycleRepository = get(),
+            deviceIdentity = get(),
+            database = get()
         )
     }
 }

@@ -132,6 +132,76 @@ CREATE TABLE IF NOT EXISTS cycle_settings (
 
 CREATE INDEX IF NOT EXISTS idx_cycle_settings_pair_updated ON cycle_settings (pair_id, updated_at);
 
+-- Монотонный курсор синхронизации. sync_cursor увеличивается в той же транзакции,
+-- что и revision изменённых строк, поэтому гонки sequence/commit не теряют записи.
+ALTER TABLE pairs ADD COLUMN IF NOT EXISTS sync_cursor BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS device_key TEXT NOT NULL DEFAULT '';
+ALTER TABLE pairs ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE wishes ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE gifts ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE gifts ADD COLUMN IF NOT EXISTS surprise BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE gifts ADD COLUMN IF NOT EXISTS owner_device_id TEXT NOT NULL DEFAULT '';
+ALTER TABLE gifts ADD COLUMN IF NOT EXISTS bought_at BIGINT;
+ALTER TABLE gifts ADD COLUMN IF NOT EXISTS given_at BIGINT;
+ALTER TABLE pokes ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE quiz_scores ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE lessons ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE cycle_days ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE cycle_settings ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0;
+
+CREATE INDEX IF NOT EXISTS idx_events_pair_revision ON events (pair_id, revision);
+CREATE INDEX IF NOT EXISTS idx_wishes_pair_revision ON wishes (pair_id, revision);
+CREATE INDEX IF NOT EXISTS idx_gifts_pair_revision ON gifts (pair_id, revision);
+CREATE INDEX IF NOT EXISTS idx_pokes_pair_revision ON pokes (pair_id, revision);
+CREATE INDEX IF NOT EXISTS idx_quiz_scores_pair_revision ON quiz_scores (pair_id, revision);
+CREATE INDEX IF NOT EXISTS idx_lessons_pair_revision ON lessons (pair_id, revision);
+CREATE INDEX IF NOT EXISTS idx_cycle_days_pair_revision ON cycle_days (pair_id, revision);
+CREATE INDEX IF NOT EXISTS idx_cycle_settings_pair_revision ON cycle_settings (pair_id, revision);
+
+-- Одноразовое наполнение для баз, созданных до серверных ревизий.
+UPDATE pairs SET sync_cursor = GREATEST(sync_cursor, 1), revision = 1 WHERE revision = 0;
+UPDATE events SET revision = 1 WHERE revision = 0;
+UPDATE wishes SET revision = 1 WHERE revision = 0;
+UPDATE gifts SET revision = 1 WHERE revision = 0;
+UPDATE pokes SET revision = 1 WHERE revision = 0;
+UPDATE quiz_scores SET revision = 1 WHERE revision = 0;
+UPDATE lessons SET revision = 1 WHERE revision = 0;
+UPDATE cycle_days SET revision = 1 WHERE revision = 0;
+UPDATE cycle_settings SET revision = 1 WHERE revision = 0;
+
+CREATE OR REPLACE FUNCTION vdvoem_assign_revision() RETURNS trigger AS $$
+BEGIN
+    SELECT sync_cursor INTO NEW.revision FROM pairs WHERE id = NEW.pair_id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS assign_revision ON events;
+CREATE TRIGGER assign_revision BEFORE INSERT OR UPDATE ON events
+    FOR EACH ROW EXECUTE FUNCTION vdvoem_assign_revision();
+DROP TRIGGER IF EXISTS assign_revision ON wishes;
+CREATE TRIGGER assign_revision BEFORE INSERT OR UPDATE ON wishes
+    FOR EACH ROW EXECUTE FUNCTION vdvoem_assign_revision();
+DROP TRIGGER IF EXISTS assign_revision ON gifts;
+CREATE TRIGGER assign_revision BEFORE INSERT OR UPDATE ON gifts
+    FOR EACH ROW EXECUTE FUNCTION vdvoem_assign_revision();
+DROP TRIGGER IF EXISTS assign_revision ON pokes;
+CREATE TRIGGER assign_revision BEFORE INSERT OR UPDATE ON pokes
+    FOR EACH ROW EXECUTE FUNCTION vdvoem_assign_revision();
+DROP TRIGGER IF EXISTS assign_revision ON quiz_scores;
+CREATE TRIGGER assign_revision BEFORE INSERT OR UPDATE ON quiz_scores
+    FOR EACH ROW EXECUTE FUNCTION vdvoem_assign_revision();
+DROP TRIGGER IF EXISTS assign_revision ON lessons;
+CREATE TRIGGER assign_revision BEFORE INSERT OR UPDATE ON lessons
+    FOR EACH ROW EXECUTE FUNCTION vdvoem_assign_revision();
+DROP TRIGGER IF EXISTS assign_revision ON cycle_days;
+CREATE TRIGGER assign_revision BEFORE INSERT OR UPDATE ON cycle_days
+    FOR EACH ROW EXECUTE FUNCTION vdvoem_assign_revision();
+DROP TRIGGER IF EXISTS assign_revision ON cycle_settings;
+CREATE TRIGGER assign_revision BEFORE INSERT OR UPDATE ON cycle_settings
+    FOR EACH ROW EXECUTE FUNCTION vdvoem_assign_revision();
+
 -- Вложения (фото, видео, голосовые): метаданные синкаются, файл лежит на диске по storage_key.
 CREATE TABLE IF NOT EXISTS attachments (
     id          UUID PRIMARY KEY,

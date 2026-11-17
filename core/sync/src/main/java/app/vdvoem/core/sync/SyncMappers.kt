@@ -47,6 +47,7 @@ object SyncMappers {
         dateMillis = dateMillis,
         annual = annual,
         updatedAt = updatedAt,
+        deletedAt = deletedAt,
         pairId = pairId
     )
 
@@ -56,7 +57,8 @@ object SyncMappers {
         title = title,
         dateMillis = dateMillis,
         annual = annual,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
+        deletedAt = deletedAt
     )
 
     fun Wish.toDto(): WishDto = WishDto(
@@ -98,7 +100,11 @@ object SyncMappers {
         pairId = pairId,
         note = note,
         budget = budget,
-        wishId = wishId
+        wishId = wishId,
+        surprise = surprise,
+        ownerDeviceId = ownerDeviceId,
+        boughtAt = boughtAt,
+        givenAt = givenAt
     )
 
     fun GiftDto.toDomain(fallbackPairId: String = ""): Gift = Gift(
@@ -110,7 +116,11 @@ object SyncMappers {
         status = runCatching { GiftStatus.valueOf(status) }.getOrDefault(GiftStatus.IDEA),
         updatedAt = updatedAt,
         wishId = wishId,
-        deletedAt = deletedAt
+        deletedAt = deletedAt,
+        surprise = surprise,
+        ownerDeviceId = ownerDeviceId,
+        boughtAt = boughtAt,
+        givenAt = givenAt
     )
 
     fun Lesson.toDto(): LessonDto = LessonDto(

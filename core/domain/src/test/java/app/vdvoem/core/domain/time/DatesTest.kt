@@ -11,12 +11,11 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * Чистая логика дат: без Android, на JVM. Все ожидания считаются в системной зоне,
- * потому что так же их считает production-код.
+ * Чистая логика дат: без Android, на JVM. Date-only значения не зависят от системной зоны.
  */
 class DatesTest {
 
-    private val zone: ZoneId = ZoneId.systemDefault()
+    private val zone: ZoneId = ZoneOffset.UTC
 
     private fun millis(date: LocalDate): Long = Dates.startOfDay(date)
 
@@ -116,7 +115,7 @@ class DatesTest {
     // --- startOfDay ---
 
     @Test
-    fun `startOfDay returns local midnight of the same date`() {
+    fun `startOfDay returns UTC midnight of the same date`() {
         val date = LocalDate.of(2026, 3, 1)
 
         val start = Dates.startOfDay(date)
@@ -136,10 +135,10 @@ class DatesTest {
         assertTrue(Dates.startOfDay(date.plusDays(1)) > Dates.startOfDay(date))
     }
 
-    // --- DatePicker: UTC-полдень/полночь пикера <-> локальная полночь ---
+    // --- DatePicker и хранение используют одну UTC-полночь ---
 
     @Test
-    fun `fromPickerMillis converts utc midnight to local midnight`() {
+    fun `fromPickerMillis keeps utc midnight`() {
         val date = LocalDate.of(2026, 7, 4)
 
         val local = Dates.fromPickerMillis(utcMidnight(date))

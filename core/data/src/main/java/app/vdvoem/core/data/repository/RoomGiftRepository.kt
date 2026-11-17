@@ -39,7 +39,11 @@ private fun GiftEntity.toDomain() = Gift(
     status = runCatching { GiftStatus.valueOf(status) }.getOrDefault(GiftStatus.IDEA),
     updatedAt = updatedAt,
     wishId = wishId,
-    deletedAt = deletedAt
+    deletedAt = deletedAt,
+    surprise = surprise,
+    ownerDeviceId = ownerDeviceId,
+    boughtAt = boughtAt,
+    givenAt = givenAt
 )
 
 private fun Gift.toEntity() = GiftEntity(
@@ -51,5 +55,9 @@ private fun Gift.toEntity() = GiftEntity(
     status = status.name,
     updatedAt = updatedAt,
     deletedAt = deletedAt,
-    wishId = wishId
+    wishId = wishId,
+    surprise = surprise,
+    ownerDeviceId = ownerDeviceId,
+    boughtAt = boughtAt,
+    givenAt = givenAt
 )

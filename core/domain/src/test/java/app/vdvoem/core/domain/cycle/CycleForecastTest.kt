@@ -231,9 +231,9 @@ class CycleForecastTest {
         val stats = buildForecast(days, settings(cycleLength = 28), LocalDate.of(2026, 8, 20))
 
         assertEquals(1, stats.currentDay)
-        assertEquals(LocalDate.of(2026, 8, 30), stats.lastPeriodStart)
-        assertEquals(LocalDate.of(2026, 9, 27), stats.nextPeriodStart)
-        assertEquals(38L, stats.daysUntilNextPeriod)
+        assertNull(stats.lastPeriodStart)
+        assertEquals(LocalDate.of(2026, 8, 30), stats.nextPeriodStart)
+        assertEquals(10L, stats.daysUntilNextPeriod)
     }
 
     @Test

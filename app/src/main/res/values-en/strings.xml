@@ -243,4 +243,5 @@
     <string name="widget_cycle_period_today">Period expected today</string>
     <string name="widget_cycle_late">%1$d d. late</string>
     <string name="widget_cycle_empty">Log your period in the app</string>
+    <string name="more_sync_now">Send changes now</string>
 </resources>

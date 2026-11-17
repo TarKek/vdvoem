@@ -20,8 +20,7 @@ internal fun shouldApplyRemote(
     remoteUpdatedAt: Long
 ): Boolean {
     if (localUpdatedAt == null) return true
-    if (remoteUpdatedAt <= localUpdatedAt) return false
-    return localDeletedAt == null
+    return remoteUpdatedAt > localUpdatedAt
 }
 
 /** Самый свежий `updatedAt` в отправляемом наборе — водяной знак отправки. */

@@ -37,6 +37,10 @@ fun io.ktor.server.application.Application.pushRoutes(repository: Repository) {
             }
 
             val connection = PushHub.register(pairId, Db.hash(token))
+            val revokeWatcher = launch {
+                connection.revoked.await()
+                close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "device revoked"))
+            }
             val sender = launch {
                 // Единственный писатель в сокет: кадры не перемешиваются между запросами.
                 for (payload in connection.outgoing) {
@@ -45,10 +49,11 @@ fun io.ktor.server.application.Application.pushRoutes(repository: Repository) {
             }
             try {
                 for (frame in incoming) {
-                    // Сообщения от клиента не нужны; текстовые читаем, чтобы освободить буфер.
-                    if (frame is Frame.Text) frame.readText()
+                    close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "client frames not allowed"))
+                    break
                 }
             } finally {
+                revokeWatcher.cancel()
                 sender.cancel()
                 PushHub.unregister(connection)
             }

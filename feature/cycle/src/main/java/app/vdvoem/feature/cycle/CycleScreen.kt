@@ -312,7 +312,7 @@ private fun CycleCalendarCard(
             IconButton(onClick = onPreviousMonth) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                    contentDescription = stringResource(R.string.cycle_calendar_title)
+                    contentDescription = stringResource(R.string.cycle_previous_month)
                 )
             }
             Text(
@@ -325,7 +325,7 @@ private fun CycleCalendarCard(
             IconButton(onClick = onNextMonth) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = stringResource(R.string.cycle_calendar_title)
+                    contentDescription = stringResource(R.string.cycle_next_month)
                 )
             }
         }
@@ -406,7 +406,7 @@ private fun DayCell(mark: CycleDayMark, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(VdvoemSpacing.huge)
+            .height(VdvoemSizes.touchTarget)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
@@ -854,8 +854,12 @@ private fun DaySheet(
             }
             OutlinedTextField(
                 value = draft.weight,
-                onValueChange = { value -> onUpdate { it.copy(weight = value) } },
+                onValueChange = { value -> onUpdate { it.copy(weight = value, weightError = false) } },
                 label = { Text(stringResource(R.string.cycle_sheet_weight)) },
+                isError = draft.weightError,
+                supportingText = if (draft.weightError) {
+                    { Text(stringResource(R.string.cycle_error_weight)) }
+                } else null,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )

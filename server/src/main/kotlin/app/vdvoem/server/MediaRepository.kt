@@ -90,6 +90,7 @@ class MediaRepository(private val dataSource: DataSource) {
         }
 
     /** Сохраняет метаданные; повторная загрузка того же файла к той же сущности возвращает старую запись. */
+    @Synchronized
     fun saveAttachment(pairId: String, attachment: NewAttachment): AttachmentDto =
         dataSource.connection.use { connection ->
             connection.tx { tx ->

@@ -39,6 +39,7 @@ fun resolveCountdown(
             if (since) {
                 // «Сколько прошло вместе» — это весь срок пары, а не с последней годовщины.
                 val start = Dates.toLocalDate(sinceMillis)
+                if (start.isAfter(today)) return null
                 CountdownResult(
                     days = ChronoUnit.DAYS.between(start, today),
                     date = start
@@ -68,7 +69,11 @@ private fun at(
     annual: Boolean,
     since: Boolean,
     today: LocalDate
-): CountdownResult {
+): CountdownResult? {
+    if (since && !annual) {
+        val original = Dates.toLocalDate(epochMillis)
+        if (original.isAfter(today)) return null
+    }
     val date = if (since) {
         Dates.previousOccurrence(epochMillis, annual, today)
     } else {
@@ -92,7 +97,7 @@ private fun nearest(
     today: LocalDate
 ): CountdownResult? {
     if (events.isEmpty()) return null
-    val candidates = events.map { event ->
+    val candidates = events.mapNotNull { event ->
         at(
             title = event.title,
             epochMillis = event.dateMillis,
@@ -102,7 +107,7 @@ private fun nearest(
         )
     }
     return if (since) {
-        candidates.filter { it.days <= 0 }.maxByOrNull { it.days } ?: candidates.maxByOrNull { it.days }
+        candidates.filter { it.days <= 0 }.maxByOrNull { it.days }
     } else {
         candidates.filter { it.days >= 0 }.minByOrNull { it.days } ?: candidates.maxByOrNull { it.days }
     }

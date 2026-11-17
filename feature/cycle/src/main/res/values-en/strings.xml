@@ -174,4 +174,7 @@
         <item>PMS is hormones, not character. Slow down without guilt.</item>
         <item>Salt holds water — that is where swelling and heaviness come from.</item>
     </string-array>
+    <string name="cycle_error_weight">Enter a weight between 20 and 300 kg</string>
+    <string name="cycle_previous_month">Previous month</string>
+    <string name="cycle_next_month">Next month</string>
 </resources>

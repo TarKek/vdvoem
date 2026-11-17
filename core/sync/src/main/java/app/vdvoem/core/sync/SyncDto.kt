@@ -84,7 +84,11 @@ data class GiftDto(
     val note: String = "",
     val budget: Long? = null,
     /** Ссылка на желание, из которого вырос подарок. */
-    val wishId: String? = null
+    val wishId: String? = null,
+    val surprise: Boolean = false,
+    val ownerDeviceId: String = "",
+    val boughtAt: Long? = null,
+    val givenAt: Long? = null
 )
 
 @Serializable

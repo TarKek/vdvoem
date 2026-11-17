@@ -32,10 +32,10 @@ import kotlinx.coroutines.sync.withLock
  * Движок синхронизации: один проход = pull → применить (LWW) → push локальных изменений.
  *
  * Правила:
- * - `since` берётся из `lastServerTime` (серверное время), не из часов телефона;
+ * - `since` — непрозрачная серверная ревизия из `serverTime`, не часы телефона;
  * - запись в репозиторий только если серверная запись новее локальной (LWW по `updatedAt`);
- * - локальные изменения определяются как `updatedAt > lastServerTime` — без отдельной очереди;
- * - после успеха `lastServerTime` обновляется, повторный проход не отправляет то же самое.
+ * - локальные изменения хранятся до подтверждения конкретной версии каждого ID;
+ * - после успеха курсор обновляется, повторный проход не отправляет то же самое.
  *
  * Проходы сериализованы [mutex]: параллельные вызовы (воркер и кнопка «Синхронизировать сейчас»)
  * не дублируют запросы.
@@ -61,6 +61,11 @@ class SyncEngine(
     private val _lastResult = MutableStateFlow<SyncResult?>(null)
     val lastResult: StateFlow<SyncResult?> = _lastResult.asStateFlow()
 
+    /** Ждёт завершения текущего прохода перед сменой credentials. */
+    suspend fun awaitIdle() {
+        mutex.withLock { }
+    }
+
     suspend fun syncOnce(): SyncResult = mutex.withLock {
         val settings = settingsStore.current()
         if (!settings.isConfigured) {
@@ -77,12 +82,10 @@ class SyncEngine(
             var pulled = 0
             var applied = 0
 
-            val remote = api.pull(since)
+            val remote = api.pull(since, settings)
+            ensureCurrentPair(settings)
             pulled += remote.size
 
-            // Снимок локальных изменений до применения серверных: так только что
-            // применённые записи не уезжают обратно на сервер «эхом».
-            val outgoing = collectLocalChanges(settings.lastPushedAt)
             val incomingPokes = mutableListOf<Poke>()
 
             applied += applyPair(remote.pair)
@@ -98,11 +101,17 @@ class SyncEngine(
             applied += applyLessons(remote.lessons, pairId)
             applied += applyCycleDays(remote.cycleDays, pairId)
             applied += applyCycleSettings(remote.cycleSettings, pairId)
+            settingsStore.markPushed(pairId, remote)
+            val outgoing = collectLocalChanges(pairId)
 
+            var responseServerTime = 0L
             var pushed = 0
             if (!outgoing.isEmpty) {
                 pushed = outgoing.size
-                val response = api.push(outgoing)
+                val response = api.push(outgoing, settings)
+                responseServerTime = response.serverTime
+                ensureCurrentPair(settings)
+                settingsStore.markPushed(pairId, outgoing)
                 pulled += response.size
                 applied += applyPair(response.pair)
                 applied += applyEvents(response.events, pairId)
@@ -118,13 +127,12 @@ class SyncEngine(
                 applied += applyCycleDays(response.cycleDays, pairId)
                 applied += applyCycleSettings(response.cycleSettings, pairId)
 
-                // Отмечаем, что именно уже уехало: следующая отправка считается
-                // не от серверного времени, а от локального «водяного знака».
-                val pushedMax = outgoing.maxUpdatedAt()
-                if (pushedMax > settings.lastPushedAt) settingsStore.setLastPushedAt(pushedMax)
+                // Каждая запись подтверждается отдельно в markPushed: глобальный
+                // timestamp больше не может навсегда скрыть офлайн-правку.
             }
 
-            val serverTime = maxOf(remote.serverTime, settings.lastServerTime)
+            val serverTime = maxOf(remote.serverTime, responseServerTime)
+                .takeIf { it > 0L } ?: settings.lastServerTime
             settingsStore.setLastServerTime(serverTime)
 
             val result = SyncResult.Success(pulled = pulled, applied = applied, serverTime = serverTime)
@@ -160,7 +168,7 @@ class SyncEngine(
 
     private suspend fun applyEvents(remote: List<EventDto>, pairId: String): Int {
         if (remote.isEmpty()) return 0
-        val localById = calendarRepository.observeEvents().first().associateBy { it.id }
+        val localById = calendarRepository.observeEventsIncludingDeleted().first().associateBy { it.id }
         var applied = 0
         remote.forEach { dto ->
             val local = localById[dto.id]
@@ -228,7 +236,7 @@ class SyncEngine(
     /** Применяет уроки партнёра; возвращает число новых записей. */
     private suspend fun applyLessons(remote: List<LessonDto>, pairId: String): Int {
         if (remote.isEmpty()) return 0
-        val localById = lessonRepository.observe().first().associateBy { it.id }
+        val localById = lessonRepository.observeIncludingDeleted().first().associateBy { it.id }
         var applied = 0
         remote.forEach { dto ->
             val local = localById[dto.id]
@@ -272,24 +280,29 @@ class SyncEngine(
 
     // --- сбор локальных изменений ---
 
-    private suspend fun collectLocalChanges(pushedBefore: Long): ChangesDto {
-        val localPair: Pair? = pairRepository.current()?.takeIf { it.updatedAt > pushedBefore }
-        val events: List<CalendarEvent> = calendarRepository.observeEvents().first()
-            .filter { it.updatedAt > pushedBefore }
+    private suspend fun collectLocalChanges(pairId: String): ChangesDto {
+        val acknowledged = settingsStore.acknowledgements(pairId)
+        fun isPending(type: String, id: String, updatedAt: Long): Boolean =
+            acknowledged[syncAckKey(pairId, type, id)] != updatedAt
+
+        val localPair: Pair? = pairRepository.current()
+            ?.takeIf { it.id == pairId && isPending("pair", it.id, it.updatedAt) }
+        val events: List<CalendarEvent> = calendarRepository.observeEventsIncludingDeleted().first()
+            .filter { it.pairId == pairId && isPending("event", it.id, it.updatedAt) }
         val wishes: List<Wish> = wishRepository.observeWishesIncludingDeleted().first()
-            .filter { it.updatedAt > pushedBefore }
+            .filter { it.pairId == pairId && isPending("wish", it.id, it.updatedAt) }
         val gifts: List<Gift> = giftRepository.observeGiftsIncludingDeleted().first()
-            .filter { it.updatedAt > pushedBefore }
+            .filter { it.pairId == pairId && isPending("gift", it.id, it.updatedAt) }
         val pokes: List<Poke> = pokeRepository.observe().first()
-            .filter { it.updatedAt > pushedBefore }
+            .filter { it.pairId == pairId && isPending("poke", it.id, it.updatedAt) }
         val quizScores: List<QuizScore> = quizScoreRepository.observe().first()
-            .filter { it.updatedAt > pushedBefore }
-        val lessons: List<Lesson> = lessonRepository.observe().first()
-            .filter { it.updatedAt > pushedBefore }
+            .filter { it.pairId == pairId && isPending("quiz", it.id, it.updatedAt) }
+        val lessons: List<Lesson> = lessonRepository.observeIncludingDeleted().first()
+            .filter { it.pairId == pairId && isPending("lesson", it.id, it.updatedAt) }
         val cycleDays: List<CycleDay> = cycleRepository.observeDaysIncludingDeleted().first()
-            .filter { it.updatedAt > pushedBefore }
+            .filter { it.pairId == pairId && isPending("cycleDay", it.id, it.updatedAt) }
         val cycleSettings: List<CycleSettings> = cycleRepository.observeSettingsIncludingDeleted().first()
-            .filter { it.updatedAt > pushedBefore }
+            .filter { it.pairId == pairId && isPending("cycleSettings", it.id, it.updatedAt) }
 
         return ChangesDto(
             pair = localPair?.toDto(),
@@ -302,6 +315,15 @@ class SyncEngine(
             cycleDays = cycleDays.map { it.toDto() },
             cycleSettings = cycleSettings.map { it.toDto() }
         )
+    }
+
+    private suspend fun ensureCurrentPair(snapshot: SyncSettings) {
+        val current = settingsStore.current()
+        check(
+            current.pairId == snapshot.pairId &&
+                current.deviceToken == snapshot.deviceToken &&
+                current.baseUrl == snapshot.baseUrl
+        ) { "Пара изменилась во время синхронизации; проход отменён" }
     }
 
     private companion object {

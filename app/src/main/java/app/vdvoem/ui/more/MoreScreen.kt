@@ -141,7 +141,23 @@ fun MoreScreen(
                 modifier = Modifier.padding(top = VdvoemSpacing.sm)
             )
         }
-
+        if (pendingCount > 0) {
+            item(key = "more_sync_now") {
+                ModuleRow(
+                    title = stringResource(R.string.more_sync_now),
+                    description = stringResource(R.string.more_sync_pending_hint),
+                    onClick = onSyncNow,
+                    icon = {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.List,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(VdvoemSizes.iconMd)
+                        )
+                    }
+                )
+            }
+        }
         item(key = "more_sync") {
             ModuleRow(
                 title = pairLabel ?: stringResource(R.string.more_sync_title),
@@ -150,18 +166,13 @@ fun MoreScreen(
                 } else {
                     stringResource(R.string.more_sync_text)
                 },
-                // Неотправленные правки видно сразу: строка превращается в «отправить сейчас».
+                // Настройки пары доступны всегда, отправка вынесена в отдельную строку.
                 footer = if (pendingCount > 0) {
                     stringResource(R.string.more_sync_pending, pendingCount)
                 } else {
                     null
                 },
-                hint = if (pendingCount > 0) {
-                    stringResource(R.string.more_sync_pending_hint)
-                } else {
-                    null
-                },
-                onClick = if (pendingCount > 0) onSyncNow else onOpenConnect,
+                onClick = onOpenConnect,
                 icon = {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.List,

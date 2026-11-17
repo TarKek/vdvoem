@@ -3,6 +3,8 @@ package app.vdvoem.server
 import java.sql.Connection
 import javax.sql.DataSource
 
+data class SyncDevice(val pairId: String, val deviceId: String)
+
 class Repository(private val dataSource: DataSource) {
 
     fun authenticate(token: String): String? =
@@ -27,8 +29,8 @@ class Repository(private val dataSource: DataSource) {
             tx.prepareStatement(
                 """
                 INSERT INTO pairs (id, name_a, name_b, since_millis, birthday_a, birthday_b,
-                                   invite_code, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                   invite_code, updated_at, sync_cursor, revision)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 1)
                 """.trimIndent()
             ).use { statement ->
                 statement.setObject(1, java.util.UUID.fromString(pairId))
@@ -77,11 +79,55 @@ class Repository(private val dataSource: DataSource) {
         return token
     }
 
-    fun pull(pairId: String, since: Long): ChangesDto = dataSource.connection.use { connection ->
+    fun currentCursor(pairId: String): Long = dataSource.connection.use { connection ->
+        connection.prepareStatement("SELECT sync_cursor FROM pairs WHERE id = ?").use { statement ->
+            statement.setObject(1, java.util.UUID.fromString(pairId))
+            statement.executeQuery().use { rows ->
+                if (rows.next()) rows.getLong(1) else 0L
+            }
+        }
+    }
+
+    fun revokeDevice(token: String): Boolean = dataSource.connection.use { connection ->
+        connection.prepareStatement("DELETE FROM devices WHERE token_hash = ?").use { statement ->
+            statement.setString(1, Db.hash(token))
+            statement.executeUpdate() > 0
+        }
+    }
+
+    fun authenticateSyncDevice(token: String, claimedDeviceId: String): SyncDevice? =
+        dataSource.connection.use { connection ->
+            if (claimedDeviceId.isBlank()) {
+                return@use connection.prepareStatement(
+                    "SELECT pair_id, device_key FROM devices WHERE token_hash = ?"
+                ).use { statement ->
+                    statement.setString(1, Db.hash(token))
+                    statement.executeQuery().use { rows ->
+                        if (rows.next()) SyncDevice(rows.getString(1), "") else null
+                    }
+                }
+            }
+            connection.prepareStatement(
+                """
+                UPDATE devices SET device_key = ?
+                WHERE token_hash = ? AND (device_key = '' OR device_key = ?)
+                RETURNING pair_id, device_key
+                """.trimIndent()
+            ).use { statement ->
+                statement.setString(1, claimedDeviceId)
+                statement.setString(2, Db.hash(token))
+                statement.setString(3, claimedDeviceId)
+                statement.executeQuery().use { rows ->
+                    if (rows.next()) SyncDevice(rows.getString(1), rows.getString(2)) else null
+                }
+            }
+        }
+
+    fun pull(pairId: String, since: Long, viewerDeviceId: String): ChangesDto = dataSource.connection.use { connection ->
         val pair = connection.prepareStatement(
             """
             SELECT id, name_a, name_b, since_millis, birthday_a, birthday_b, updated_at
-            FROM pairs WHERE id = ? AND deleted_at IS NULL AND updated_at > ?
+            FROM pairs WHERE id = ? AND deleted_at IS NULL AND revision > ?
             """.trimIndent()
         ).use { statement ->
             statement.setObject(1, java.util.UUID.fromString(pairId))
@@ -102,7 +148,7 @@ class Repository(private val dataSource: DataSource) {
         val events = connection.prepareStatement(
             """
             SELECT id, title, date_millis, annual, updated_at, deleted_at
-            FROM events WHERE pair_id = ? AND updated_at > ? ORDER BY updated_at
+            FROM events WHERE pair_id = ? AND revision > ? ORDER BY updated_at
             """.trimIndent()
         ).use { statement ->
             statement.setObject(1, java.util.UUID.fromString(pairId))
@@ -127,11 +173,14 @@ class Repository(private val dataSource: DataSource) {
             """
             SELECT id, title, note, price_estimate, status, updated_at, deleted_at,
                    priority, url, surprise, owner_device_id
-            FROM wishes WHERE pair_id = ? AND updated_at > ? ORDER BY updated_at
+            FROM wishes WHERE pair_id = ? AND revision > ?
+              AND (NOT surprise OR owner_device_id = ?)
+            ORDER BY updated_at
             """.trimIndent()
         ).use { statement ->
             statement.setObject(1, java.util.UUID.fromString(pairId))
             statement.setLong(2, since)
+            statement.setString(3, viewerDeviceId)
             statement.executeQuery().use { rows ->
                 buildList {
                     while (rows.next()) add(
@@ -155,12 +204,16 @@ class Repository(private val dataSource: DataSource) {
 
         val gifts = connection.prepareStatement(
             """
-            SELECT id, title, note, budget, status, updated_at, deleted_at, wish_id
-            FROM gifts WHERE pair_id = ? AND updated_at > ? ORDER BY updated_at
+            SELECT id, title, note, budget, status, updated_at, deleted_at, wish_id,
+                   surprise, owner_device_id, bought_at, given_at
+            FROM gifts WHERE pair_id = ? AND revision > ?
+              AND (NOT surprise OR status = 'GIVEN' OR owner_device_id = ?)
+            ORDER BY updated_at
             """.trimIndent()
         ).use { statement ->
             statement.setObject(1, java.util.UUID.fromString(pairId))
             statement.setLong(2, since)
+            statement.setString(3, viewerDeviceId)
             statement.executeQuery().use { rows ->
                 buildList {
                     while (rows.next()) add(
@@ -168,7 +221,11 @@ class Repository(private val dataSource: DataSource) {
                             id = rows.getString(1), title = rows.getString(2), note = rows.getString(3),
                             budget = rows.getLong(4).takeUnless { rows.wasNull() }, status = rows.getString(5),
                             updatedAt = rows.getLong(6), deletedAt = rows.getLong(7).takeUnless { rows.wasNull() },
-                            wishId = rows.getString(8).orEmpty().ifBlank { null }
+                            wishId = rows.getString(8).orEmpty().ifBlank { null },
+                            surprise = rows.getBoolean(9),
+                            ownerDeviceId = rows.getString(10).orEmpty(),
+                            boughtAt = rows.getLong(11).takeUnless { rows.wasNull() },
+                            givenAt = rows.getLong(12).takeUnless { rows.wasNull() }
                         )
                     )
                 }
@@ -176,7 +233,7 @@ class Repository(private val dataSource: DataSource) {
         }
 
         val pokes = connection.prepareStatement(
-            "SELECT id, text, created_at, updated_at, deleted_at FROM pokes WHERE pair_id = ? AND updated_at > ? ORDER BY updated_at"
+            "SELECT id, text, created_at, updated_at, deleted_at FROM pokes WHERE pair_id = ? AND revision > ? ORDER BY updated_at"
         ).use { statement ->
             statement.setObject(1, java.util.UUID.fromString(pairId))
             statement.setLong(2, since)
@@ -193,7 +250,7 @@ class Repository(private val dataSource: DataSource) {
         }
 
         val quizScores = connection.prepareStatement(
-            "SELECT id, quiz_id, percent, passed_at, updated_at, deleted_at FROM quiz_scores WHERE pair_id = ? AND updated_at > ? ORDER BY updated_at"
+            "SELECT id, quiz_id, percent, passed_at, updated_at, deleted_at FROM quiz_scores WHERE pair_id = ? AND revision > ? ORDER BY updated_at"
         ).use { statement ->
             statement.setObject(1, java.util.UUID.fromString(pairId))
             statement.setLong(2, since)
@@ -212,7 +269,7 @@ class Repository(private val dataSource: DataSource) {
 
         val lessons = connection.prepareStatement(
             "SELECT id, subject, weekday, start_minute, end_minute, room, teacher, updated_at, deleted_at " +
-                "FROM lessons WHERE pair_id = ? AND updated_at > ? ORDER BY weekday, start_minute"
+                "FROM lessons WHERE pair_id = ? AND revision > ? ORDER BY weekday, start_minute"
         ).use { statement ->
             statement.setObject(1, java.util.UUID.fromString(pairId))
             statement.setLong(2, since)
@@ -233,7 +290,7 @@ class Repository(private val dataSource: DataSource) {
 
         val cycleDays = connection.prepareStatement(
             "SELECT id, date_millis, period, flow, symptoms, mood, weight, note, updated_at, deleted_at " +
-                "FROM cycle_days WHERE pair_id = ? AND updated_at > ? ORDER BY date_millis"
+                "FROM cycle_days WHERE pair_id = ? AND revision > ? ORDER BY date_millis"
         ).use { statement ->
             statement.setObject(1, java.util.UUID.fromString(pairId))
             statement.setLong(2, since)
@@ -259,7 +316,7 @@ class Repository(private val dataSource: DataSource) {
 
         val cycleSettings = connection.prepareStatement(
             "SELECT id, cycle_length, period_length, updated_at, deleted_at " +
-                "FROM cycle_settings WHERE pair_id = ? AND updated_at > ? ORDER BY updated_at"
+                "FROM cycle_settings WHERE pair_id = ? AND revision > ? ORDER BY updated_at"
         ).use { statement ->
             statement.setObject(1, java.util.UUID.fromString(pairId))
             statement.setLong(2, since)
@@ -285,15 +342,22 @@ class Repository(private val dataSource: DataSource) {
         )
     }
 
-    fun push(pairId: String, changes: ChangesDto): Int = dataSource.connection.use { connection ->
+    fun push(pairId: String, deviceId: String, changes: ChangesDto): Int = dataSource.connection.use { connection ->
         connection.tx { tx ->
+            // Ревизия и строки изменяются атомарно; блокировка pairs сериализует push пары.
+            tx.prepareStatement(
+                "UPDATE pairs SET sync_cursor = sync_cursor + 1 WHERE id = ?"
+            ).use { statement ->
+                statement.setObject(1, java.util.UUID.fromString(pairId))
+                check(statement.executeUpdate() == 1) { "pair not found" }
+            }
             var applied = 0
 
             changes.pair?.let { pair ->
                 applied += tx.prepareStatement(
                     """
                     UPDATE pairs SET name_a = ?, name_b = ?, since_millis = ?,
-                                     birthday_a = ?, birthday_b = ?, updated_at = ?
+                                     birthday_a = ?, birthday_b = ?, updated_at = ?, revision = sync_cursor
                     WHERE id = ? AND updated_at < ?
                     """.trimIndent()
                 ).use { statement ->
@@ -319,7 +383,7 @@ class Repository(private val dataSource: DataSource) {
                     ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title,
                         date_millis = EXCLUDED.date_millis, annual = EXCLUDED.annual,
                         updated_at = EXCLUDED.updated_at, deleted_at = EXCLUDED.deleted_at
-                    WHERE EXCLUDED.updated_at > events.updated_at
+                    WHERE events.pair_id = EXCLUDED.pair_id AND EXCLUDED.updated_at > events.updated_at
                     """.trimIndent()
                 ).use { statement ->
                     statement.setObject(1, java.util.UUID.fromString(event.id))
@@ -345,7 +409,8 @@ class Repository(private val dataSource: DataSource) {
                         updated_at = EXCLUDED.updated_at, deleted_at = EXCLUDED.deleted_at,
                         priority = EXCLUDED.priority, url = EXCLUDED.url,
                         surprise = EXCLUDED.surprise, owner_device_id = EXCLUDED.owner_device_id
-                    WHERE EXCLUDED.updated_at > wishes.updated_at
+                    WHERE wishes.pair_id = EXCLUDED.pair_id AND EXCLUDED.updated_at > wishes.updated_at
+                      AND (NOT wishes.surprise OR wishes.owner_device_id = EXCLUDED.owner_device_id)
                     """.trimIndent()
                 ).use { statement ->
                     statement.setObject(1, java.util.UUID.fromString(wish.id))
@@ -361,7 +426,7 @@ class Repository(private val dataSource: DataSource) {
                     statement.setInt(9, wish.priority)
                     statement.setString(10, wish.url)
                     statement.setBoolean(11, wish.surprise)
-                    statement.setString(12, wish.ownerDeviceId)
+                    statement.setString(12, if (wish.surprise) deviceId else "")
                     statement.executeUpdate()
                 }
             }
@@ -370,13 +435,17 @@ class Repository(private val dataSource: DataSource) {
                 applied += tx.prepareStatement(
                     """
                     INSERT INTO gifts (id, pair_id, title, note, budget, status, updated_at,
-                        deleted_at, wish_id)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        deleted_at, wish_id, surprise, owner_device_id, bought_at, given_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, note = EXCLUDED.note,
                         budget = EXCLUDED.budget, status = EXCLUDED.status,
                         updated_at = EXCLUDED.updated_at, deleted_at = EXCLUDED.deleted_at,
-                        wish_id = EXCLUDED.wish_id
-                    WHERE EXCLUDED.updated_at > gifts.updated_at
+                        wish_id = EXCLUDED.wish_id, surprise = EXCLUDED.surprise,
+                        owner_device_id = EXCLUDED.owner_device_id,
+                        bought_at = EXCLUDED.bought_at, given_at = EXCLUDED.given_at
+                    WHERE gifts.pair_id = EXCLUDED.pair_id AND EXCLUDED.updated_at > gifts.updated_at
+                      AND (NOT gifts.surprise OR gifts.status = 'GIVEN' OR
+                           gifts.owner_device_id = EXCLUDED.owner_device_id)
                     """.trimIndent()
                 ).use { statement ->
                     statement.setObject(1, java.util.UUID.fromString(gift.id))
@@ -391,6 +460,12 @@ class Repository(private val dataSource: DataSource) {
                     else statement.setNull(8, java.sql.Types.BIGINT)
                     if (gift.wishId != null) statement.setString(9, gift.wishId)
                     else statement.setNull(9, java.sql.Types.VARCHAR)
+                    statement.setBoolean(10, gift.surprise)
+                    statement.setString(11, if (gift.surprise) deviceId else "")
+                    if (gift.boughtAt != null) statement.setLong(12, gift.boughtAt)
+                    else statement.setNull(12, java.sql.Types.BIGINT)
+                    if (gift.givenAt != null) statement.setLong(13, gift.givenAt)
+                    else statement.setNull(13, java.sql.Types.BIGINT)
                     statement.executeUpdate()
                 }
             }
@@ -403,7 +478,7 @@ class Repository(private val dataSource: DataSource) {
                     ON CONFLICT (id) DO UPDATE SET text = EXCLUDED.text,
                         created_at = EXCLUDED.created_at, updated_at = EXCLUDED.updated_at,
                         deleted_at = EXCLUDED.deleted_at
-                    WHERE EXCLUDED.updated_at > pokes.updated_at
+                    WHERE pokes.pair_id = EXCLUDED.pair_id AND EXCLUDED.updated_at > pokes.updated_at
                     """.trimIndent()
                 ).use { statement ->
                     statement.setObject(1, java.util.UUID.fromString(poke.id))
@@ -425,7 +500,7 @@ class Repository(private val dataSource: DataSource) {
                     ON CONFLICT (id) DO UPDATE SET percent = EXCLUDED.percent,
                         passed_at = EXCLUDED.passed_at, updated_at = EXCLUDED.updated_at,
                         deleted_at = EXCLUDED.deleted_at
-                    WHERE EXCLUDED.updated_at > quiz_scores.updated_at
+                    WHERE quiz_scores.pair_id = EXCLUDED.pair_id AND EXCLUDED.updated_at > quiz_scores.updated_at
                     """.trimIndent()
                 ).use { statement ->
                     statement.setObject(1, java.util.UUID.fromString(score.id))
@@ -451,7 +526,7 @@ class Repository(private val dataSource: DataSource) {
                         end_minute = EXCLUDED.end_minute, room = EXCLUDED.room,
                         teacher = EXCLUDED.teacher, updated_at = EXCLUDED.updated_at,
                         deleted_at = EXCLUDED.deleted_at
-                    WHERE EXCLUDED.updated_at > lessons.updated_at
+                    WHERE lessons.pair_id = EXCLUDED.pair_id AND EXCLUDED.updated_at > lessons.updated_at
                     """.trimIndent()
                 ).use { statement ->
                     statement.setObject(1, java.util.UUID.fromString(lesson.id))
@@ -480,7 +555,7 @@ class Repository(private val dataSource: DataSource) {
                         symptoms = EXCLUDED.symptoms, mood = EXCLUDED.mood,
                         weight = EXCLUDED.weight, note = EXCLUDED.note,
                         updated_at = EXCLUDED.updated_at, deleted_at = EXCLUDED.deleted_at
-                    WHERE EXCLUDED.updated_at > cycle_days.updated_at
+                    WHERE cycle_days.pair_id = EXCLUDED.pair_id AND EXCLUDED.updated_at > cycle_days.updated_at
                     """.trimIndent()
                 ).use { statement ->
                     statement.setString(1, day.id)
@@ -509,7 +584,7 @@ class Repository(private val dataSource: DataSource) {
                     ON CONFLICT (id) DO UPDATE SET cycle_length = EXCLUDED.cycle_length,
                         period_length = EXCLUDED.period_length,
                         updated_at = EXCLUDED.updated_at, deleted_at = EXCLUDED.deleted_at
-                    WHERE EXCLUDED.updated_at > cycle_settings.updated_at
+                    WHERE cycle_settings.pair_id = EXCLUDED.pair_id AND EXCLUDED.updated_at > cycle_settings.updated_at
                     """.trimIndent()
                 ).use { statement ->
                     statement.setString(1, settings.id)

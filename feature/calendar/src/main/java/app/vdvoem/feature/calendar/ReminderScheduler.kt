@@ -59,6 +59,20 @@ class ReminderScheduler(private val context: Context) {
         workManager.cancelAllWorkByTag(TAG)
     }
 
+    suspend fun scheduleNextAnnual(
+        event: CalendarEvent,
+        previousOccurrence: LocalDate,
+        settings: ReminderSettings
+    ) = lock.withLock {
+        if (!event.annual || !settings.enabled) return@withLock
+        withContext(Dispatchers.IO) {
+            val next = previousOccurrence.plusYears(1)
+            val now = System.currentTimeMillis()
+            enqueue(event, next, settings.leadDays, settings.hour, now)
+            enqueue(event, next, OFFSET_DAY, settings.hour, now)
+        }
+    }
+
     private fun enqueue(
         event: CalendarEvent,
         date: LocalDate,

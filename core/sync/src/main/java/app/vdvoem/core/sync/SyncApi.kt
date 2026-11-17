@@ -8,6 +8,7 @@ import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -85,21 +86,30 @@ class SyncApi(private val settings: SyncSettingsStore) {
         }.body()
     }
 
-    /** `GET /v1/sync?since=<ms>` — всё, что изменилось после [since] по серверному времени. */
-    suspend fun pull(since: Long): ChangesDto = wrap {
-        val cfg = config()
+    /** Отзывает текущий токен; локальные credentials очищаются контроллером даже офлайн. */
+    suspend fun leavePair(snapshot: SyncSettings): Unit = wrap {
+        client.post("${snapshot.baseUrl}/v1/pairs/leave") {
+            bearerAuth(snapshot.deviceToken)
+        }
+    }
+
+    /** `GET /v1/sync?since=<cursor>` — изменения после непрозрачного серверного курсора. */
+    suspend fun pull(since: Long, snapshot: SyncSettings? = null): ChangesDto = wrap {
+        val cfg = snapshot ?: config()
         val text = client.get("${cfg.baseUrl}/v1/sync") {
             bearerAuth(cfg.deviceToken)
+            header("X-Device-Id", settings.deviceId())
             parameter("since", since)
         }.bodyAsText()
         decode(text)
     }
 
     /** `POST /v1/sync` — отправить локальные изменения; сервер применяет LWW. */
-    suspend fun push(changes: ChangesDto): ChangesDto = wrap {
-        val cfg = config()
+    suspend fun push(changes: ChangesDto, snapshot: SyncSettings? = null): ChangesDto = wrap {
+        val cfg = snapshot ?: config()
         val text = client.post("${cfg.baseUrl}/v1/sync") {
             bearerAuth(cfg.deviceToken)
+            header("X-Device-Id", settings.deviceId())
             contentType(ContentType.Application.Json)
             setBody(PushRequestDto(baseTime = cfg.lastServerTime, changes = changes))
         }.bodyAsText()

@@ -75,7 +75,7 @@ class NotesViewModel(
         val existing = current.id?.let { id -> state.value.notes.firstOrNull { it.id == id } }
         val note = Note(
             id = existing?.id ?: UUID.randomUUID().toString(),
-            title = title.ifEmpty { existing?.title.orEmpty() },
+            title = title,
             body = body,
             createdAt = existing?.createdAt ?: now,
             updatedAt = now

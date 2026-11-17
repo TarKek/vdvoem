@@ -592,7 +592,7 @@ private fun WidgetGrid(
                         HomePreferences.WIDGET_TOGETHER -> {
                             val since = pair?.sinceMillis ?: 0L
                             val days = if (since > 0L) {
-                                Dates.daysUntil(Dates.toLocalDate(since))
+                                Dates.daysUntil(Dates.today(), Dates.toLocalDate(since))
                             } else {
                                 0L
                             }

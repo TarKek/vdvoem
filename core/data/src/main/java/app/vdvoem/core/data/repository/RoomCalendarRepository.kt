@@ -15,6 +15,9 @@ class RoomCalendarRepository(
     override fun observeEvents(): Flow<List<CalendarEvent>> =
         dao.observeAll().map { events -> events.map { it.toDomain() } }
 
+    override fun observeEventsIncludingDeleted(): Flow<List<CalendarEvent>> =
+        dao.observeAllIncludingDeleted().map { events -> events.map { it.toDomain() } }
+
     override suspend fun upsert(event: CalendarEvent) {
         dao.upsert(event.toEntity())
         LocalChangeSignal.notifyLocalWrite()
@@ -32,7 +35,8 @@ private fun EventEntity.toDomain() = CalendarEvent(
     title = title,
     dateMillis = dateMillis,
     annual = annual,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    deletedAt = deletedAt
 )
 
 private fun CalendarEvent.toEntity() = EventEntity(
@@ -41,5 +45,6 @@ private fun CalendarEvent.toEntity() = EventEntity(
     title = title,
     dateMillis = dateMillis,
     annual = annual,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    deletedAt = deletedAt
 )

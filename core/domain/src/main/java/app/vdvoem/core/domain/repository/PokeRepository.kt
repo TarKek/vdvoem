@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 interface PokeRepository {
     /** Все сердечки пары, новые сверху. */
     fun observe(): Flow<List<Poke>>
+    fun observeIncludingDeleted(): Flow<List<Poke>>
 
     suspend fun save(poke: Poke)
 }

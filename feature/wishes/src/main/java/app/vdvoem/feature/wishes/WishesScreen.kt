@@ -54,6 +54,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -104,8 +105,9 @@ fun WishesScreen(
     onMakeGift: (Wish) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var editingWish by remember { mutableStateOf<Wish?>(null) }
-    var showAddDialog by remember { mutableStateOf(false) }
+    var editingWishId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editingWish = state.wishes.firstOrNull { it.id == editingWishId }
+    var showAddDialog by rememberSaveable { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<Wish?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -213,7 +215,7 @@ fun WishesScreen(
                 else -> items(visible, key = { it.id }) { wish ->
                     WishCard(
                         wish = wish,
-                        onEdit = { editingWish = wish },
+                        onEdit = { editingWishId = wish.id },
                         onMarkDone = { onSetStatus(wish.id, WishStatus.DONE) },
                         onMakeGift = {
                             onMakeGift(wish)
@@ -265,13 +267,13 @@ fun WishesScreen(
     editingWish?.let { wish ->
         WishDialog(
             wish = wish,
-            onDismiss = { editingWish = null },
+            onDismiss = { editingWishId = null },
             onConfirm = { title, note, price, priority, url, surprise ->
                 onUpdateWish(wish.id, title, note, price, priority, url, surprise)
-                editingWish = null
+                editingWishId = null
             },
             onDelete = {
-                editingWish = null
+                editingWishId = null
                 pendingDelete = wish
             }
         )
@@ -639,14 +641,14 @@ private fun WishDialog(
     onDelete: (() -> Unit)?
 ) {
     val editing = wish != null
-    var title by remember(wish?.id) { mutableStateOf(wish?.title.orEmpty()) }
-    var note by remember(wish?.id) { mutableStateOf(wish?.note.orEmpty()) }
-    var price by remember(wish?.id) {
+    var title by rememberSaveable(wish?.id) { mutableStateOf(wish?.title.orEmpty()) }
+    var note by rememberSaveable(wish?.id) { mutableStateOf(wish?.note.orEmpty()) }
+    var price by rememberSaveable(wish?.id) {
         mutableStateOf(wish?.priceEstimate?.toString().orEmpty())
     }
-    var priority by remember(wish?.id) { mutableStateOf(wish?.safePriority ?: Wish.PRIORITY_NORMAL) }
-    var url by remember(wish?.id) { mutableStateOf(wish?.url.orEmpty()) }
-    var surprise by remember(wish?.id) { mutableStateOf(wish?.surprise == true) }
+    var priority by rememberSaveable(wish?.id) { mutableStateOf(wish?.safePriority ?: Wish.PRIORITY_NORMAL) }
+    var url by rememberSaveable(wish?.id) { mutableStateOf(wish?.url.orEmpty()) }
+    var surprise by rememberSaveable(wish?.id) { mutableStateOf(wish?.surprise == true) }
     val canSave = title.isNotBlank()
 
     AlertDialog(
