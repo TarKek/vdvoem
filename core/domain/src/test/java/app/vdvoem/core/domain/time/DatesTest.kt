@@ -7,6 +7,7 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
+import java.util.Locale
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -173,7 +174,13 @@ class DatesTest {
 
     @Test
     fun `format prints russian day month and year`() {
-        assertEquals("15 марта 2020", Dates.format(LocalDate.of(2020, 3, 15)))
-        assertEquals("1 января 2026", Dates.format(LocalDate.of(2026, 1, 1)))
+        val previous = Locale.getDefault()
+        try {
+            Locale.setDefault(Locale.forLanguageTag("ru"))
+            assertEquals("15 марта 2020", Dates.format(LocalDate.of(2020, 3, 15)))
+            assertEquals("1 января 2026", Dates.format(LocalDate.of(2026, 1, 1)))
+        } finally {
+            Locale.setDefault(previous)
+        }
     }
 }
