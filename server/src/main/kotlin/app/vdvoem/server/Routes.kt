@@ -14,6 +14,10 @@ import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.UUID
@@ -82,7 +86,11 @@ fun Application.configureRouting(repository: Repository, mediaRepository: MediaR
                     val effectiveSince = since.coerceAtLeast(0L).takeIf { it <= cursor } ?: 0L
                     cursor to repository.pull(pairId, effectiveSince, device.deviceId)
                 }
-                call.respond(SyncResponse(cursor, changes))
+                if (call.isLegacySyncClient()) {
+                    call.respond(legacySyncResponse(cursor, changes))
+                } else {
+                    call.respond(SyncResponse(cursor, changes))
+                }
             }
 
             post("/sync") {
@@ -100,7 +108,7 @@ fun Application.configureRouting(repository: Repository, mediaRepository: MediaR
                     call.respond(HttpStatusCode.PayloadTooLarge, ErrorResponse("sync body too large"))
                     return@post
                 }
-                val request = Json { ignoreUnknownKeys = true }.decodeFromString<PushRequest>(raw)
+                val request = syncJson.decodeFromString<PushRequest>(raw)
                 val validationError = validateSyncRequest(pairId, device.deviceId, request.changes)
                 if (validationError != null) {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse(validationError))
@@ -113,7 +121,11 @@ fun Application.configureRouting(repository: Repository, mediaRepository: MediaR
                     cursor to repository.pull(pairId, effectiveSince, device.deviceId)
                 }
                 PushHub.notifyPair(pairId, exceptTokenHash = token?.let(Db::hash), serverTime = cursor)
-                call.respond(SyncResponse(cursor, changes))
+                if (call.isLegacySyncClient()) {
+                    call.respond(legacySyncResponse(cursor, changes))
+                } else {
+                    call.respond(SyncResponse(cursor, changes))
+                }
             }
         }
 
@@ -121,6 +133,7 @@ fun Application.configureRouting(repository: Repository, mediaRepository: MediaR
     }
 }
 
+@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 private fun Application.installJson() {
     install(ContentNegotiation) {
         json(Json {
@@ -130,6 +143,21 @@ private fun Application.installJson() {
         })
     }
 }
+
+private val syncJson = Json {
+    ignoreUnknownKeys = true
+    encodeDefaults = true
+}
+
+/** Старые APK без X-Device-Id продолжают получать плоский ChangesDto + serverTime. */
+private fun io.ktor.server.application.ApplicationCall.isLegacySyncClient(): Boolean =
+    request.headers["X-Device-Id"].isNullOrBlank()
+
+private fun legacySyncResponse(serverTime: Long, changes: ChangesDto): JsonObject =
+    JsonObject(
+        syncJson.encodeToJsonElement(ChangesDto.serializer(), changes).jsonObject +
+            ("serverTime" to JsonPrimitive(serverTime))
+    )
 
 private const val MAX_SYNC_BODY_CHARS = 2_000_000
 private const val MAX_SYNC_CHANGES = 5_000

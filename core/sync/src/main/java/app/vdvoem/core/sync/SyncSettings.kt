@@ -40,6 +40,11 @@ data class SyncSettings(
         get() = serverUrl.trim().trimEnd('/')
 }
 
+private fun migrateProductionUrl(url: String): String = when (url.trim().trimEnd('/')) {
+    "http://185.213.240.43:18090" -> "https://185.213.240.43.sslip.io:18443"
+    else -> url
+}
+
 private val Context.syncDataStore by preferencesDataStore(name = "sync_prefs")
 
 /** DataStore-хранилище настроек синка (файл `sync_prefs`). */
@@ -51,7 +56,7 @@ class SyncSettingsStore(private val context: Context) {
         }
         .map { prefs ->
             SyncSettings(
-                serverUrl = prefs[KEY_SERVER_URL].orEmpty(),
+                serverUrl = migrateProductionUrl(prefs[KEY_SERVER_URL].orEmpty()),
                 deviceToken = prefs[KEY_DEVICE_TOKEN].orEmpty(),
                 pairId = prefs[KEY_PAIR_ID].orEmpty(),
                 inviteCode = prefs[KEY_INVITE_CODE].orEmpty(),

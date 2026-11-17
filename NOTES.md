@@ -16,8 +16,12 @@
 - Исправлены yearly/background reminders, FGS timeout, запуск push после pairing, обновление виджета,
   ввод веса, прогноз цикла, all-day export, рекорды тестов, микрофон/плеер, счётчики, редакторы и доступность.
 - Release APK запрещает cleartext и публикуется из `assembleRelease`; updater выбирает только `*-release.apk`.
-  Для production-sync нужно настроить HTTPS/WSS с доверенным сертификатом; текущий HTTP по IP доступен только debug.
+  На srv1 развёрнут Caddy с доверенным сертификатом: `https://185.213.240.43.sslip.io:18443` (HTTP/WS
+  проксируются на прежний API; порт 443/xray не затронут). Старый HTTP `:18090` оставлен для старых APK.
+  Сервер одновременно отдаёт legacy flat sync и новый envelope; старый URL автоматически мигрирует на HTTPS.
 - Проверка: Android `testDebugUnitTest`, `assembleDebug`, `assembleRelease`; server `test build`.
+  Production smoke по HTTP и HTTPS: создание пары, legacy/new sync, push и revoke — успешно.
+  Перед миграцией сделан `pg_dump` в `/opt/vdvoem/backups`; тестовые пары удалены.
   На устройстве после этого пакета ещё нужны migration/sync smoke-test и скриншоты; у server пока нет unit-тестов.
 
 ## Состояние на 2026-11-14

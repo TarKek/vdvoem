@@ -44,7 +44,9 @@ curl http://127.0.0.1:8090/health
 ## Прод (srv1)
 
 - Каталог: `/opt/vdvoem`, API слушает `127.0.0.1:8090` и дополнительно публикуется наружу на `:18090`
-  (`http://185.213.240.43:18090`) — без туннеля. Порт 443 занят сторонним `xray`, его не трогаем.
+  для совместимости со старыми APK. Production-адрес: `https://185.213.240.43.sslip.io:18443`.
+  Caddy работает в host-network на `:80` (ACME) и `:18443` (HTTPS/WSS); занятый `:443/xray` не трогаем.
+  Конфиг и сертификаты: `/opt/vdvoem/caddy`, контейнер `vdvoem-caddy`.
 - Обновление: скопировать `server/` на сервер и выполнить `docker compose up -d --build`.
 - Бэкапы: `docker compose exec -T db pg_dump -U vdvoem vdvoem > backup.sql` (по cron),
   файлы вложений/APK — из volume `storage_data` (`docker run --rm -v vdvoem_storage_data:/data ...`).

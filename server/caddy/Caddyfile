@@ -1,0 +1,9 @@
+{
+	http_port 80
+	https_port 18443
+	auto_https disable_redirects
+}
+
+https://185.213.240.43.sslip.io:18443 {
+	reverse_proxy 127.0.0.1:18090
+}
