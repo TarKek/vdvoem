@@ -247,5 +247,17 @@
     <string name="widget_cycle_period_today">Period expected today</string>
     <string name="widget_cycle_late">%1$d d. late</string>
     <string name="widget_cycle_empty">Log your period in the app</string>
+
+    <!-- Calendar and Wish-of-the-day home-screen widgets (Glance). -->
+    <string name="widget_calendar_label">Calendar</string>
+    <string name="widget_calendar_description">Three upcoming events for the couple</string>
+    <string name="widget_calendar_today">Today</string>
+    <string name="widget_calendar_tomorrow">Tomorrow</string>
+    <string name="widget_calendar_empty">Add an event to the calendar</string>
+    <string name="widget_wish_label">Wish of the day</string>
+    <string name="widget_wish_description">One wish from the shared list</string>
+    <string name="widget_wish_high">Really want it</string>
+    <string name="widget_wish_reserved">Already chosen</string>
+    <string name="widget_wish_empty">Add a wish to the list</string>
     <string name="more_sync_now">Send changes now</string>
 </resources>

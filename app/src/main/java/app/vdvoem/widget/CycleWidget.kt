@@ -30,20 +30,6 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import app.vdvoem.MainActivity
 
-/**
- * Брендовые цвета для Glance.
- *
- * MaterialTheme в виджете недоступен (RemoteViews вне Compose), а палитра в
- * `:core:ui` объявлена `internal` и наружу не выходит, поэтому берём те же значения
- * из `core/ui/theme/Color.kt` константами. Меняется палитра — меняем и здесь.
- */
-private val BrandBackground = Color(0xFFFFECEF)
-private val BrandPrimary = Color(0xFF8E4A5F)
-private val BrandOnSurface = Color(0xFF22191B)
-private val BrandMuted = Color(0xFF514347)
-private val BrandTrack = Color(0xFFF2DDE1)
-private val BrandForecast = Color(0xFFFFB1C5)
-
 /** Системный виджет «Цикл»: день, фаза, подсказка и пять ближайших дней точками. */
 class CycleWidget : GlanceAppWidget() {
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Виджет «Цикл» (Glance). Сам не просыпается: updatePeriodMillis=0,
-     обновление приходит из приложения через CycleWidgetUpdater. -->
+<!-- Виджет «Цикл» (Glance). Периодическое обновление раз в 30 минут,
+     чтобы после полуночи сдвигался день цикла; после правок приложение обновляет само. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/widget_cycle_description"
     android:initialLayout="@layout/glance_default_loading_layout"

@@ -261,5 +261,17 @@
     <string name="widget_cycle_period_today">Месячные ожидаются сегодня</string>
     <string name="widget_cycle_late">Задержка %1$d дн.</string>
     <string name="widget_cycle_empty">Отметь месячные в приложении</string>
+
+    <!-- Системные виджеты «Календарь» и «Желание дня» (Glance). -->
+    <string name="widget_calendar_label">Календарь</string>
+    <string name="widget_calendar_description">Три ближайших события пары</string>
+    <string name="widget_calendar_today">Сегодня</string>
+    <string name="widget_calendar_tomorrow">Завтра</string>
+    <string name="widget_calendar_empty">Добавьте событие в календарь</string>
+    <string name="widget_wish_label">Желание дня</string>
+    <string name="widget_wish_description">Одно желание из общего списка пары</string>
+    <string name="widget_wish_high">Очень хочу</string>
+    <string name="widget_wish_reserved">Уже выбрано</string>
+    <string name="widget_wish_empty">Добавьте желание в список</string>
     <string name="more_sync_now">Отправить изменения сейчас</string>
 </resources>

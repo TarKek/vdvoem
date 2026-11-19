@@ -53,6 +53,32 @@
                 android:resource="@xml/cycle_widget_info" />
         </receiver>
 
+        <!-- Системный виджет «Календарь»: ближайшие события пары. -->
+        <receiver
+            android:name=".widget.CalendarWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_calendar_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/calendar_widget_info" />
+        </receiver>
+
+        <!-- Системный виджет «Желание дня»: одно желание из общего списка. -->
+        <receiver
+            android:name=".widget.WishWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_wish_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/wish_widget_info" />
+        </receiver>
+
         <!-- Мгновенный пуш партнёру: WebSocket + постоянное уведомление (CYCLE_SPEC.md §8).
              specialUse — у dataSync на Android 15 есть лимит в 6 часов, после которого
              система гасит сервис; постоянному соединению такой лимит не подходит. -->

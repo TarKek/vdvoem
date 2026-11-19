@@ -9,7 +9,7 @@ import app.vdvoem.core.sync.di.syncModule
 import app.vdvoem.di.appKoinModule
 import app.vdvoem.notify.PokeNotifier
 import app.vdvoem.push.PushService
-import app.vdvoem.widget.CycleWidgetUpdater
+import app.vdvoem.widget.WidgetRefresher
 import app.vdvoem.feature.calendar.calendarFeatureModule
 import app.vdvoem.feature.calendar.CalendarReminderObserver
 import app.vdvoem.feature.gifts.giftsFeatureModule
@@ -71,7 +71,7 @@ class VdvoemApplication : Application() {
         applicationScope.launch {
             val cycle = koin.get<CycleRepository>()
             merge(cycle.observeDays(), cycle.observeSettings()).collect {
-                CycleWidgetUpdater.requestRefresh(this@VdvoemApplication)
+                WidgetRefresher.requestRefresh(this@VdvoemApplication)
             }
         }
 
