@@ -25,6 +25,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.random.Random
+import java.util.concurrent.TimeUnit
 
 /** Путь канала мгновенных уведомлений на сервере (docs/CYCLE_SPEC.md §8). */
 private const val WS_PATH = "/v1/ws"
@@ -49,7 +50,7 @@ private const val JITTER_MS = 1_000L
  * → подключиться снова. Токен и адрес берутся из [SyncSettingsStore] на каждую попытку,
  * так что смена сервера или пары подхватывается без пересоздания клиента.
  *
- * Живёт внутри `PushService` (foreground, `dataSync`), поэтому цикл не ограничен
+ * Живёт внутри `PushService` (foreground, `specialUse`), поэтому цикл не ограничен
  * жизнью активити. Сеть — только пока пара настроена и включена.
  */
 class PushClient(private val settings: SyncSettingsStore) {
@@ -58,6 +59,15 @@ class PushClient(private val settings: SyncSettingsStore) {
 
     private val client = HttpClient(OkHttp) {
         install(WebSockets)
+        // Keep-alive: мобильные операторы и роутеры молча выбрасывают простаивающий TCP
+        // через 3–10 минут. Без пингов сокет «умирал» тихо — клиент ждал кадр, которого
+        // уже не будет, и партнёр видел уведомления только после открытия приложения.
+        engine {
+            config {
+                pingInterval(20, TimeUnit.SECONDS)
+                retryOnConnectionFailure(true)
+            }
+        }
     }
 
     private val scope = CoroutineScope(
@@ -69,14 +79,30 @@ class PushClient(private val settings: SyncSettingsStore) {
     /** null — цикл не запущен; отменённая job не мешает новому старту. */
     private var job: Job? = null
 
+    /** Колбэк последнего [start]: нужен, чтобы переподключиться без потери подписчика. */
+    private var onChanged: (suspend () -> Unit)? = null
+
     val isRunning: Boolean
         get() = synchronized(lock) { job?.isActive == true }
 
     /** Идемпотентно: повторный вызов при уже работающем цикле ничего не делает. */
     fun start(onChanged: suspend () -> Unit) {
         synchronized(lock) {
+            this.onChanged = onChanged
             if (job?.isActive == true) return
             job = scope.launch { listen(onChanged) }
+        }
+    }
+
+    /**
+     * Пересоздать сокет: например, после смены сети (Wi-Fi → LTE), когда старый TCP
+     * уже мёртв, а цикл ещё об этом не узнал. Подписчик сохраняется.
+     */
+    fun restart() {
+        synchronized(lock) {
+            val callback = onChanged ?: return
+            job?.cancel()
+            job = scope.launch { listen(callback) }
         }
     }
 

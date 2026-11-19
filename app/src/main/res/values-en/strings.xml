@@ -206,7 +206,11 @@
     <string name="connect_invite_text">Your partner enters this code on their phone: “More” → “Connect couple”.</string>
     <string name="connect_sync_now">Sync now</string>
     <string name="connect_syncing">Syncing…</string>
-    <string name="connect_sync_hint">Usually it happens on its own: when you open the app and after every edit.</string>
+    <string name="connect_sync_hint">Usually it happens on its own: notifications arrive within a second, even when the app is closed.</string>
+    <string name="connect_background_title">Notifications in the background</string>
+    <string name="connect_background_text">The phone saves battery by putting apps to sleep, so notifications wait until you open Vdvoem. Allow unrestricted background work and your partner\'s changes arrive instantly. On Samsung also: Settings → Battery → Background usage limits → remove Vdvoem from the list.</string>
+    <string name="connect_background_ok">Allowed. The phone no longer stops Vdvoem, so notifications arrive instantly.</string>
+    <string name="connect_background_action">Allow background work</string>
     <string name="connect_leave">Leave couple</string>
     <string name="connect_leave_title">Leave the couple?</string>
     <string name="connect_leave_text">Sync settings on this phone will be reset. Your data stays on the device and on the server.</string>

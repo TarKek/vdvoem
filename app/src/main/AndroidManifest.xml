@@ -2,9 +2,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
@@ -49,11 +53,37 @@
                 android:resource="@xml/cycle_widget_info" />
         </receiver>
 
-        <!-- Мгновенный пуш партнёру: WebSocket + постоянное уведомление (CYCLE_SPEC §8). -->
+        <!-- Мгновенный пуш партнёру: WebSocket + постоянное уведомление (CYCLE_SPEC.md §8).
+             specialUse — у dataSync на Android 15 есть лимит в 6 часов, после которого
+             система гасит сервис; постоянному соединению такой лимит не подходит. -->
         <service
             android:name=".push.PushService"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="dataSync|specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Постоянное соединение с сервером пары для мгновенной доставки уведомлений" />
+        </service>
+
+        <!-- Поднимает пуш обратно после перезагрузки телефона и обновления приложения. -->
+        <receiver
+            android:name=".push.PushRestartReceiver"
+            android:exported="true"
+            android:directBootAware="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Будильник после свайпа из «недавних»: отправляем только мы, снаружи закрыт. -->
+        <receiver
+            android:name=".push.PushAlarmReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="app.vdvoem.push.RESTART" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

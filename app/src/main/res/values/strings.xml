@@ -220,7 +220,11 @@
     <string name="connect_invite_text">Партнёр вводит этот код у себя: «Ещё» → «Подключить пару».</string>
     <string name="connect_sync_now">Синхронизировать сейчас</string>
     <string name="connect_syncing">Синхронизируем…</string>
-    <string name="connect_sync_hint">Обычно всё приходит само: при открытии приложения и после каждой правки.</string>
+    <string name="connect_sync_hint">Обычно всё приходит само: уведомления приходят через секунду, даже если приложение закрыто.</string>
+    <string name="connect_background_title">Уведомления в фоне</string>
+    <string name="connect_background_text">Телефон экономит заряд и усыпляет приложения: тогда уведомления ждут, пока вы сами откроете «Вдвоём». Разрешите работу без ограничений — и правки партнёра будут приходить сразу. На Samsung дополнительно: «Настройки» → «Батарея» → «Ограничения в фоне» → убрать «Вдвоём» из списка.</string>
+    <string name="connect_background_ok">Разрешено. Телефон не останавливает «Вдвоём», уведомления приходят сразу.</string>
+    <string name="connect_background_action">Разрешить работу в фоне</string>
     <string name="connect_leave">Выйти из пары</string>
     <string name="connect_leave_title">Выйти из пары?</string>
     <string name="connect_leave_text">Настройки синхронизации на этом телефоне сбросятся. Данные останутся локально и на сервере.</string>

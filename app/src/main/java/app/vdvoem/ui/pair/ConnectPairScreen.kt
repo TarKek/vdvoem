@@ -1,5 +1,11 @@
 package app.vdvoem.ui.pair
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,11 +41,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -48,6 +56,8 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import app.vdvoem.R
 import app.vdvoem.core.domain.time.Dates
 import app.vdvoem.core.ui.components.SectionHeader
@@ -425,6 +435,60 @@ private fun CreatedContent(
 }
 
 /**
+ * Разрешение «не экономить заряд» — без него Samsung/Xiaomi усыпляют приложение,
+ * и уведомления партнёра ждут, пока человек сам откроет «Вдвоём».
+ * Оформление как у остальных строк: заголовок, объяснение, кнопка.
+ */
+@Composable
+private fun BackgroundDeliveryCard() {
+    val context = LocalContext.current
+    var exempt by remember { mutableStateOf(isBatteryExempt(context)) }
+    // Человек возвращается из системных настроек — сразу показываем новый статус.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { exempt = isBatteryExempt(context) }
+
+    VdvoemCard {
+        SectionHeader(title = stringResource(R.string.connect_background_title))
+        Spacer(modifier = Modifier.height(VdvoemSpacing.xs))
+        Text(
+            text = stringResource(
+                if (exempt) R.string.connect_background_ok else R.string.connect_background_text
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        if (!exempt) {
+            Spacer(modifier = Modifier.height(VdvoemSpacing.sm))
+            OutlinedButton(
+                onClick = { requestBatteryExemption(context) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = VdvoemSpacing.huge)
+            ) {
+                Text(stringResource(R.string.connect_background_action))
+            }
+        }
+    }
+}
+
+private fun isBatteryExempt(context: Context): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
+    val power = context.getSystemService(PowerManager::class.java) ?: return true
+    return power.isIgnoringBatteryOptimizations(context.packageName)
+}
+
+/** Системный диалог «разрешить работу в фоне»; если прошивка его не знает — общий список. */
+private fun requestBatteryExemption(context: Context) {
+    val direct = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+        .setData(Uri.parse("package:${context.packageName}"))
+    val opened = runCatching { context.startActivity(direct) }.isSuccess
+    if (!opened) {
+        runCatching {
+            context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+        }
+    }
+}
+
+/**
  * Пара уже подключена: показываем состав пары, код для второго телефона,
  * ручную синхронизацию и выход из пары. Раньше здесь снова была форма создания —
  * из-за этого можно было случайно завести вторую пару и потерять данные партнёра.
@@ -552,6 +616,8 @@ private fun ConnectedContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+
+    BackgroundDeliveryCard()
 
     state.error?.let { message ->
         if (message.isNotBlank()) {
