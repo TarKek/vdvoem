@@ -62,6 +62,7 @@ import app.vdvoem.core.domain.model.Poke
 import app.vdvoem.core.domain.module.ModuleRegistry
 import app.vdvoem.core.domain.repository.PokeRepository
 import app.vdvoem.core.sync.SyncController
+import app.vdvoem.core.sync.SyncSettings
 import app.vdvoem.core.sync.SyncStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -116,6 +117,9 @@ fun VdvoemRoot(
     val sentPokeIds by homePreferences.sentPokeIds
         .collectAsStateWithLifecycle(initialValue = emptySet())
     val syncStatus by syncController.status.collectAsStateWithLifecycle(initialValue = SyncStatus.Idle)
+    // Нужно, чтобы подсказки про синхронизацию показывались только тем, у кого она не настроена.
+    val syncSettings by syncController.settings.collectAsStateWithLifecycle(initialValue = SyncSettings())
+    val syncReady = syncSettings.isConfigured && syncSettings.enabled
     val pendingSyncCount by syncController.pendingCount.collectAsStateWithLifecycle()
     val syncing = syncStatus is SyncStatus.Running
     val navController = rememberNavController()
@@ -423,6 +427,7 @@ fun VdvoemRoot(
                     sentPokeIds = sentPokeIds,
                     cycleStats = dashboardState.cycleStats,
                     refreshing = syncing,
+                    syncReady = syncReady,
                     onRefresh = { syncController.syncInBackground() },
                     onWidgetsChange = { list ->
                         scope.launch { homePreferences.setWidgets(list) }
@@ -441,9 +446,8 @@ fun VdvoemRoot(
                                     text = text
                                 )
                             )
-                            snackbarHostState.showSnackbar(
-                                context.getString(R.string.dashboard_poke_sent)
-                            )
+                            // Сердечко уже видно в карточке пары («Последнее сердечко»),
+                            // поэтому отдельная плашка не нужна — она только мешала.
                             syncController.syncInBackground()
                         }
                     },

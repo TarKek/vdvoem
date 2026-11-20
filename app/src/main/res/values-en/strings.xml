@@ -63,7 +63,6 @@
     <string name="dashboard_today">Today</string>
     <string name="dashboard_passed">Already passed</string>
     <string name="dashboard_poke">Send a heart</string>
-    <string name="dashboard_poke_sent">Heart sent — your partner will see it after sync</string>
     <string name="dashboard_birthday">%1$s · %2$s</string>
 
     <string name="pair_birthday_a">Birthday: me</string>
@@ -123,7 +122,7 @@
     </plurals>
 
     <string name="poke_dialog_title">Heart</string>
-    <string name="poke_dialog_text">Your partner will get it as a notification once sync is on.</string>
+    <string name="poke_dialog_text">Your partner will see the heart once sync is on: “More” → “Connect couple”.</string>
     <string name="poke_field">Your message</string>
     <string name="poke_send">Send</string>
     <string name="poke_quick_love">Love you</string>

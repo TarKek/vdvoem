@@ -103,6 +103,8 @@ fun DashboardScreen(
     sentPokeIds: Set<String> = emptySet(),
     cycleStats: CycleStats? = null,
     refreshing: Boolean = false,
+    /** Синхронизация настроена и включена: подсказки «увидит после синхронизации» не нужны. */
+    syncReady: Boolean = true,
     onRefresh: () -> Unit = {},
     onWidgetsChange: (List<HomeWidget>) -> Unit,
     onAddWidget: (String) -> Unit,
@@ -239,6 +241,7 @@ fun DashboardScreen(
 
     if (showPokeDialog) {
         PokeDialog(
+            syncReady = syncReady,
             onDismiss = { showPokeDialog = false },
             onSend = { text ->
                 onSendPoke(text)
@@ -1082,6 +1085,7 @@ private fun RadioOption(
 
 @Composable
 private fun PokeDialog(
+    syncReady: Boolean = true,
     onDismiss: () -> Unit,
     onSend: (String) -> Unit,
     onOpenHistory: () -> Unit = {}
@@ -1099,11 +1103,15 @@ private fun PokeDialog(
         title = { Text(stringResource(R.string.poke_dialog_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)) {
-                Text(
-                    text = stringResource(R.string.poke_dialog_text),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                // Когда пара уже синхронизируется, обещание «увидит после синхронизации»
+                // только путало: сердечко уходит сразу.
+                if (!syncReady) {
+                    Text(
+                        text = stringResource(R.string.poke_dialog_text),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 quickMessages.forEach { message ->
                     OutlinedButton(
                         onClick = { text = message },

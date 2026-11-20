@@ -69,7 +69,6 @@
     <string name="dashboard_today">Сегодня</string>
     <string name="dashboard_passed">Уже прошло</string>
     <string name="dashboard_poke">Отправить сердечко</string>
-    <string name="dashboard_poke_sent">Сердечко отправлено — партнёр увидит его после синхронизации</string>
     <string name="dashboard_birthday">%1$s · %2$s</string>
 
     <string name="pair_birthday_a">День рождения: я</string>
@@ -131,7 +130,7 @@
     </plurals>
 
     <string name="poke_dialog_title">Сердечко</string>
-    <string name="poke_dialog_text">Партнёр получит сообщение в уведомлениях, когда появится синхронизация.</string>
+    <string name="poke_dialog_text">Партнёр увидит сердечко, когда включите синхронизацию: «Ещё» → «Подключить пару».</string>
     <string name="poke_field">Своё сообщение</string>
     <string name="poke_send">Отправить</string>
     <string name="poke_quick_love">Люблю тебя</string>
