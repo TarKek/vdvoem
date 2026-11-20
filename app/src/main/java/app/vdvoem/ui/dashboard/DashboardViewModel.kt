@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.model.Pair
 import app.vdvoem.core.domain.model.Poke
+import app.vdvoem.core.domain.model.birthdays
 import app.vdvoem.core.domain.cycle.CycleStats
 import app.vdvoem.core.domain.cycle.buildForecast
 import app.vdvoem.core.domain.repository.CalendarRepository
@@ -82,7 +83,9 @@ class DashboardViewModel(
             pair = pair,
             events = events.sortedBy { it.dateMillis },
             nextEvent = (upcoming ?: latestPast)?.first,
-            eventCount = events.size,
+            // Дни рождения из профиля пары — тоже события: иначе их приходилось
+            // заводить в календаре руками, а теперь они появляются там сами.
+            eventCount = events.size + (pair?.birthdays()?.size ?: 0),
             wishCount = visibleWishes.size,
             giftCount = visibleGifts.size,
             lastPoke = pokes.firstOrNull(),

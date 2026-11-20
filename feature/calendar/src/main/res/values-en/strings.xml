@@ -34,6 +34,7 @@
     <string name="calendar_card_meta">%1$s · %2$s</string>
     <string name="calendar_card_meta_annual">%1$s · %2$s · every year</string>
     <string name="calendar_card_edit_hint">Edit: %1$s</string>
+    <string name="calendar_birthday_title">Birthday: %1$s</string>
     <string name="calendar_add_to_calendar">Add to phone calendar</string>
     <string name="calendar_add_to_calendar_failed">No calendar app found</string>
 

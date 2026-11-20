@@ -105,7 +105,13 @@ fun CalendarScreen(
 
     // Экспорт в календарь телефона — только через Intent, без OAuth и разрешений.
     val addToPhoneCalendar: (EventUi) -> Unit = { event ->
-        if (!insertIntoPhoneCalendar(context, event)) {
+        // В профиле у дня рождения только имя: подпись «День рождения» добавляем здесь.
+        val title = if (event.isBirthday) {
+            context.getString(R.string.calendar_birthday_title, event.title)
+        } else {
+            event.title
+        }
+        if (!insertIntoPhoneCalendar(context, event, title)) {
             scope.launch { snackbarHostState.showSnackbar(calendarFailedMessage) }
         }
     }
@@ -302,7 +308,7 @@ private fun CalendarHero(next: EventUi?) {
         Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
         Text(
             text = if (next != null) {
-                stringResource(R.string.calendar_hero_next, next.title, next.relativeLabel())
+                stringResource(R.string.calendar_hero_next, eventTitle(next), next.relativeLabel())
             } else {
                 stringResource(R.string.calendar_hero_empty)
             },
@@ -460,8 +466,10 @@ private fun EventCard(
     onAddToCalendar: () -> Unit,
     onEdit: () -> Unit
 ) {
-    val editHint = stringResource(R.string.calendar_card_edit_hint, event.title)
-    VdvoemCard(onClick = onEdit) {
+    val title = eventTitle(event)
+    val editHint = stringResource(R.string.calendar_card_edit_hint, title)
+    // День рождения приходит из профиля пары: править его в календаре нечего.
+    VdvoemCard(onClick = if (event.isBirthday) null else onEdit) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Surface(
                 shape = CircleShape,
@@ -489,10 +497,12 @@ private fun EventCard(
             Spacer(modifier = Modifier.size(VdvoemSpacing.md))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = event.title,
+                    text = title,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
+                    // У дня рождения длинная подпись — даём ей вторую строку,
+                    // иначе «День рождения: Партнёр» обрезается.
+                    maxLines = if (event.isBirthday) 2 else 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
@@ -510,15 +520,26 @@ private fun EventCard(
                     modifier = Modifier.size(VdvoemSizes.iconMd)
                 )
             }
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = editHint,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(VdvoemSizes.iconLg)
-            )
+            if (!event.isBirthday) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = editHint,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(VdvoemSizes.iconLg)
+                )
+            }
         }
     }
 }
+
+/** В профиле пары у дня рождения только имя — подпись добавляем при показе. */
+@Composable
+private fun eventTitle(event: EventUi): String =
+    if (event.isBirthday) {
+        stringResource(R.string.calendar_birthday_title, event.title)
+    } else {
+        event.title
+    }
 
 /** «Через 5 дней · 1 января 2025 · каждый год» — без догадок, что именно за дата. */
 @Composable
@@ -713,7 +734,7 @@ private const val MILLIS_PER_DAY = 24L * 60L * 60L * 1000L
  * в базу календаря — дальше пользователь сам жмёт «Сохранить» в приложении календаря.
  * В модели нет времени события, поэтому запись создаётся как событие на весь день.
  */
-private fun insertIntoPhoneCalendar(context: Context, event: EventUi): Boolean {
+private fun insertIntoPhoneCalendar(context: Context, event: EventUi, title: String): Boolean {
     val begin = Dates.startOfDay(event.date)
     val description = context.applicationInfo?.loadLabel(context.packageManager)?.toString().orEmpty()
     val intent = Intent(Intent.ACTION_INSERT)
@@ -721,7 +742,7 @@ private fun insertIntoPhoneCalendar(context: Context, event: EventUi): Boolean {
         .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, begin)
         .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, begin + MILLIS_PER_DAY)
         .putExtra(CalendarContract.EXTRA_EVENT_ALL_DAY, true)
-        .putExtra(CalendarContract.Events.TITLE, event.title)
+        .putExtra(CalendarContract.Events.TITLE, title)
         .putExtra(CalendarContract.Events.DESCRIPTION, description)
     // context из LocalContext — это Activity, поэтому FLAG_ACTIVITY_NEW_TASK не нужен.
     return runCatching { context.startActivity(intent) }.isSuccess

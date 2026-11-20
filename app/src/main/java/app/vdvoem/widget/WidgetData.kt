@@ -19,22 +19,29 @@ internal data class UpcomingEvent(
 /**
  * Ближайшие события пары: сегодня и позже, без удалённых.
  *
+ * [extra] — даты, которых нет в базе (например, дни рождения из профиля пары):
+ * их уже привели к ближайшему наступлению и подписали снаружи.
+ *
  * Прошедшие не-годовщины не показываем: в виджете нужен «что впереди», а не архив.
  */
 internal fun upcomingEvents(
     events: List<CalendarEvent>,
     today: LocalDate,
+    extra: List<UpcomingEvent> = emptyList(),
     limit: Int = CALENDAR_WIDGET_LIMIT
-): List<UpcomingEvent> = events.asSequence()
-    .filter { it.deletedAt == null }
-    .map { event ->
-        val date = Dates.nextOccurrence(event.dateMillis, event.annual, today)
-        UpcomingEvent(title = event.title, date = date, daysUntil = Dates.daysUntil(date, today))
-    }
-    .filter { it.daysUntil >= 0L }
-    .sortedWith(compareBy<UpcomingEvent> { it.daysUntil }.thenBy { it.title })
-    .take(limit)
-    .toList()
+): List<UpcomingEvent> {
+    val fromEvents = events.asSequence()
+        .filter { it.deletedAt == null }
+        .map { event ->
+            val date = Dates.nextOccurrence(event.dateMillis, event.annual, today)
+            UpcomingEvent(title = event.title, date = date, daysUntil = Dates.daysUntil(date, today))
+        }
+    return (fromEvents + extra.asSequence())
+        .filter { it.daysUntil >= 0L }
+        .sortedWith(compareBy<UpcomingEvent> { it.daysUntil }.thenBy { it.title })
+        .take(limit)
+        .toList()
+}
 
 /**
  * «Желание дня»: одно желание, которое меняется раз в сутки.

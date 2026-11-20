@@ -101,6 +101,32 @@ class WidgetDataTest {
         assertEquals(CALENDAR_WIDGET_LIMIT, upcomingEvents(events, today).size)
     }
 
+    /** Дни рождения приходят не из базы, а из профиля пары — они идут в тот же список. */
+    @Test
+    fun `extra dates are merged into the same sorted list`() {
+        val events = listOf(event("e1", "Ужин", today.plusDays(5)))
+        val birthdays = listOf(
+            UpcomingEvent(title = "День рождения: Варя", date = today.plusDays(2), daysUntil = 2L)
+        )
+
+        val result = upcomingEvents(events, today, extra = birthdays)
+
+        assertEquals(listOf("День рождения: Варя", "Ужин"), result.map { it.title })
+    }
+
+    @Test
+    fun `extra dates respect the limit after merging`() {
+        val events = (1..3).map { event("e$it", "Событие $it", today.plusDays(it.toLong())) }
+        val birthdays = listOf(
+            UpcomingEvent(title = "День рождения: Варя", date = today, daysUntil = 0L)
+        )
+
+        val result = upcomingEvents(events, today, extra = birthdays)
+
+        assertEquals(CALENDAR_WIDGET_LIMIT, result.size)
+        assertEquals("День рождения: Варя", result.first().title)
+    }
+
     @Test
     fun `wish of day hides done surprised and deleted wishes`() {
         val wishes = listOf(

@@ -3,6 +3,9 @@ package app.vdvoem.feature.calendar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.vdvoem.core.domain.model.CalendarEvent
+import app.vdvoem.core.domain.model.Pair
+import app.vdvoem.core.domain.model.birthdays
+import app.vdvoem.core.domain.model.upcomingDate
 import app.vdvoem.core.domain.repository.CalendarRepository
 import app.vdvoem.core.domain.repository.PairRepository
 import app.vdvoem.core.domain.time.Dates
@@ -31,7 +34,12 @@ data class EventUi(
     /** Исходная сохранённая дата — нужна для режима правки. */
     val dateMillis: Long,
     val annual: Boolean,
-    val daysLeft: Long
+    val daysLeft: Long,
+    /**
+     * День рождения из профиля пары: показываем, но не редактируем —
+     * дата меняется в профиле, а не в календаре.
+     */
+    val isBirthday: Boolean = false
 )
 
 data class CalendarUiState(
@@ -72,11 +80,12 @@ class CalendarViewModel(
     val state: StateFlow<CalendarUiState> =
         combine(
             calendarRepository.observeEvents(),
+            pairRepository.observe(),
             filter,
             sort,
             reminderSettings
-        ) { events, selected, order, reminders ->
-            buildState(events, selected, order, reminders)
+        ) { events, pair, selected, order, reminders ->
+            buildState(events, pair, selected, order, reminders)
         }
             .stateIn(
                 scope = viewModelScope,
@@ -185,6 +194,7 @@ class CalendarViewModel(
 
     private fun buildState(
         events: List<CalendarEvent>,
+        pair: Pair?,
         selected: CalendarFilter,
         order: CalendarSort,
         reminders: ReminderSettings
@@ -201,7 +211,7 @@ class CalendarViewModel(
                 annual = event.annual,
                 daysLeft = Dates.daysUntil(date, today)
             )
-        }
+        } + pair.birthdayEvents(today)
         val byNearest = sortEvents(all)
         val visible = all.filter { it.matches(selected, today) }
         return CalendarUiState(
@@ -240,6 +250,27 @@ class CalendarViewModel(
             CalendarFilter.MONTH ->
                 daysLeft >= 0 && date.year == today.year && date.month == today.month
         }
+
+    /**
+     * Дни рождения из профиля пары как события: без строки в базе они всегда
+     * совпадают с профилем, а правка даты не требует ни миграции, ни синка.
+     */
+    private fun Pair?.birthdayEvents(today: LocalDate): List<EventUi> {
+        val pair = this ?: return emptyList()
+        return pair.birthdays().map { birthday ->
+            val date = birthday.upcomingDate(today)
+            EventUi(
+                id = birthday.eventId,
+                pairId = pair.id,
+                title = birthday.name,
+                date = date,
+                dateMillis = birthday.dateMillis,
+                annual = true,
+                daysLeft = Dates.daysUntil(date, today),
+                isBirthday = true
+            )
+        }
+    }
 
     private companion object {
         const val LOCAL_PAIR_ID = "local"

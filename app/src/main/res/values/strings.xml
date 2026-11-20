@@ -70,7 +70,6 @@
     <string name="dashboard_passed">Уже прошло</string>
     <string name="dashboard_poke">Отправить сердечко</string>
     <string name="dashboard_poke_sent">Сердечко отправлено — партнёр увидит его после синхронизации</string>
-    <string name="dashboard_birthday">%1$s · %2$s</string>
 
     <string name="pair_birthday_a">День рождения: я</string>
     <string name="pair_birthday_a_value">Мой день рождения: %1$s</string>
@@ -90,7 +89,7 @@
     <string name="widget_countdown_title">Отсчёт</string>
     <string name="widget_countdown_description">Счётчик до или после выбранной даты</string>
     <string name="widget_event_title">События</string>
-    <string name="widget_event_description">Сколько дат уже сохранено</string>
+    <string name="widget_event_description">Сколько дат в общем календаре</string>
     <string name="widget_wishes_description">Сколько желаний в списке</string>
     <string name="widget_gifts_description">Сколько подарков запланировано</string>
     <string name="widget_tests_description">Быстрый вход в тесты для двоих</string>
@@ -268,6 +267,7 @@
     <string name="widget_calendar_today">Сегодня</string>
     <string name="widget_calendar_tomorrow">Завтра</string>
     <string name="widget_calendar_empty">Добавьте событие в календарь</string>
+    <string name="widget_calendar_birthday">День рождения: %1$s</string>
     <string name="widget_wish_label">Желание дня</string>
     <string name="widget_wish_description">Одно желание из общего списка пары</string>
     <string name="widget_wish_high">Очень хочу</string>
