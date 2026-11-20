@@ -21,6 +21,10 @@
     <string name="timetable_error_subject">Enter a subject</string>
     <string name="timetable_error_time">Time format 9:00</string>
     <string name="timetable_error_order">End must be after start</string>
+    <string name="timetable_today">today</string>
+    <string name="timetable_day_empty">No lessons on this day</string>
+    <string name="timetable_textbook">Textbook taken by</string>
+    <string name="timetable_textbook_taken">Textbook: %1$s</string>
 
     <string-array name="timetable_weekdays">
         <item>Mon</item>
@@ -30,5 +34,30 @@
         <item>Fri</item>
         <item>Sat</item>
         <item>Sun</item>
+    </string-array>
+
+    <string-array name="timetable_weekdays_full">
+        <item>Monday</item>
+        <item>Tuesday</item>
+        <item>Wednesday</item>
+        <item>Thursday</item>
+        <item>Friday</item>
+        <item>Saturday</item>
+        <item>Sunday</item>
+    </string-array>
+
+    <string-array name="timetable_months">
+        <item>January</item>
+        <item>February</item>
+        <item>March</item>
+        <item>April</item>
+        <item>May</item>
+        <item>June</item>
+        <item>July</item>
+        <item>August</item>
+        <item>September</item>
+        <item>October</item>
+        <item>November</item>
+        <item>December</item>
     </string-array>
 </resources>

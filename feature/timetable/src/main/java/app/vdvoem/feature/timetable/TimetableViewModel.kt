@@ -10,7 +10,17 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.temporal.TemporalAdjusters
 import java.util.UUID
+
+/** Сколько дней показываем в горизонтальной ленте дат: две недели от понедельника. */
+const val TIMETABLE_STRIP_DAYS = 14
+
+/** Понедельник недели, в которую попадает [date]. */
+fun weekStart(date: LocalDate): LocalDate =
+    date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
 
 /** Черновик урока в диалоге: null — диалог закрыт. */
 data class LessonDraft(
@@ -21,19 +31,20 @@ data class LessonDraft(
     val end: String = "9:45",
     val room: String = "",
     val teacher: String = "",
+    val textbookBy: String = "",
     val error: Int? = null
 )
 
 data class TimetableUiState(
     val lessons: List<Lesson> = emptyList(),
-    val draft: LessonDraft? = null
+    val draft: LessonDraft? = null,
+    val selectedDate: LocalDate = LocalDate.now()
 ) {
-    /** Уроки по дням недели: 1..7, пустые дни не попадают. */
-    val byDay: List<Pair<Int, List<Lesson>>>
+    /** Уроки выбранного дня, по времени. */
+    val dayLessons: List<Lesson>
         get() = lessons
-            .groupBy { it.weekday }
-            .toSortedMap()
-            .map { (day, list) -> day to list.sortedBy { it.startMinute } }
+            .filter { it.weekday == selectedDate.dayOfWeek.value }
+            .sortedBy { it.startMinute }
 
     val isEmpty: Boolean
         get() = lessons.isEmpty()
@@ -45,19 +56,28 @@ class TimetableViewModel(
 ) : ViewModel() {
 
     private val draft = MutableStateFlow<LessonDraft?>(null)
+    private val selectedDate = MutableStateFlow(LocalDate.now())
     private val _state = MutableStateFlow(TimetableUiState())
 
     val state: StateFlow<TimetableUiState> = _state.asStateFlow()
 
     init {
         viewModelScope.launch {
-            combine(repository.observe(), draft) { lessons, editing ->
-                TimetableUiState(lessons = lessons.filter { it.deletedAt == null }, draft = editing)
+            combine(repository.observe(), draft, selectedDate) { lessons, editing, date ->
+                TimetableUiState(
+                    lessons = lessons.filter { it.deletedAt == null },
+                    draft = editing,
+                    selectedDate = date
+                )
             }.collect { _state.value = it }
         }
     }
 
-    fun addLesson(weekday: Int = 1) {
+    fun selectDate(date: LocalDate) {
+        selectedDate.value = date
+    }
+
+    fun addLesson(weekday: Int = state.value.selectedDate.dayOfWeek.value) {
         draft.value = LessonDraft(weekday = weekday)
     }
 
@@ -69,7 +89,8 @@ class TimetableViewModel(
             start = Lesson.formatMinute(lesson.startMinute),
             end = Lesson.formatMinute(lesson.endMinute),
             room = lesson.room,
-            teacher = lesson.teacher
+            teacher = lesson.teacher,
+            textbookBy = lesson.textbookBy
         )
     }
 
@@ -106,7 +127,8 @@ class TimetableViewModel(
             startMinute = start,
             endMinute = end,
             room = current.room.trim(),
-            teacher = current.teacher.trim()
+            teacher = current.teacher.trim(),
+            textbookBy = current.textbookBy.trim()
         )
         viewModelScope.launch {
             val pairId = lesson.pairId.ifBlank { pairRepository.current()?.id.orEmpty() }

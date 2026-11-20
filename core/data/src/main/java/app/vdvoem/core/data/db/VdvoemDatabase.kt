@@ -18,7 +18,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         CycleDayEntity::class,
         CycleSettingsEntity::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = false
 )
 @TypeConverters(CycleConverters::class)
@@ -222,6 +222,13 @@ abstract class VdvoemDatabase : RoomDatabase() {
                 db.execSQL("UPDATE `pair` SET `birthdayB` = ${utcMidnight("birthdayB")} WHERE `birthdayB` IS NOT NULL")
                 db.execSQL("UPDATE `events` SET `dateMillis` = ${utcMidnight("dateMillis")}")
                 db.execSQL("UPDATE `cycle_days` SET `dateMillis` = ${utcMidnight("dateMillis")}")
+            }
+        }
+
+        /** v10 → v11: у урока появилось поле «кто берёт учебник». */
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `lessons` ADD COLUMN `textbook_by` TEXT NOT NULL DEFAULT ''")
             }
         }
     }

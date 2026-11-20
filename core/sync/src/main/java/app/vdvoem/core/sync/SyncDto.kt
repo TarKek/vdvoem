@@ -122,6 +122,7 @@ data class LessonDto(
     val endMinute: Int = 0,
     val room: String = "",
     val teacher: String = "",
+    val textbookBy: String = "",
     val updatedAt: Long = 0L,
     val deletedAt: Long? = null,
     val pairId: String? = null

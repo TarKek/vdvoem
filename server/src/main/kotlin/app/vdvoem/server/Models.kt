@@ -89,6 +89,7 @@ data class LessonDto(
     @SerialName("endMinute") val endMinute: Int = 0,
     val room: String = "",
     val teacher: String = "",
+    @SerialName("textbookBy") val textbookBy: String = "",
     @SerialName("updatedAt") val updatedAt: Long = 0,
     @SerialName("deletedAt") val deletedAt: Long? = null
 )

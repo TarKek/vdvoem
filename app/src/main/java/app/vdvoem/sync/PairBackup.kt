@@ -160,6 +160,7 @@ object PairBackup {
                         .put("endMinute", lesson.endMinute)
                         .put("room", lesson.room)
                         .put("teacher", lesson.teacher)
+                        .put("textbookBy", lesson.textbookBy)
                         .put("updatedAt", lesson.updatedAt)
                         .put("deletedAt", lesson.deletedAt ?: JSONObject.NULL)
                 )
@@ -311,6 +312,7 @@ object PairBackup {
                     endMinute = json.optInt("endMinute", 0),
                     room = json.optString("room"),
                     teacher = json.optString("teacher"),
+                    textbookBy = json.optString("textbookBy"),
                     updatedAt = json.optLong("updatedAt", 0L),
                     deletedAt = json.optLongOrNull("deletedAt")
                 )

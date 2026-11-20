@@ -268,7 +268,7 @@ class Repository(private val dataSource: DataSource) {
         }
 
         val lessons = connection.prepareStatement(
-            "SELECT id, subject, weekday, start_minute, end_minute, room, teacher, updated_at, deleted_at " +
+            "SELECT id, subject, weekday, start_minute, end_minute, room, teacher, updated_at, deleted_at, textbook_by " +
                 "FROM lessons WHERE pair_id = ? AND revision > ? ORDER BY weekday, start_minute"
         ).use { statement ->
             statement.setObject(1, java.util.UUID.fromString(pairId))
@@ -281,7 +281,8 @@ class Repository(private val dataSource: DataSource) {
                             weekday = rows.getInt(3), startMinute = rows.getInt(4),
                             endMinute = rows.getInt(5), room = rows.getString(6),
                             teacher = rows.getString(7), updatedAt = rows.getLong(8),
-                            deletedAt = rows.getLong(9).takeUnless { rows.wasNull() }
+                            deletedAt = rows.getLong(9).takeUnless { rows.wasNull() },
+                            textbookBy = rows.getString(10) ?: ""
                         )
                     )
                 }
@@ -519,12 +520,13 @@ class Repository(private val dataSource: DataSource) {
                 applied += tx.prepareStatement(
                     """
                     INSERT INTO lessons (id, pair_id, subject, weekday, start_minute, end_minute,
-                        room, teacher, updated_at, deleted_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        room, teacher, textbook_by, updated_at, deleted_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT (id) DO UPDATE SET subject = EXCLUDED.subject,
                         weekday = EXCLUDED.weekday, start_minute = EXCLUDED.start_minute,
                         end_minute = EXCLUDED.end_minute, room = EXCLUDED.room,
-                        teacher = EXCLUDED.teacher, updated_at = EXCLUDED.updated_at,
+                        teacher = EXCLUDED.teacher, textbook_by = EXCLUDED.textbook_by,
+                        updated_at = EXCLUDED.updated_at,
                         deleted_at = EXCLUDED.deleted_at
                     WHERE lessons.pair_id = EXCLUDED.pair_id AND EXCLUDED.updated_at > lessons.updated_at
                     """.trimIndent()
@@ -537,9 +539,10 @@ class Repository(private val dataSource: DataSource) {
                     statement.setInt(6, lesson.endMinute)
                     statement.setString(7, lesson.room)
                     statement.setString(8, lesson.teacher)
-                    statement.setLong(9, lesson.updatedAt)
-                    if (lesson.deletedAt != null) statement.setLong(10, lesson.deletedAt)
-                    else statement.setNull(10, java.sql.Types.BIGINT)
+                    statement.setString(9, lesson.textbookBy)
+                    statement.setLong(10, lesson.updatedAt)
+                    if (lesson.deletedAt != null) statement.setLong(11, lesson.deletedAt)
+                    else statement.setNull(11, java.sql.Types.BIGINT)
                     statement.executeUpdate()
                 }
             }

@@ -94,6 +94,7 @@ data class LessonEntity(
     val endMinute: Int,
     val room: String,
     val teacher: String,
+    @ColumnInfo(name = "textbook_by") val textbookBy: String = "",
     val updatedAt: Long,
     val deletedAt: Long? = null
 )
