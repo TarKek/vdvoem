@@ -34,6 +34,7 @@
     <string name="calendar_card_meta">%1$s · %2$s</string>
     <string name="calendar_card_meta_annual">%1$s · %2$s · каждый год</string>
     <string name="calendar_card_edit_hint">Изменить: %1$s</string>
+    <string name="calendar_birthday_title">День рождения: %1$s</string>
     <string name="calendar_add_to_calendar">В календарь телефона</string>
     <string name="calendar_add_to_calendar_failed">Нет приложения календаря</string>
 

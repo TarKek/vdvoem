@@ -63,7 +63,6 @@
     <string name="dashboard_today">Today</string>
     <string name="dashboard_passed">Already passed</string>
     <string name="dashboard_poke">Send a heart</string>
-    <string name="dashboard_birthday">%1$s · %2$s</string>
 
     <string name="pair_birthday_a">Birthday: me</string>
     <string name="pair_birthday_a_value">My birthday: %1$s</string>
@@ -83,7 +82,7 @@
     <string name="widget_countdown_title">Countdown</string>
     <string name="widget_countdown_description">A counter to or since a chosen date</string>
     <string name="widget_event_title">Events</string>
-    <string name="widget_event_description">How many dates are saved</string>
+    <string name="widget_event_description">How many dates are in your shared calendar</string>
     <string name="widget_wishes_description">How many wishes are on the list</string>
     <string name="widget_gifts_description">How many gifts are planned</string>
     <string name="widget_tests_description">Quick access to quizzes for two</string>
@@ -253,6 +252,7 @@
     <string name="widget_calendar_today">Today</string>
     <string name="widget_calendar_tomorrow">Tomorrow</string>
     <string name="widget_calendar_empty">Add an event to the calendar</string>
+    <string name="widget_calendar_birthday">Birthday: %1$s</string>
     <string name="widget_wish_label">Wish of the day</string>
     <string name="widget_wish_description">One wish from the shared list</string>
     <string name="widget_wish_high">Really want it</string>

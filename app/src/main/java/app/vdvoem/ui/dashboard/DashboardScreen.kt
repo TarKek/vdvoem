@@ -357,20 +357,6 @@ private fun PairCard(
                         textAlign = TextAlign.Center
                     )
                 }
-                pair.birthdayA?.let { birthday ->
-                    BirthdayLine(
-                        name = pair.nameA,
-                        birthday = birthday,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                    )
-                }
-                pair.birthdayB?.let { birthday ->
-                    BirthdayLine(
-                        name = pair.nameB,
-                        birthday = birthday,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                    )
-                }
                 if (!lastPoke.isNullOrBlank()) {
                     Spacer(modifier = Modifier.size(VdvoemSpacing.sm))
                     Text(
@@ -403,16 +389,6 @@ private fun PairCard(
             }
         }
     }
-}
-
-@Composable
-private fun BirthdayLine(name: String, birthday: Long, color: Color) {
-    val date = Dates.toLocalDate(birthday)
-    Text(
-        text = stringResource(R.string.dashboard_birthday, name, Dates.format(date)),
-        style = MaterialTheme.typography.bodySmall,
-        color = color
-    )
 }
 
 @Composable
