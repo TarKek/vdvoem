@@ -11,7 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.List
@@ -23,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +32,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import app.vdvoem.R
@@ -67,12 +70,23 @@ fun MoreScreen(
     modifier: Modifier = Modifier
 ) {
     var navSheetOpen by rememberSaveable { mutableStateOf(false) }
+    var modulesSheetOpen by rememberSaveable { mutableStateOf(false) }
     if (navSheetOpen) {
         NavTabsSheet(
             selected = bottomModules.map { it.route },
             available = navModules,
             onChange = onNavRoutesChange,
             onDismiss = { navSheetOpen = false }
+        )
+    }
+    if (modulesSheetOpen) {
+        AllModulesSheet(
+            modules = overflowModules,
+            onOpen = { module ->
+                modulesSheetOpen = false
+                onOpenModule(module)
+            },
+            onDismiss = { modulesSheetOpen = false }
         )
     }
 
@@ -86,23 +100,19 @@ fun MoreScreen(
         ),
         verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.md)
     ) {
-        item(key = "more_header") {
-            Text(
-                text = stringResource(R.string.more_intro),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
         if (overflowModules.isNotEmpty()) {
-            items(overflowModules, key = { it.manifest.id }) { module ->
+            item(key = "more_modules") {
                 ModuleRow(
-                    title = stringResource(module.manifest.titleRes),
-                    description = stringResource(module.manifest.descriptionRes),
-                    onClick = { onOpenModule(module) },
+                    title = stringResource(R.string.more_all_modules),
+                    description = pluralStringResource(
+                        R.plurals.more_modules_count,
+                        overflowModules.size,
+                        overflowModules.size
+                    ),
+                    onClick = { modulesSheetOpen = true },
                     icon = {
                         Icon(
-                            imageVector = module.icon,
+                            imageVector = Icons.AutoMirrored.Filled.List,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(VdvoemSizes.iconMd)
@@ -275,6 +285,77 @@ fun MoreScreen(
                     )
                 }
             )
+        }
+    }
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun AllModulesSheet(
+    modules: List<AppModule>,
+    onOpen: (AppModule) -> Unit,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = VdvoemSpacing.xl)
+        ) {
+            Text(
+                text = stringResource(R.string.more_all_modules),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(horizontal = VdvoemSpacing.screenHorizontal)
+            )
+            Text(
+                text = stringResource(R.string.more_intro),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .padding(horizontal = VdvoemSpacing.screenHorizontal)
+                    .padding(top = VdvoemSpacing.xs, bottom = VdvoemSpacing.md)
+            )
+            modules.forEach { module ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onOpen(module) }
+                        .padding(
+                            horizontal = VdvoemSpacing.screenHorizontal,
+                            vertical = VdvoemSpacing.md
+                        ),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = module.icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(VdvoemSizes.iconLg)
+                    )
+                    Spacer(modifier = Modifier.size(VdvoemSpacing.md))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(module.manifest.titleRes),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = stringResource(module.manifest.descriptionRes),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
     }
 }

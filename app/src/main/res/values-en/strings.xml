@@ -131,6 +131,11 @@
 
     <string name="more_title">More</string>
     <string name="more_intro">Modules that didn\'t fit in the bottom bar. Tap a row to open it.</string>
+        <string name="more_all_modules">All sections</string>
+    <plurals name="more_modules_count">
+        <item quantity="one">%d section</item>
+        <item quantity="other">%d sections</item>
+    </plurals>
     <string name="more_empty_title">Nothing here yet</string>
     <string name="more_empty_text">Turn on modules in the add-ons store — they\'ll show up here.</string>
     <string name="more_addons_title">Add-ons</string>
