@@ -10,6 +10,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.vdvoem.core.domain.module.AppModule
 import app.vdvoem.core.domain.module.ModuleCategory
 import app.vdvoem.core.domain.module.ModuleManifest
+import app.vdvoem.core.domain.settings.ReminderLeadSettings
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.compose.koinViewModel
 import org.koin.dsl.module
@@ -57,6 +58,8 @@ class CalendarModule : AppModule {
 val calendarFeatureModule = module {
     single { CalendarModule() }
     single { ReminderPreferences(context = androidContext()) }
+    // «Главная» просит только срок показа событий, не зная про этот модуль.
+    single<ReminderLeadSettings> { get<ReminderPreferences>() }
     single { ReminderScheduler(context = androidContext()) }
     single {
         CalendarReminderObserver(

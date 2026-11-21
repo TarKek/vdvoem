@@ -59,6 +59,8 @@ val appKoinModule = module {
             giftRepository = get(),
             pokeRepository = get(),
             cycleRepository = get(),
+            lessonRepository = get(),
+            reminderLeadSettings = get(),
             deviceIdentity = get()
         )
     }

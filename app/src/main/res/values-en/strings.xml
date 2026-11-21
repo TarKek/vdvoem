@@ -61,6 +61,21 @@
     <string name="dashboard_widget_add">Add widget</string>
     <string name="dashboard_widget_empty">Empty</string>
     <string name="dashboard_today">Today</string>
+    <string name="dashboard_today_cd_lessons">Today, lessons: %1$d</string>
+    <string name="dashboard_today_cd_events">there are events</string>
+    <string name="dashboard_today_lessons">Lessons</string>
+    <string name="dashboard_today_lessons_empty">No lessons today</string>
+    <string name="dashboard_today_events">Events</string>
+    <string name="dashboard_today_events_empty">No upcoming events</string>
+    <string name="dashboard_today_birthday">Birthday: %1$s</string>
+    <string name="dashboard_today_event_today">today</string>
+    <string name="dashboard_today_event_tomorrow">tomorrow</string>
+    <plurals name="dashboard_today_event_in_days">
+        <item quantity="one">in %1$d day</item>
+        <item quantity="other">in %1$d days</item>
+    </plurals>
+    <string name="dashboard_today_room">room %1$s</string>
+    <string name="dashboard_today_textbook">textbook: %1$s</string>
     <string name="dashboard_passed">Already passed</string>
     <string name="dashboard_poke">Send a heart</string>
 
