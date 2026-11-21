@@ -141,6 +141,13 @@
 
     <string name="more_title">Ещё</string>
     <string name="more_intro">Модули, которые не поместились в нижнюю панель. Нажмите на строку, чтобы открыть.</string>
+        <string name="more_all_modules">Все разделы</string>
+    <plurals name="more_modules_count">
+        <item quantity="one">%d раздел</item>
+        <item quantity="few">%d раздела</item>
+        <item quantity="many">%d разделов</item>
+        <item quantity="other">%d раздела</item>
+    </plurals>
     <string name="more_empty_title">Пока нечего показать</string>
     <string name="more_empty_text">Включите модули в магазине дополнений — они появятся здесь.</string>
     <string name="more_addons_title">Дополнения</string>
