@@ -15,6 +15,8 @@ data class Lesson(
     val endMinute: Int,
     val room: String = "",
     val teacher: String = "",
+    /** Кто берёт учебник на этот предмет: свободный текст («Я», «Варя», «оба»). */
+    val textbookBy: String = "",
     val updatedAt: Long = System.currentTimeMillis(),
     val deletedAt: Long? = null
 ) {

@@ -21,6 +21,10 @@
     <string name="timetable_error_subject">Укажи предмет</string>
     <string name="timetable_error_time">Время в формате 9:00</string>
     <string name="timetable_error_order">Конец должен быть позже начала</string>
+    <string name="timetable_today">сегодня</string>
+    <string name="timetable_day_empty">На этот день уроков нет</string>
+    <string name="timetable_textbook">Учебник берёт</string>
+    <string name="timetable_textbook_taken">Учебник: %1$s</string>
 
     <string-array name="timetable_weekdays">
         <item>Пн</item>
@@ -30,5 +34,30 @@
         <item>Пт</item>
         <item>Сб</item>
         <item>Вс</item>
+    </string-array>
+
+    <string-array name="timetable_weekdays_full">
+        <item>Понедельник</item>
+        <item>Вторник</item>
+        <item>Среда</item>
+        <item>Четверг</item>
+        <item>Пятница</item>
+        <item>Суббота</item>
+        <item>Воскресенье</item>
+    </string-array>
+
+    <string-array name="timetable_months">
+        <item>января</item>
+        <item>февраля</item>
+        <item>марта</item>
+        <item>апреля</item>
+        <item>мая</item>
+        <item>июня</item>
+        <item>июля</item>
+        <item>августа</item>
+        <item>сентября</item>
+        <item>октября</item>
+        <item>ноября</item>
+        <item>декабря</item>
     </string-array>
 </resources>

@@ -39,6 +39,7 @@ private fun LessonEntity.toDomain() = Lesson(
     endMinute = endMinute,
     room = room,
     teacher = teacher,
+    textbookBy = textbookBy,
     updatedAt = updatedAt,
     deletedAt = deletedAt
 )
@@ -52,6 +53,7 @@ private fun Lesson.toEntity() = LessonEntity(
     endMinute = endMinute,
     room = room,
     teacher = teacher,
+    textbookBy = textbookBy,
     updatedAt = updatedAt,
     deletedAt = deletedAt
 )

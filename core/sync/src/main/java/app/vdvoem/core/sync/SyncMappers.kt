@@ -131,6 +131,7 @@ object SyncMappers {
         endMinute = endMinute,
         room = room,
         teacher = teacher,
+        textbookBy = textbookBy,
         updatedAt = updatedAt,
         deletedAt = deletedAt,
         pairId = pairId
@@ -145,6 +146,7 @@ object SyncMappers {
         endMinute = endMinute.coerceIn(0, 24 * 60),
         room = room,
         teacher = teacher,
+        textbookBy = textbookBy,
         updatedAt = updatedAt,
         deletedAt = deletedAt
     )

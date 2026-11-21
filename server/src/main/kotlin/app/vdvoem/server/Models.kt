@@ -89,6 +89,8 @@ data class LessonDto(
     @SerialName("endMinute") val endMinute: Int = 0,
     val room: String = "",
     val teacher: String = "",
+    // null — поле отсутствует у старого клиента; пустая строка — явная очистка.
+    @SerialName("textbookBy") val textbookBy: String? = null,
     @SerialName("updatedAt") val updatedAt: Long = 0,
     @SerialName("deletedAt") val deletedAt: Long? = null
 )
