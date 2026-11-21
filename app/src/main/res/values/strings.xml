@@ -67,6 +67,23 @@
     <string name="dashboard_widget_add">Добавить виджет</string>
     <string name="dashboard_widget_empty">Пусто</string>
     <string name="dashboard_today">Сегодня</string>
+    <string name="dashboard_today_cd_lessons">Сегодня, уроков: %1$d</string>
+    <string name="dashboard_today_cd_events">есть события</string>
+    <string name="dashboard_today_lessons">Уроки</string>
+    <string name="dashboard_today_lessons_empty">На сегодня уроков нет</string>
+    <string name="dashboard_today_events">События</string>
+    <string name="dashboard_today_events_empty">Ближайших событий нет</string>
+    <string name="dashboard_today_birthday">День рождения: %1$s</string>
+    <string name="dashboard_today_event_today">сегодня</string>
+    <string name="dashboard_today_event_tomorrow">завтра</string>
+    <plurals name="dashboard_today_event_in_days">
+        <item quantity="one">через %1$d день</item>
+        <item quantity="few">через %1$d дня</item>
+        <item quantity="many">через %1$d дней</item>
+        <item quantity="other">через %1$d дня</item>
+    </plurals>
+    <string name="dashboard_today_room">каб. %1$s</string>
+    <string name="dashboard_today_textbook">учебник: %1$s</string>
     <string name="dashboard_passed">Уже прошло</string>
     <string name="dashboard_poke">Отправить сердечко</string>
 

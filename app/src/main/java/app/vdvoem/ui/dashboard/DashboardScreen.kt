@@ -12,9 +12,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -31,6 +33,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -62,16 +65,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.vdvoem.R
 import app.vdvoem.core.domain.model.CalendarEvent
+import app.vdvoem.core.domain.model.Lesson
 import app.vdvoem.core.domain.model.Pair
 import app.vdvoem.core.domain.model.Poke
 import app.vdvoem.core.domain.module.AppModule
 import app.vdvoem.core.domain.time.Dates
+import java.time.LocalDate
 import app.vdvoem.core.ui.components.InfoPill
 import app.vdvoem.core.ui.components.SectionHeader
 import app.vdvoem.core.ui.components.VdvoemCard
@@ -105,6 +111,12 @@ fun DashboardScreen(
     refreshing: Boolean = false,
     /** Синхронизация настроена и включена: подсказки «увидит после синхронизации» не нужны. */
     syncReady: Boolean = true,
+    /** Сегодняшняя дата: приходит из состояния, чтобы шторка и уроки жили по одному дню. */
+    today: LocalDate,
+    /** Уроки сегодняшнего дня — для шторки «Сегодня». */
+    todayLessons: List<Lesson> = emptyList(),
+    /** Ближайшие события в пределах срока напоминаний. */
+    upcomingEvents: List<TodayEvent> = emptyList(),
     onRefresh: () -> Unit = {},
     onWidgetsChange: (List<HomeWidget>) -> Unit,
     onAddWidget: (String) -> Unit,
@@ -121,9 +133,19 @@ fun DashboardScreen(
 ) {
     var showPokeDialog by rememberSaveable { mutableStateOf(false) }
     var showPokeHistory by rememberSaveable { mutableStateOf(false) }
+    var showToday by rememberSaveable { mutableStateOf(false) }
     var showWidgetPicker by rememberSaveable { mutableStateOf(false) }
     var configWidgetId by rememberSaveable { mutableStateOf<String?>(null) }
     val enabledRoutes = remember(modules) { modules.map { it.route }.toSet() }
+    // Блоки шторки повторяют навигацию: нет модуля — нет и раздела, а не «уроков нет».
+    val lessonsAvailable = "timetable" in enabledRoutes
+    val eventsAvailable = "calendar" in enabledRoutes
+    val todayLessonsVisible = remember(todayLessons, lessonsAvailable) {
+        if (lessonsAvailable) todayLessons else emptyList()
+    }
+    val visibleEvents = remember(upcomingEvents, eventsAvailable) {
+        if (eventsAvailable) upcomingEvents else emptyList()
+    }
     val visibleWidgets = remember(widgets, enabledRoutes) {
         widgets.filter { widgetAvailable(it.type, enabledRoutes) }
     }
@@ -148,7 +170,10 @@ fun DashboardScreen(
                 pair = pair,
                 lastPoke = lastPoke,
                 onEditPair = onOpenPairEditor,
-                onPoke = { showPokeDialog = true }
+                onPoke = { showPokeDialog = true },
+                todayLessonCount = todayLessonsVisible.size,
+                hasUpcomingEvents = visibleEvents.any { !it.isBirthday },
+                onOpenToday = { showToday = true }
             )
         }
 
@@ -261,6 +286,17 @@ fun DashboardScreen(
             onDismiss = { showPokeHistory = false }
         )
     }
+
+    if (showToday) {
+        TodaySheet(
+            today = today,
+            lessons = todayLessonsVisible,
+            lessonsAvailable = lessonsAvailable,
+            events = visibleEvents,
+            eventsAvailable = eventsAvailable,
+            onDismiss = { showToday = false }
+        )
+    }
 }
 
 /** Большая карточка пары: аватары A и B с сердечком между ними и счётчик дней. */
@@ -268,37 +304,51 @@ fun DashboardScreen(
 private fun PairCard(
     pair: Pair?,
     lastPoke: String?,
+    todayLessonCount: Int,
+    hasUpcomingEvents: Boolean,
     onEditPair: () -> Unit,
-    onPoke: () -> Unit
+    onPoke: () -> Unit,
+    onOpenToday: () -> Unit
 ) {
     VdvoemCard(
         containerColor = MaterialTheme.colorScheme.primaryContainer,
         onClick = onEditPair
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            AvatarColumn(
-                letter = pair?.nameA?.firstOrNull()?.uppercase() ?: "?",
-                name = pair?.nameA ?: stringResource(R.string.pair_field_you)
-            )
-            IconButton(
-                onClick = onPoke,
-                modifier = Modifier.padding(horizontal = VdvoemSpacing.sm)
+        // Кнопка «Сегодня» — поверх правого верхнего угла карточки, рядом с аватарами.
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Favorite,
-                    contentDescription = stringResource(R.string.dashboard_poke),
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(VdvoemSizes.iconLg)
+                AvatarColumn(
+                    letter = pair?.nameA?.firstOrNull()?.uppercase() ?: "?",
+                    name = pair?.nameA ?: stringResource(R.string.pair_field_you)
+                )
+                IconButton(
+                    onClick = onPoke,
+                    modifier = Modifier.padding(horizontal = VdvoemSpacing.sm)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Favorite,
+                        contentDescription = stringResource(R.string.dashboard_poke),
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(VdvoemSizes.iconLg)
+                    )
+                }
+                AvatarColumn(
+                    letter = pair?.nameB?.firstOrNull()?.uppercase() ?: "?",
+                    name = pair?.nameB ?: stringResource(R.string.pair_field_partner)
                 )
             }
-            AvatarColumn(
-                letter = pair?.nameB?.firstOrNull()?.uppercase() ?: "?",
-                name = pair?.nameB ?: stringResource(R.string.pair_field_partner)
-            )
+            if (pair != null) {
+                TodayButton(
+                    lessons = todayLessonCount,
+                    hasEvents = hasUpcomingEvents,
+                    onClick = onOpenToday,
+                    modifier = Modifier.align(Alignment.TopEnd)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.size(VdvoemSpacing.lg))
@@ -419,6 +469,237 @@ private fun AvatarColumn(letter: String, name: String) {
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center
         )
+    }
+}
+
+/**
+ * Круглая кнопка «Сегодня» в углу карточки пары.
+ * Цифра — сколько сегодня уроков, точка — есть событие календаря, пусто — просто календарик.
+ */
+@Composable
+private fun TodayButton(
+    lessons: Int,
+    hasEvents: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // Экранный диктор должен знать и про уроки, и про точку: она декоративная.
+    val description = buildString {
+        append(stringResource(R.string.dashboard_today))
+        if (lessons > 0) {
+            append(", ")
+            append(stringResource(R.string.dashboard_today_cd_lessons, lessons))
+        }
+        if (hasEvents) {
+            append(", ")
+            append(stringResource(R.string.dashboard_today_cd_events))
+        }
+    }
+    Box(modifier = modifier.size(VdvoemSizes.touchTarget)) {
+        IconButton(onClick = onClick) {
+            Box(
+                modifier = Modifier
+                    .size(VdvoemSizes.roundButton)
+                    .background(
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.DateRange,
+                    contentDescription = description,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(VdvoemSizes.iconMd)
+                )
+            }
+        }
+        // Счётчик уроков и точка «есть событие» живут независимо: точка не должна
+        // пропадать в день с уроками. Оба значка — отдельным слоем поверх кнопки.
+        if (lessons > 0) {
+            Badge(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = VdvoemSpacing.xxs, y = -VdvoemSpacing.xxs)
+                    .clearAndSetSemantics { }
+            ) {
+                Text(text = lessons.toString(), style = MaterialTheme.typography.labelSmall)
+            }
+        }
+        if (hasEvents) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .offset(x = -VdvoemSpacing.xs, y = -VdvoemSpacing.xs)
+                    .size(VdvoemSizes.dot)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+            )
+        }
+    }
+}
+
+/** Шторка «Сегодня»: уроки на сегодня и события, которые скоро наступят. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TodaySheet(
+    today: LocalDate,
+    lessons: List<Lesson>,
+    lessonsAvailable: Boolean,
+    events: List<TodayEvent>,
+    eventsAvailable: Boolean,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = VdvoemSizes.sheetMax)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = VdvoemSpacing.screenHorizontal)
+                .padding(bottom = VdvoemSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)
+        ) {
+            Text(
+                text = stringResource(R.string.dashboard_today),
+                style = MaterialTheme.typography.titleLarge
+            )
+            Text(
+                text = Dates.formatWeekday(today),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
+
+            // Раздел показываем только вместе с его модулем: иначе «уроков нет» врёт,
+            // когда уроки просто спрятаны вместе с «Расписанием».
+            if (lessonsAvailable) {
+                Text(
+                    text = stringResource(R.string.dashboard_today_lessons),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                if (lessons.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.dashboard_today_lessons_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    lessons.forEach { lesson -> TodayLessonRow(lesson) }
+                }
+            }
+
+            if (lessonsAvailable && eventsAvailable) {
+                HorizontalDivider()
+            }
+
+            if (eventsAvailable) {
+                Text(
+                    text = stringResource(R.string.dashboard_today_events),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                if (events.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.dashboard_today_events_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    events.forEach { event -> TodayEventRow(event) }
+                }
+            }
+
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text(stringResource(R.string.connect_done))
+            }
+        }
+    }
+}
+
+/** Событие и сколько до него осталось: «сегодня», «завтра» или «через N дней». */
+@Composable
+private fun TodayEventRow(event: TodayEvent) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = VdvoemSpacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)
+    ) {
+        Icon(
+            imageVector = if (event.isBirthday) Icons.Filled.Favorite else Icons.Filled.DateRange,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(VdvoemSizes.iconSm)
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = if (event.isBirthday) {
+                    stringResource(R.string.dashboard_today_birthday, event.title)
+                } else {
+                    event.title
+                },
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Text(
+                text = eventCountdownText(event.daysUntil),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun eventCountdownText(daysUntil: Long): String {
+    val days = daysUntil.toInt()
+    return when (days) {
+        0 -> stringResource(R.string.dashboard_today_event_today)
+        1 -> stringResource(R.string.dashboard_today_event_tomorrow)
+        else -> pluralStringResource(R.plurals.dashboard_today_event_in_days, days, days)
+    }
+}
+
+/** Одна строка урока: время, предмет, кабинет и кто берёт учебник. */
+@Composable
+private fun TodayLessonRow(lesson: Lesson) {
+    val details = buildList {
+        if (lesson.room.isNotBlank()) add(stringResource(R.string.dashboard_today_room, lesson.room))
+        if (lesson.textbookBy.isNotBlank()) add(stringResource(R.string.dashboard_today_textbook, lesson.textbookBy))
+    }.joinToString(" · ")
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = VdvoemSpacing.xs),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)
+    ) {
+        Text(
+            text = lesson.timeRange,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.widthIn(min = VdvoemSizes.timeColumn)
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = lesson.subject,
+                style = MaterialTheme.typography.bodyLarge
+            )
+            if (details.isNotEmpty()) {
+                Text(
+                    text = details,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 

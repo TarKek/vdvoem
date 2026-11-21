@@ -16,6 +16,9 @@ object Dates {
     private val dateFormat: DateTimeFormatter
         get() = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.getDefault())
 
+    private val weekdayFormat: DateTimeFormatter
+        get() = DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.getDefault())
+
     fun toLocalDate(epochMillis: Long): LocalDate =
         Instant.ofEpochMilli(epochMillis).atZone(ZoneOffset.UTC).toLocalDate()
 
@@ -44,6 +47,10 @@ object Dates {
         ChronoUnit.DAYS.between(from, target)
 
     fun format(date: LocalDate): String = date.format(dateFormat)
+
+    /** «Пятница, 21 ноября» — день недели с заглавной буквы, как в заголовках. */
+    fun formatWeekday(date: LocalDate): String =
+        date.format(weekdayFormat).replaceFirstChar { it.titlecase(Locale.getDefault()) }
 
     /** DatePicker отдаёт полночь по UTC — переводим в локальную полночь и обратно. */
     fun fromPickerMillis(utcMillis: Long): Long {

@@ -7,8 +7,10 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import app.vdvoem.core.domain.settings.ReminderLeadSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import java.io.IOException
 
@@ -38,7 +40,7 @@ private val Context.calendarPreferences by preferencesDataStore(name = "calendar
  * Отдельный файл `calendar_prefs`, чтобы настройки модуля не смешивались с чужими
  * и не требовали правок ядра.
  */
-class ReminderPreferences(private val context: Context) {
+class ReminderPreferences(private val context: Context) : ReminderLeadSettings {
 
     val settings: Flow<ReminderSettings> = context.calendarPreferences.data
         .catch { throwable ->
@@ -59,6 +61,11 @@ class ReminderPreferences(private val context: Context) {
 
     /** Короткая форма для тех, кому нужен только переключатель. */
     val enabled: Flow<Boolean> = settings.map { it.enabled }
+
+    /** Срок показа будущих событий — его читает «Главная». */
+    override val leadDays: Flow<Int> = settings
+        .map { it.leadDays }
+        .distinctUntilChanged()
 
     suspend fun setEnabled(value: Boolean) {
         context.calendarPreferences.edit { preferences -> preferences[KEY_ENABLED] = value }
