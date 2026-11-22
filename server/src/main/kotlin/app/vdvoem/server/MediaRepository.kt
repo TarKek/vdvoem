@@ -89,31 +89,11 @@ class MediaRepository(private val dataSource: DataSource) {
             }
         }
 
-    /** Сохраняет метаданные; повторная загрузка того же файла к той же сущности возвращает старую запись. */
-    @Synchronized
+    /** Сохраняет метаданные каждой загрузки отдельной записью. */
     fun saveAttachment(pairId: String, attachment: NewAttachment): AttachmentDto =
         dataSource.connection.use { connection ->
             connection.tx { tx ->
                 val entityId = UUID.fromString(attachment.entityId)
-                tx.prepareStatement(
-                    """
-                    SELECT id, entity_type, entity_id, kind, mime, size, sha256, duration_ms,
-                           width, height, created_at, updated_at, deleted_at
-                    FROM attachments
-                    WHERE pair_id = ? AND sha256 = ? AND entity_type = ? AND entity_id = ?
-                      AND kind = ? AND deleted_at IS NULL
-                    """.trimIndent()
-                ).use { statement ->
-                    statement.setObject(1, UUID.fromString(pairId))
-                    statement.setString(2, attachment.sha256)
-                    statement.setString(3, attachment.entityType)
-                    statement.setObject(4, entityId)
-                    statement.setString(5, attachment.kind)
-                    statement.executeQuery().use { rows ->
-                        if (rows.next()) return@tx rows.toAttachment()
-                    }
-                }
-
                 val id = UUID.fromString(Db.newId())
                 val now = System.currentTimeMillis()
                 tx.prepareStatement(
@@ -159,7 +139,7 @@ class MediaRepository(private val dataSource: DataSource) {
             }
         }
 
-    /** Soft-delete: файл на диске остаётся (может быть общим по sha256). */
+    /** Soft-delete: файл на диске остаётся. */
     fun deleteAttachment(pairId: String, id: String): Boolean =
         uuidOrNull(pairId)?.let { pair ->
             uuidOrNull(id)?.let { attachmentId ->

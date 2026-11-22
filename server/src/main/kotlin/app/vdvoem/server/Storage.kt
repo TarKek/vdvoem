@@ -7,6 +7,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
+import java.util.UUID
 
 private const val BUFFER_SIZE = 64 * 1024
 
@@ -16,7 +17,7 @@ class TooLargeException(val limit: Long) : RuntimeException("file is larger than
 class IncomingFile(val temp: Path, val sha256: String, val size: Long)
 
 /**
- * Файловое хранилище: <STORAGE_DIR>/attachments/<sha256> и <STORAGE_DIR>/plugins/<id>/<version>.apk.
+ * Файловое хранилище: <STORAGE_DIR>/attachments/<uuid> и <STORAGE_DIR>/plugins/<id>/<version>.apk.
  * STORAGE_DIR по умолчанию /data/storage (volume в docker-compose), создаётся при старте.
  */
 object Storage {
@@ -43,7 +44,11 @@ object Storage {
 
     fun pathOrNull(key: String): Path? = runCatching { path(key) }.getOrNull()
 
-    fun attachmentKey(sha256: String): String = "attachments/$sha256"
+    /**
+     * UUID не зависит от содержимого: одинаковые файлы остаются отдельными загрузками.
+     * Старые ключи attachments/<sha256> по-прежнему читаются через универсальный [path].
+     */
+    fun attachmentKey(): String = "attachments/${UUID.randomUUID()}"
 
     fun pluginKey(pluginId: String, version: String, sha256: String): String =
         "plugins/$pluginId/$version-$sha256.apk"
@@ -73,17 +78,10 @@ object Storage {
         return IncomingFile(temp, digest.digest().toHex(), size)
     }
 
-    /**
-     * Переносит файл в хранилище.
-     * [replace] = false — дедупликация: если файл с таким ключом уже есть, он не перезаписывается.
-     */
-    fun commit(incoming: IncomingFile, key: String, replace: Boolean): Path {
+    /** Переносит файл под переданный ключ, заменяя существующий при совпадении ключа. */
+    fun commit(incoming: IncomingFile, key: String): Path {
         val target = path(key)
         target.parent?.let { Files.createDirectories(it) }
-        if (!replace && Files.isRegularFile(target)) {
-            Files.deleteIfExists(incoming.temp)
-            return target
-        }
         Files.move(incoming.temp, target, StandardCopyOption.REPLACE_EXISTING)
         return target
     }

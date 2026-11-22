@@ -27,6 +27,9 @@ android {
 }
 
 dependencies {
+    // Контракт настроек оформления (AppearanceSettings) — часть публичного API темы.
+    api(project(":core:domain"))
+
     val composeBom = platform("androidx.compose:compose-bom:2024.10.01")
     api(composeBom)
     api("androidx.compose.ui:ui")

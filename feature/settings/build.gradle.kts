@@ -33,4 +33,5 @@ dependencies {
     implementation("io.insert-koin:koin-androidx-compose:4.0.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
+    implementation("androidx.activity:activity-compose:1.9.3")
 }

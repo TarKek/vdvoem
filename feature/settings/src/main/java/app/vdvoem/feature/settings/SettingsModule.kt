@@ -4,6 +4,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.vdvoem.core.domain.module.AppModule
@@ -29,12 +32,24 @@ class SettingsModule : AppModule {
     override fun Screen(modifier: Modifier) {
         val viewModel: SettingsViewModel = koinViewModel()
         val state by viewModel.state.collectAsStateWithLifecycle()
-        SettingsScreen(
-            state = state,
-            onThemeModeChange = viewModel::setThemeMode,
-            onDynamicColorChange = viewModel::setDynamicColor,
-            modifier = modifier
-        )
+        // Редактор оформления живёт внутри модуля: отдельный nav-маршрут не нужен.
+        var editorOpen by rememberSaveable { mutableStateOf(false) }
+        if (editorOpen) {
+            AppearanceEditorScreen(
+                appearance = state.appearance,
+                onChange = viewModel::setAppearance,
+                onBack = { editorOpen = false },
+                modifier = modifier
+            )
+        } else {
+            SettingsScreen(
+                state = state,
+                onThemeModeChange = viewModel::setThemeMode,
+                onDynamicColorChange = viewModel::setDynamicColor,
+                onOpenAppearanceEditor = { editorOpen = true },
+                modifier = modifier
+            )
+        }
     }
 
     companion object {

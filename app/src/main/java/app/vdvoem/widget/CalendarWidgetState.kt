@@ -4,7 +4,7 @@ import android.content.Context
 import app.vdvoem.R
 import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.model.Pair
-import app.vdvoem.core.domain.model.birthdaysWithoutManualDuplicates
+import app.vdvoem.core.domain.model.birthdays
 import app.vdvoem.core.domain.model.upcomingDate
 import app.vdvoem.core.domain.repository.CalendarRepository
 import app.vdvoem.core.domain.repository.PairRepository
@@ -56,7 +56,7 @@ internal object CalendarWidgetState {
             items = upcomingEvents(
                 events,
                 today,
-                extra = birthdayItems(pair, events, today, context)
+                extra = birthdayItems(pair, today, context)
             )
                 .map { event ->
                     CalendarWidgetItem(
@@ -71,11 +71,10 @@ internal object CalendarWidgetState {
     /** Дни рождения из профиля в том же виде, что и обычные события виджета. */
     private fun birthdayItems(
         pair: Pair?,
-        events: List<CalendarEvent>,
         today: LocalDate,
         context: Context
     ): List<UpcomingEvent> =
-        pair?.birthdaysWithoutManualDuplicates(events).orEmpty().map { birthday ->
+        pair?.birthdays().orEmpty().map { birthday ->
             val date = birthday.upcomingDate(today)
             UpcomingEvent(
                 title = context.getString(R.string.widget_calendar_birthday, birthday.name),

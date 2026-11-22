@@ -12,9 +12,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
@@ -32,6 +37,7 @@ import app.vdvoem.core.domain.settings.AppSettings
 import app.vdvoem.core.domain.settings.ThemeMode
 import app.vdvoem.core.ui.components.SectionHeader
 import app.vdvoem.core.ui.components.VdvoemCard
+import app.vdvoem.core.ui.theme.VdvoemSizes
 import app.vdvoem.core.ui.theme.VdvoemSpacing
 import app.vdvoem.core.ui.theme.VdvoemTheme
 
@@ -44,6 +50,7 @@ fun SettingsScreen(
     state: AppSettings,
     onThemeModeChange: (ThemeMode) -> Unit,
     onDynamicColorChange: (Boolean) -> Unit,
+    onOpenAppearanceEditor: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val dynamicColorSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
@@ -81,6 +88,8 @@ fun SettingsScreen(
                     enabled = dynamicColorSupported,
                     onCheckedChange = onDynamicColorChange
                 )
+                RowDivider()
+                AppearanceEntryRow(onClick = onOpenAppearanceEditor)
             }
         }
 
@@ -223,6 +232,45 @@ private fun DynamicColorRow(
     }
 }
 
+/** Вход в редактор тонкой настройки: цвета, скругления, отступы, размеры и шрифты вручную. */
+@Composable
+private fun AppearanceEntryRow(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = VdvoemSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Build,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(VdvoemSizes.iconLg)
+        )
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = VdvoemSpacing.sm)
+        ) {
+            Text(
+                text = stringResource(R.string.appearance_entry_title),
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Text(
+                text = stringResource(R.string.appearance_entry_subtitle),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
 /** Информационная строка блока «Данные»: что за действие и зачем оно нужно. */
 @Composable
 private fun InfoRow(title: String, text: String) {
@@ -310,7 +358,8 @@ private fun SettingsScreenPreview() {
         SettingsScreen(
             state = AppSettings(),
             onThemeModeChange = {},
-            onDynamicColorChange = {}
+            onDynamicColorChange = {},
+            onOpenAppearanceEditor = {}
         )
     }
 }

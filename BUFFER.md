@@ -11,6 +11,12 @@
 
 ## Журнал
 
+[appearance-ui] feature/settings — готово: редактор «Оформление» (AppearanceEditorScreen: live-превью, 36 цветов HSV+HEX отдельно light/dark, 5 скруглений, масштаб+11 отступов, 17 размеров, масштаб+15 стилей/весов/интервалов, масштаб+4 высот, сбросы секций/ролей/всего), вход из настроек, BackHandler, строки ru/en ~135; :app:assembleDebug + testDebugUnitTest — BUILD SUCCESSFUL; NEED: — (делал главный агент после падений сабагентов)
+
+[dedup-cut] server+навигация — готово: дедупликация вырезана: Storage.attachmentKey()=UUID, commit всегда переносит файл (sha256 только метаданные, старые ключи читаются), ModuleRegistry.ordered/HomePreferences/VdvoemRoot без distinct (+тест на сохранение повторов), docs/SYNC_API.md и server/README.md обновлены; server `test`, :core:domain:testDebugUnitTest — BUILD SUCCESSFUL; NEED: — (файлы писал сабагент, проверил и добил главный агент)
+
+[core-engine] core/domain+data+ui, app/MainActivity — готово: AppearanceSettings-движок (serialization-плагин+json 1.7.3 в domain/data, appearance_json в DataStore с fallback, VdvoemTheme(appearance=...) с перекрытиями 36 цветов/5 скруглений/15 стилей, токены SpacingTokens/SizeTokens/ElevationTokens через CompositionLocal + @Composable-геттеры VdvoemSpacing/VdvoemSizes/VdvoemElevation, VdvoemCard elevation=токен); core×3 + 10 feature (кроме settings) — BUILD SUCCESSFUL; NEED: — (делал главный агент после падений сабагентов)
+
 [connect-ui] app/ui/pair — готово: ConnectPairScreen(state, onServerChange, onInviteCodeChange, onCreatePair, onJoin(code), onCancel) — Form (адрес сервера + «Создать пару», блок «Уже есть пара?» с кодом 8 символов/uppercase) и Created (крупный код + «Скопировать» через ClipboardManager), busy/error, строки connect_*, @Preview×3; :app:compileDebugKotlin — BUILD SUCCESSFUL; NEED: вызов из настроек/главной + ViewModel
 
 [roadmap-b007] feature/calendar — напоминания: ReminderScheduler (WorkManager, event_<id>_week/day, 9:00, REPLACE), ReminderWorker (канал «Напоминания», проверка areNotificationsEnabled, идемпотентно по id), DataStore `calendar_prefs` + Switch «Напоминания» с запросом POST_NOTIFICATIONS и снекбаром; :feature:calendar:compileDebugKotlin — BUILD SUCCESSFUL; NEED: — (scheduler/prefs регистрируются в calendarFeatureModule, ViewModel подключает их сам; правки app/ не нужны)

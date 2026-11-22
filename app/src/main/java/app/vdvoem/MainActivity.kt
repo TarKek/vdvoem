@@ -46,7 +46,8 @@ class MainActivity : ComponentActivity(), KoinComponent {
 
             VdvoemTheme(
                 darkTheme = darkTheme,
-                dynamicColor = settings.dynamicColor
+                dynamicColor = settings.dynamicColor,
+                appearance = settings.appearance
             ) {
                 VdvoemRoot()
             }

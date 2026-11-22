@@ -121,7 +121,6 @@ class HomePreferences(private val context: Context) {
         context.homeDataStore.edit { prefs ->
             prefs[navRoutesKey] = routes
                 .filter { it.isNotBlank() }
-                .distinct()
                 .take(NAV_SLOTS)
                 .joinToString(",")
         }
@@ -131,7 +130,6 @@ class HomePreferences(private val context: Context) {
         val raw = prefs[navRoutesKey] ?: return DEFAULT_NAV_ROUTES
         return raw.split(',')
             .filter { it.isNotBlank() }
-            .distinct()
             .take(NAV_SLOTS)
     }
 

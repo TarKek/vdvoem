@@ -33,12 +33,13 @@ class ModuleRegistry(modules: List<AppModule>) {
      * Модули в пользовательском порядке: сначала известные из [orderIds] (в сохранённой
      * последовательности), затем остальные по [ModuleManifest.order].
      *
-     * Неизвестные и повторяющиеся идентификаторы игнорируются, поэтому устаревшие настройки
-     * или удалённые модули ничего не ломают.
+     * Неизвестные идентификаторы игнорируются, поэтому устаревшие настройки или удалённые
+     * модули ничего не ломают. Повторяющиеся идентификаторы сохраняются в заданном порядке:
+     * пользователь полностью контролирует итоговый список.
      */
     fun ordered(orderIds: List<String>): List<AppModule> {
         if (orderIds.isEmpty()) return modules
-        val known = orderIds.distinct().mapNotNull(byId::get)
+        val known = orderIds.mapNotNull(byId::get)
         if (known.isEmpty()) return modules
         val knownIds = known.mapTo(HashSet()) { it.manifest.id }
         return known + modules.filterNot { it.manifest.id in knownIds }

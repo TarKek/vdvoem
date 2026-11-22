@@ -14,8 +14,9 @@ Kotlin + Ktor + PostgreSQL. Разворачивается на своём VPS �
 ## Вложения и плагины (v2-задел)
 
 - `POST /v1/attachments` — multipart upload (`file` + `entityType`, `entityId`, `kind`, `durationMs`,
-  `width`, `height`); лимит 50 МБ, `pair_id` берётся из токена, файл: `attachments/<sha256>`
-  (дедупликация по содержимому), ответ `201` с метаданными.
+  `width`, `height`); лимит 50 МБ, `pair_id` берётся из токена. Каждая загрузка сохраняется под
+  уникальным ключом `attachments/<uuid>` отдельной записью; `sha256` остаётся в метаданных для
+  контроля целостности. Ответ `201` с метаданными.
 - `GET /v1/attachments?since=<millis>` — `{serverTime, attachments:[...]}`: метаданные пары без файлов,
   включая удалённые (`deletedAt`). `since` — `serverTime` предыдущего ответа.
 - `GET /v1/attachments/{id}` — файл с `Content-Type`, поддержка `Range` (206) для видео.

@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import app.vdvoem.core.ui.theme.VdvoemElevation
 import app.vdvoem.core.ui.theme.VdvoemSizes
 import app.vdvoem.core.ui.theme.VdvoemSpacing
 import app.vdvoem.core.ui.theme.VdvoemTheme
@@ -68,7 +69,7 @@ fun VdvoemCard(
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = containerColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = VdvoemElevation.card)
     ) {
         Column(modifier = Modifier.padding(VdvoemSpacing.xl), content = content)
     }

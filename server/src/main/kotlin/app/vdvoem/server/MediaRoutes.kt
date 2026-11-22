@@ -72,8 +72,8 @@ fun Route.attachmentRoutes(repository: Repository, media: MediaRepository) {
             val kind = upload.fields["kind"]?.trim()?.lowercase()?.takeIf { it.isNotEmpty() } ?: "file"
             val mime = upload.fileMime ?: upload.fields["mime"]?.trim()?.takeIf { it.isNotEmpty() }
                 ?: "application/octet-stream"
-            val storageKey = Storage.attachmentKey(file.sha256)
-            Storage.commit(file, storageKey, replace = false)
+            val storageKey = Storage.attachmentKey()
+            Storage.commit(file, storageKey)
 
             val saved = media.saveAttachment(
                 pairId,
@@ -225,7 +225,7 @@ fun Route.adminRoutes(media: MediaRepository) {
 
             val previous = media.pluginFile(pluginId)?.storageKey
             val storageKey = Storage.pluginKey(pluginId, version, file.sha256)
-            Storage.commit(file, storageKey, replace = false)
+            Storage.commit(file, storageKey)
 
             val plugin = media.publish(
                 NewPlugin(

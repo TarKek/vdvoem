@@ -246,7 +246,6 @@ fun VdvoemRoot(
         // Какие вкладки выбраны — решает navRoutes, а их порядок берём из магазина.
         // Скрытая вкладка просто выпадает из нижней панели, а не роняет навигацию.
         navRoutes.mapNotNull { byRoute[it] }
-            .distinctBy { it.route }
             .sortedBy { position[it.route] ?: Int.MAX_VALUE }
             .take(HomePreferences.NAV_SLOTS)
     }

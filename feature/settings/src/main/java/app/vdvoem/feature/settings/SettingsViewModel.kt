@@ -2,6 +2,7 @@ package app.vdvoem.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.vdvoem.core.domain.settings.AppearanceSettings
 import app.vdvoem.core.domain.settings.AppSettings
 import app.vdvoem.core.domain.settings.AppSettingsRepository
 import app.vdvoem.core.domain.settings.ThemeMode
@@ -28,5 +29,13 @@ class SettingsViewModel(
     fun setDynamicColor(enabled: Boolean) {
         if (state.value.dynamicColor == enabled) return
         viewModelScope.launch { repository.setDynamicColor(enabled) }
+    }
+
+    fun setAppearance(appearance: AppearanceSettings) {
+        viewModelScope.launch { repository.setAppearance(appearance) }
+    }
+
+    fun updateAppearance(transform: (AppearanceSettings) -> AppearanceSettings) {
+        setAppearance(transform(state.value.appearance))
     }
 }
