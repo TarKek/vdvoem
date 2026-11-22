@@ -3,15 +3,19 @@ package app.vdvoem.feature.timetable
 import app.vdvoem.core.domain.model.Lesson
 import app.vdvoem.core.domain.repository.LessonRepository
 import app.vdvoem.core.domain.repository.PairRepository
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import java.time.DayOfWeek
+import java.time.Duration
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.temporal.TemporalAdjusters
 import java.util.UUID
 
@@ -21,6 +25,15 @@ const val TIMETABLE_STRIP_DAYS = 14
 /** Понедельник недели, в которую попадает [date]. */
 fun weekStart(date: LocalDate): LocalDate =
     date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+
+/**
+ * Сколько ждать до следующей полуночи. Небольшой запас гарантирует, что после
+ * пробуждения `LocalDate.now()` уже вернёт новый день.
+ */
+internal fun millisUntilNextMidnight(now: LocalDateTime): Long =
+    Duration.between(now, now.toLocalDate().plusDays(1).atStartOfDay())
+        .toMillis()
+        .coerceAtLeast(1_000L) + 1_000L
 
 /** Черновик урока в диалоге: null — диалог закрыт. */
 data class LessonDraft(
@@ -38,7 +51,9 @@ data class LessonDraft(
 data class TimetableUiState(
     val lessons: List<Lesson> = emptyList(),
     val draft: LessonDraft? = null,
-    val selectedDate: LocalDate = LocalDate.now()
+    val selectedDate: LocalDate = LocalDate.now(),
+    /** Текущая дата: двигается в полночь, даже если экран остаётся открытым. */
+    val today: LocalDate = LocalDate.now()
 ) {
     /** Уроки выбранного дня, по времени. */
     val dayLessons: List<Lesson>
@@ -52,32 +67,58 @@ data class TimetableUiState(
 
 class TimetableViewModel(
     private val repository: LessonRepository,
-    private val pairRepository: PairRepository
+    private val pairRepository: PairRepository,
+    private val todayProvider: () -> LocalDate = LocalDate::now
 ) : ViewModel() {
 
+    private val initialToday = todayProvider()
     private val draft = MutableStateFlow<LessonDraft?>(null)
-    private val selectedDate = MutableStateFlow(LocalDate.now())
-    private val _state = MutableStateFlow(TimetableUiState())
+    private val selectedDate = MutableStateFlow(initialToday)
+    private val today = MutableStateFlow(initialToday)
+    private val _state = MutableStateFlow(
+        TimetableUiState(selectedDate = initialToday, today = initialToday)
+    )
 
     val state: StateFlow<TimetableUiState> = _state.asStateFlow()
 
     init {
         viewModelScope.launch {
-            combine(repository.observe(), draft, selectedDate) { lessons, editing, date ->
+            combine(
+                repository.observe(),
+                draft,
+                selectedDate,
+                today
+            ) { lessons, editing, date, currentDate ->
                 TimetableUiState(
                     lessons = lessons.filter { it.deletedAt == null },
                     draft = editing,
-                    selectedDate = date
+                    selectedDate = date,
+                    today = currentDate
                 )
             }.collect { _state.value = it }
         }
+        viewModelScope.launch {
+            while (isActive) {
+                delay(millisUntilNextMidnight(LocalDateTime.now()))
+                refreshToday()
+            }
+        }
+    }
+
+    /** Обновляет «сегодня» при возврате в foreground и после полуночи. */
+    fun refreshToday() {
+        today.value = todayProvider()
     }
 
     fun selectDate(date: LocalDate) {
         selectedDate.value = date
     }
 
-    fun addLesson(weekday: Int = state.value.selectedDate.dayOfWeek.value) {
+    /**
+     * Читает выбранную дату напрямую, а не из асинхронно обновлённого UI-state:
+     * иначе быстрый тап «другая дата → добавить» создаёт урок со старым weekday.
+     */
+    fun addLesson(weekday: Int = selectedDate.value.dayOfWeek.value) {
         draft.value = LessonDraft(weekday = weekday)
     }
 

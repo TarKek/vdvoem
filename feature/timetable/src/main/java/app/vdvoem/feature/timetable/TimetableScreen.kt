@@ -40,6 +40,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import app.vdvoem.core.domain.model.Lesson
 import app.vdvoem.core.ui.components.EmptyState
 import app.vdvoem.core.ui.components.InfoPill
@@ -64,9 +66,12 @@ fun TimetableScreen(
     onSave: () -> Unit,
     onDelete: () -> Unit,
     onSelectDate: (LocalDate) -> Unit,
+    onRefreshToday: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val today = remember { LocalDate.now() }
+    // Активность могла вернуться из фона уже после полуночи: ViewModel обновит «сегодня».
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { onRefreshToday() }
+    val today = state.today
     val dates = remember(today) {
         val start = weekStart(today)
         List(TIMETABLE_STRIP_DAYS) { start.plusDays(it.toLong()) }
@@ -453,7 +458,8 @@ private fun TimetablePreview() {
             onUpdate = {},
             onSave = {},
             onDelete = {},
-            onSelectDate = {}
+            onSelectDate = {},
+            onRefreshToday = {}
         )
     }
 }

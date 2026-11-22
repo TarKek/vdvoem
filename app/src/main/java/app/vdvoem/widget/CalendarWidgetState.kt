@@ -2,8 +2,9 @@ package app.vdvoem.widget
 
 import android.content.Context
 import app.vdvoem.R
+import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.model.Pair
-import app.vdvoem.core.domain.model.birthdays
+import app.vdvoem.core.domain.model.birthdaysWithoutManualDuplicates
 import app.vdvoem.core.domain.model.upcomingDate
 import app.vdvoem.core.domain.repository.CalendarRepository
 import app.vdvoem.core.domain.repository.PairRepository
@@ -52,7 +53,11 @@ internal object CalendarWidgetState {
             headerLabel = context.getString(R.string.widget_calendar_label),
             dateLabel = today.format(DateTimeFormatter.ofPattern("d MMMM", Locale.getDefault())),
             emptyLabel = context.getString(R.string.widget_calendar_empty),
-            items = upcomingEvents(events, today, extra = birthdayItems(pair, today, context))
+            items = upcomingEvents(
+                events,
+                today,
+                extra = birthdayItems(pair, events, today, context)
+            )
                 .map { event ->
                     CalendarWidgetItem(
                         title = event.title,
@@ -64,8 +69,13 @@ internal object CalendarWidgetState {
     }
 
     /** Дни рождения из профиля в том же виде, что и обычные события виджета. */
-    private fun birthdayItems(pair: Pair?, today: LocalDate, context: Context): List<UpcomingEvent> =
-        pair?.birthdays().orEmpty().map { birthday ->
+    private fun birthdayItems(
+        pair: Pair?,
+        events: List<CalendarEvent>,
+        today: LocalDate,
+        context: Context
+    ): List<UpcomingEvent> =
+        pair?.birthdaysWithoutManualDuplicates(events).orEmpty().map { birthday ->
             val date = birthday.upcomingDate(today)
             UpcomingEvent(
                 title = context.getString(R.string.widget_calendar_birthday, birthday.name),
