@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="diary_module_title">Дневник пары</string>
+    <string name="diary_module_description">Общие записи о днях, настроении и важных мелочах</string>
+
+    <string name="diary_title">Дневник пары</string>
+    <string name="diary_subtitle">Общее с партнёром</string>
+    <string name="diary_hero_hint">Записи видны вам обоим — они синхронизируются</string>
+
+    <string name="diary_section_entries">Записи</string>
+    <string name="diary_loading">Загружаем записи…</string>
+
+    <string name="diary_section_reminders">Напоминания</string>
+    <string name="diary_reminder_add">Добавить напоминание</string>
+    <string name="diary_reminder_empty">Пока нет напоминаний…</string>
+    <string name="diary_reminder_private">Личное</string>
+    <string name="diary_reminder_done">Отметить выполненным</string>
+    <string name="diary_reminder_today">Сегодня, %1$s</string>
+    <string name="diary_reminder_tomorrow">Завтра, %1$s</string>
+
+    <string name="diary_reminder_editor_new">Новое напоминание</string>
+    <string name="diary_reminder_editor_edit">Изменить напоминание</string>
+    <string name="diary_reminder_field_text">О чём напомнить?</string>
+    <string name="diary_reminder_field_text_hint">Например, купить цветы</string>
+    <string name="diary_reminder_time_label">Время: %1$s</string>
+    <string name="diary_reminder_time_title">Время напоминания</string>
+    <string name="diary_reminder_time_input">Ввести вручную</string>
+    <string name="diary_reminder_time_dial">Выбрать на циферблате</string>
+    <string name="diary_reminder_field_private">Личное</string>
+    <string name="diary_reminder_private_hint">Партнёр не увидит это напоминание</string>
+    <string name="diary_reminder_past">Выберите время в будущем</string>
+    <string name="diary_reminder_delete_title">Удалить напоминание?</string>
+    <string name="diary_reminder_delete_message">Напоминание исчезнет и больше не придёт.</string>
+
+    <string name="diary_reminder_notification_title">Напоминание</string>
+    <string name="diary_reminder_notification_private">Личное напоминание</string>
+    <string name="diary_reminder_channel">Напоминания дневника</string>
+    <string name="diary_reminder_channel_description">Напоминания из дневника пары</string>
+
+    <string name="diary_empty_title">Дневник пока пуст</string>
+    <string name="diary_empty_message">Запишите, как прошёл день: партнёр увидит запись и сможет ответить своей.</string>
+    <string name="diary_empty_action">Первая запись</string>
+    <string name="diary_add">Добавить запись</string>
+
+    <string name="diary_today">Сегодня</string>
+    <string name="diary_yesterday">Вчера</string>
+
+    <string name="diary_editor_new">Новая запись</string>
+    <string name="diary_editor_edit">Изменить запись</string>
+    <string name="diary_field_date">Дата: %1$s</string>
+    <string name="diary_field_mood">Настроение</string>
+    <string name="diary_field_title">Заголовок</string>
+    <string name="diary_field_title_hint">Например, тихий вечер вдвоём</string>
+    <string name="diary_field_body">Как прошёл день?</string>
+    <string name="diary_field_body_hint">Пара строк о том, что запомнилось</string>
+
+    <string name="diary_mood_joy">🙂 Радость</string>
+    <string name="diary_mood_calm">😌 Спокойно</string>
+    <string name="diary_mood_neutral">😐 Обычно</string>
+    <string name="diary_mood_sad">😔 Грустно</string>
+    <string name="diary_mood_tired">😴 Усталость</string>
+
+    <string name="diary_card_delete">Удалить запись за %1$s</string>
+    <string name="diary_delete_title">Удалить запись?</string>
+    <string name="diary_delete_message">Запись исчезнет у обоих. Это нельзя отменить.</string>
+    <string name="diary_delete_confirm">Удалить</string>
+
+    <string name="diary_save">Сохранить</string>
+    <string name="diary_cancel">Отмена</string>
+    <string name="diary_ok">ОК</string>
+
+    <plurals name="diary_entries_count">
+        <item quantity="one">%1$d запись</item>
+        <item quantity="few">%1$d записи</item>
+        <item quantity="many">%1$d записей</item>
+        <item quantity="other">%1$d записи</item>
+    </plurals>
+</resources>

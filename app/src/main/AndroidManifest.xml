@@ -79,6 +79,19 @@
                 android:resource="@xml/wish_widget_info" />
         </receiver>
 
+        <!-- Системный виджет «Дневник»: запись за сегодня и напоминание. -->
+        <receiver
+            android:name=".widget.DiaryWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_diary_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/diary_widget_info" />
+        </receiver>
+
         <!-- Мгновенный пуш партнёру: WebSocket + постоянное уведомление (CYCLE_SPEC.md §8).
              specialUse — у dataSync на Android 15 есть лимит в 6 часов, после которого
              система гасит сервис; постоянному соединению такой лимит не подходит. -->

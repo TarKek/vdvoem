@@ -3,6 +3,8 @@ package app.vdvoem.ui.sync
 import androidx.lifecycle.ViewModel
 import androidx.room.withTransaction
 import app.vdvoem.core.data.db.VdvoemDatabase
+import app.vdvoem.core.data.repository.RoomDiaryRepository
+import app.vdvoem.core.data.repository.RoomDiaryReminderRepository
 import app.vdvoem.core.domain.device.DeviceIdentity
 import app.vdvoem.core.domain.model.GiftStatus
 import app.vdvoem.core.domain.repository.CalendarRepository
@@ -39,6 +41,14 @@ class BackupViewModel(
     private val database: VdvoemDatabase
 ) : ViewModel() {
 
+    // Дневник пишется через репозиторий: так же, как остальные сущности резервной копии,
+    // он поднимает LocalChangeSignal и попадёт в синхронизацию.
+    private val diaryRepository = RoomDiaryRepository(database.diaryDao())
+
+    // Напоминания — тоже через репозиторий: общие попадут в синхронизацию, личные
+    // останутся на устройстве, но сохранятся в ручной копии.
+    private val diaryReminderRepository = RoomDiaryReminderRepository(database.diaryReminderDao())
+
     suspend fun buildExport(): String = withContext(Dispatchers.IO) {
         val myDevice = deviceIdentity.deviceId()
         PairBackup.export(
@@ -57,6 +67,11 @@ class BackupViewModel(
                 tasks = taskRepository.observe().first(),
                 // Ручная копия не содержит приватный payload удалённых медицинских записей.
                 cycleDays = cycleRepository.observeDays().first(),
+                diaryEntries = diaryRepository.observeEntries().first(),
+                // Без tombstone: удалённые напоминания в копию не переносим,
+                // выполненные — переносим.
+                diaryReminders = diaryReminderRepository.observeRemindersIncludingDeleted().first()
+                    .filter { it.deletedAt == null },
                 cycleSettings = cycleRepository.observeSettings().first()
             )
         )
@@ -147,6 +162,26 @@ class BackupViewModel(
                 val local = days[incoming.id]
                 if (isNewer(incoming.updatedAt, incoming.deletedAt, local?.updatedAt, local?.deletedAt)) {
                     cycleRepository.saveDay(incoming)
+                    imported++
+                }
+            }
+
+            val diaryEntries = diaryRepository.observeEntriesIncludingDeleted().first()
+                .associateBy { it.id }
+            snapshot.diaryEntries.forEach { incoming ->
+                val local = diaryEntries[incoming.id]
+                if (isNewer(incoming.updatedAt, incoming.deletedAt, local?.updatedAt, local?.deletedAt)) {
+                    diaryRepository.upsert(incoming)
+                    imported++
+                }
+            }
+
+            val reminders = diaryReminderRepository.observeRemindersIncludingDeleted().first()
+                .associateBy { it.id }
+            snapshot.diaryReminders.forEach { incoming ->
+                val local = reminders[incoming.id]
+                if (isNewer(incoming.updatedAt, incoming.deletedAt, local?.updatedAt, local?.deletedAt)) {
+                    diaryReminderRepository.upsert(incoming)
                     imported++
                 }
             }

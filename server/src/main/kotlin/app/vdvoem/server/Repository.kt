@@ -362,10 +362,56 @@ class Repository(private val dataSource: DataSource) {
             }
         }
 
+        val diaryEntries = connection.prepareStatement(
+            "SELECT id, date_millis, mood, title, body, updated_at, deleted_at " +
+                "FROM diary_entries WHERE pair_id = ? AND revision > ? ORDER BY updated_at"
+        ).use { statement ->
+            statement.setObject(1, java.util.UUID.fromString(pairId))
+            statement.setLong(2, since)
+            statement.executeQuery().use { rows ->
+                buildList {
+                    while (rows.next()) add(
+                        DiaryDto(
+                            id = rows.getString(1),
+                            dateMillis = rows.getLong(2),
+                            mood = rows.getString(3) ?: "CALM",
+                            title = rows.getString(4).orEmpty(),
+                            body = rows.getString(5).orEmpty(),
+                            updatedAt = rows.getLong(6),
+                            deletedAt = rows.getLong(7).takeUnless { rows.wasNull() }
+                        )
+                    )
+                }
+            }
+        }
+
+        val diaryReminders = connection.prepareStatement(
+            "SELECT id, text, remind_at, done_at, updated_at, deleted_at " +
+                "FROM diary_reminders WHERE pair_id = ? AND revision > ? ORDER BY remind_at"
+        ).use { statement ->
+            statement.setObject(1, java.util.UUID.fromString(pairId))
+            statement.setLong(2, since)
+            statement.executeQuery().use { rows ->
+                buildList {
+                    while (rows.next()) add(
+                        DiaryReminderDto(
+                            id = rows.getString(1),
+                            text = rows.getString(2).orEmpty(),
+                            remindAt = rows.getLong(3),
+                            doneAt = rows.getLong(4).takeUnless { rows.wasNull() },
+                            updatedAt = rows.getLong(5),
+                            deletedAt = rows.getLong(6).takeUnless { rows.wasNull() }
+                        )
+                    )
+                }
+            }
+        }
+
         ChangesDto(
             pair = pair, events = events, wishes = wishes, gifts = gifts, pokes = pokes,
-            quizScores = quizScores, lessons = lessons, tasks = tasks, cycleDays = cycleDays,
-            cycleSettings = cycleSettings
+quizScores = quizScores, lessons = lessons, tasks = tasks, cycleDays = cycleDays,
+            cycleSettings = cycleSettings, diaryEntries = diaryEntries,
+            diaryReminders = diaryReminders
         )
     }
 
@@ -656,6 +702,58 @@ class Repository(private val dataSource: DataSource) {
                     statement.setLong(5, settings.updatedAt)
                     if (settings.deletedAt != null) statement.setLong(6, settings.deletedAt)
                     else statement.setNull(6, java.sql.Types.BIGINT)
+                    statement.executeUpdate()
+                }
+            }
+
+            changes.diaryEntries.forEach { entry ->
+                applied += tx.prepareStatement(
+                    """
+                    INSERT INTO diary_entries (id, pair_id, date_millis, mood, title, body,
+                        updated_at, deleted_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT (id) DO UPDATE SET date_millis = EXCLUDED.date_millis,
+                        mood = EXCLUDED.mood, title = EXCLUDED.title, body = EXCLUDED.body,
+                        updated_at = EXCLUDED.updated_at, deleted_at = EXCLUDED.deleted_at
+                    WHERE diary_entries.pair_id = EXCLUDED.pair_id
+                      AND EXCLUDED.updated_at > diary_entries.updated_at
+                    """.trimIndent()
+                ).use { statement ->
+                    statement.setObject(1, java.util.UUID.fromString(entry.id))
+                    statement.setObject(2, java.util.UUID.fromString(pairId))
+                    statement.setLong(3, entry.dateMillis)
+                    statement.setString(4, entry.mood)
+                    statement.setString(5, entry.title)
+                    statement.setString(6, entry.body)
+                    statement.setLong(7, entry.updatedAt)
+                    if (entry.deletedAt != null) statement.setLong(8, entry.deletedAt)
+                    else statement.setNull(8, java.sql.Types.BIGINT)
+                    statement.executeUpdate()
+                }
+            }
+
+            changes.diaryReminders.forEach { reminder ->
+                applied += tx.prepareStatement(
+                    """
+                    INSERT INTO diary_reminders (id, pair_id, text, remind_at, done_at,
+                        updated_at, deleted_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT (id) DO UPDATE SET text = EXCLUDED.text,
+                        remind_at = EXCLUDED.remind_at, done_at = EXCLUDED.done_at,
+                        updated_at = EXCLUDED.updated_at, deleted_at = EXCLUDED.deleted_at
+                    WHERE diary_reminders.pair_id = EXCLUDED.pair_id
+                      AND EXCLUDED.updated_at > diary_reminders.updated_at
+                    """.trimIndent()
+                ).use { statement ->
+                    statement.setObject(1, java.util.UUID.fromString(reminder.id))
+                    statement.setObject(2, java.util.UUID.fromString(pairId))
+                    statement.setString(3, reminder.text)
+                    statement.setLong(4, reminder.remindAt)
+                    if (reminder.doneAt != null) statement.setLong(5, reminder.doneAt)
+                    else statement.setNull(5, java.sql.Types.BIGINT)
+                    statement.setLong(6, reminder.updatedAt)
+                    if (reminder.deletedAt != null) statement.setLong(7, reminder.deletedAt)
+                    else statement.setNull(7, java.sql.Types.BIGINT)
                     statement.executeUpdate()
                 }
             }

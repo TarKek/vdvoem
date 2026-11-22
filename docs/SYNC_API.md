@@ -40,12 +40,52 @@
   "pair": {"id": "...", "nameA": "...", "nameB": "...", "sinceMillis": 0, "updatedAt": 0},
   "events": [{"id": "...", "title": "...", "dateMillis": 0, "annual": true, "updatedAt": 0}],
   "wishes": [{"id": "...", "title": "...", "status": "WANTED", "updatedAt": 0}],
-  "gifts":  [{"id": "...", "title": "...", "status": "IDEA",  "updatedAt": 0}]
+  "gifts":  [{"id": "...", "title": "...", "status": "IDEA",  "updatedAt": 0}],
+  "diaryEntries": [{"id": "...", "dateMillis": 0, "mood": "CALM", "title": "", "body": "", "updatedAt": 0}],
+  "diaryReminders": [{"id": "...", "text": "...", "remindAt": 0, "doneAt": null, "updatedAt": 0}]
 }
 ```
 
 Новые сущности добавляются как новые ключи в этот объект. Клиент игнорирует неизвестные
 ключи (`ignoreUnknownKeys = true`), сервер тоже — это и есть задел на «огромное количество функций».
+
+### Дневник пары (`diaryEntries`)
+
+Одна запись на день, видна обоим партнёрам. Удаление — tombstone, как у остальных сущностей.
+
+| Поле | Тип | Назначение |
+|---|---|---|
+| `id` | UUID | идентификатор записи, генерирует клиент |
+| `dateMillis` | long | UTC-полночь дня записи (как даты календаря) |
+| `mood` | string | `JOY`, `CALM`, `NEUTRAL`, `SAD`, `TIRED`; неизвестное значение → `CALM` |
+| `title` | string | необязательный заголовок, по умолчанию `""` |
+| `body` | string | текст записи |
+| `updatedAt` | long | LWW-версия, по ней же считается «не отправлено» |
+| `deletedAt` | long? | tombstone; удалённая запись не «оживает» от старой копии |
+
+Сервер: таблица `diary_entries` (`id UUID`, `pair_id`, `date_millis`, `mood`, `title`, `body`,
+`updated_at`, `deleted_at`, `revision`), pull по `revision > since`, push —
+`ON CONFLICT (id) DO UPDATE ... WHERE EXCLUDED.updated_at >`.
+
+### Напоминания дневника (`diaryReminders`)
+
+Напоминание с точной датой и временем; на выбранный момент телефон показывает локальное
+уведомление. Общее напоминание синхронизируется, **личное (`isPrivate`) не покидает
+устройство** — его нет ни в push, ни в ответах сервера. Личные напоминания попадают только
+в ручную резервную копию пары (файл на телефоне).
+
+| Поле | Тип | Назначение |
+|---|---|---|
+| `id` | UUID | идентификатор, генерирует клиент |
+| `text` | string | о чём напомнить |
+| `remindAt` | long | точный момент (epoch millis, локальные дата и время) |
+| `doneAt` | long? | когда отмечено выполненным; `null` — активно |
+| `updatedAt` | long | LWW-версия, по ней же считается «не отправлено» |
+| `deletedAt` | long? | tombstone |
+
+Сервер: таблица `diary_reminders` (`id UUID`, `pair_id`, `text`, `remind_at`, `done_at`,
+`updated_at`, `deleted_at`, `revision`), правила pull/push те же, что у `diary_entries`.
+Клиент отправляет и принимает только общие напоминания; поле приватности в DTO отсутствует.
 
 ## Вложения (фото, видео, голосовые) — задел v2
 

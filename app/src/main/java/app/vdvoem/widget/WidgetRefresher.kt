@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
  *
  * Glance перерисовывает виджет только по системному событию, а данные меняются
  * внутри приложения. Поэтому после правок и при возврате в приложение зовём
- * [requestRefresh]: он обновляет все три виджета разом.
+ * [requestRefresh]: он обновляет все виджеты разом.
  */
 object WidgetRefresher {
 
@@ -31,6 +31,7 @@ object WidgetRefresher {
         runCatching { CycleWidget().updateAll(appContext) }
         runCatching { CalendarWidget().updateAll(appContext) }
         runCatching { WishWidget().updateAll(appContext) }
+        runCatching { DiaryWidget().updateAll(appContext) }
     }
 
     /** Неблокирующий вариант для UI-кода и ресиверов. */

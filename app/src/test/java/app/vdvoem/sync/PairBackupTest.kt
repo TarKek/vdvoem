@@ -3,6 +3,7 @@ package app.vdvoem.sync
 import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.model.CycleDay
 import app.vdvoem.core.domain.model.CycleSettings
+import app.vdvoem.core.domain.model.DiaryReminder
 import app.vdvoem.core.domain.model.Flow
 import app.vdvoem.core.domain.model.Gift
 import app.vdvoem.core.domain.model.GiftStatus
@@ -34,6 +35,7 @@ class PairBackupTest {
         lessons: List<Lesson> = emptyList(),
         tasks: List<SharedTask> = emptyList(),
         cycleDays: List<CycleDay> = emptyList(),
+        diaryReminders: List<DiaryReminder> = emptyList(),
         cycleSettings: CycleSettings? = null
     ) = PairBackup.Snapshot(
         pair = pair,
@@ -45,6 +47,7 @@ class PairBackupTest {
         lessons = lessons,
         tasks = tasks,
         cycleDays = cycleDays,
+        diaryReminders = diaryReminders,
         cycleSettings = cycleSettings
     )
 
@@ -471,6 +474,59 @@ class PairBackupTest {
         assertEquals(1_762_000_000_200L, restored?.cycleDays?.last()?.deletedAt)
         assertEquals(30, restored?.cycleSettings?.cycleLength)
         assertEquals(6, restored?.cycleSettings?.periodLength)
+    }
+
+    @Test
+    fun `diary reminders including private survive round trip`() {
+        val original = snapshot(
+            diaryReminders = listOf(
+                DiaryReminder(
+                    id = "reminder-1",
+                    pairId = "pair",
+                    text = "Обсудить поездку",
+                    remindAt = 1_763_000_000_000L,
+                    updatedAt = 1_762_000_000_000L
+                ),
+                DiaryReminder(
+                    id = "reminder-2",
+                    pairId = "pair",
+                    text = "Купить подарок",
+                    remindAt = 1_763_100_000_000L,
+                    isPrivate = true,
+                    doneAt = 1_763_050_000_000L,
+                    updatedAt = 1_763_050_000_000L
+                ),
+                DiaryReminder(
+                    id = "reminder-3",
+                    pairId = "pair",
+                    text = "Удалённое",
+                    remindAt = 1_762_000_000_000L,
+                    updatedAt = 1_762_500_000_000L,
+                    deletedAt = 1_762_500_000_000L
+                )
+            )
+        )
+
+        val restored = PairBackup.parse(PairBackup.export(original))
+
+        assertEquals(original, restored)
+        val private = restored?.diaryReminders?.first { it.id == "reminder-2" }
+        assertEquals(true, private?.isPrivate)
+        assertEquals(1_763_050_000_000L, private?.doneAt)
+        assertEquals(1_762_500_000_000L, restored?.diaryReminders?.last()?.deletedAt)
+    }
+
+    @Test
+    fun `diary reminders count towards the import total`() {
+        val original = snapshot(
+            diaryReminders = listOf(
+                DiaryReminder(id = "r1", pairId = "pair", text = "Раз", remindAt = 1L),
+                DiaryReminder(id = "r2", pairId = "pair", text = "Два", remindAt = 2L)
+            )
+        )
+
+        assertEquals(2, original.total)
+        assertEquals(2, PairBackup.parse(PairBackup.export(original))?.total)
     }
 
     @Test

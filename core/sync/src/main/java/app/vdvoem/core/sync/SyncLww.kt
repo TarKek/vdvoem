@@ -34,5 +34,7 @@ internal fun ChangesDto.maxUpdatedAt(): Long = (
         lessons.map { it.updatedAt } +
         tasks.map { it.updatedAt } +
         cycleDays.map { it.updatedAt } +
-        cycleSettings.map { it.updatedAt }
+        cycleSettings.map { it.updatedAt } +
+        diaryEntries.map { it.updatedAt } +
+        diaryReminders.map { it.updatedAt }
     ).maxOrNull() ?: 0L

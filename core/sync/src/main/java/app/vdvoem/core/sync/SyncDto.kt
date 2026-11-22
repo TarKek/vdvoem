@@ -21,12 +21,19 @@ data class ChangesDto(
     val tasks: List<TaskDto> = emptyList(),
     val cycleDays: List<CycleDayDto> = emptyList(),
     val cycleSettings: List<CycleSettingsDto> = emptyList(),
+    val diaryEntries: List<DiaryDto> = emptyList(),
+    /**
+     * Общие напоминания дневника. Личные (`isPrivate` на клиенте) сюда не попадают:
+     * поля приватности в DTO нет вовсе.
+     */
+    val diaryReminders: List<DiaryReminderDto> = emptyList(),
     /** Серверное время ответа — из него берётся следующий `since`. */
     val serverTime: Long = 0L
 ) {
     val size: Int
         get() = (if (pair != null) 1 else 0) + events.size + wishes.size + gifts.size + pokes.size +
-            quizScores.size + lessons.size + tasks.size + cycleDays.size + cycleSettings.size
+quizScores.size + lessons.size + tasks.size + cycleDays.size + cycleSettings.size +
+            diaryEntries.size + diaryReminders.size
 
     val isEmpty: Boolean
         get() = size == 0
@@ -168,6 +175,34 @@ data class CycleSettingsDto(
     val id: String,
     val cycleLength: Int = 28,
     val periodLength: Int = 5,
+    val updatedAt: Long = 0L,
+    val deletedAt: Long? = null,
+    val pairId: String? = null
+)
+
+/** Запись общего дневника пары. `mood` — имя `DiaryMood`. */
+@Serializable
+data class DiaryDto(
+    val id: String,
+    val dateMillis: Long = 0L,
+    val mood: String = "CALM",
+    val title: String = "",
+    val body: String = "",
+    val updatedAt: Long = 0L,
+    val deletedAt: Long? = null,
+    val pairId: String? = null
+)
+
+/**
+ * Напоминание дневника. Поля `isPrivate` нет: приватные напоминания не синхронизируются,
+ * а при приёме с сервера напоминание всегда считается общим.
+ */
+@Serializable
+data class DiaryReminderDto(
+    val id: String,
+    val text: String = "",
+    val remindAt: Long = 0L,
+    val doneAt: Long? = null,
     val updatedAt: Long = 0L,
     val deletedAt: Long? = null,
     val pairId: String? = null

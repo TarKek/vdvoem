@@ -161,3 +161,44 @@ interface CycleSettingsDao {
     @Upsert
     suspend fun upsert(settings: CycleSettingsEntity)
 }
+
+@Dao
+interface DiaryDao {
+    @Query("SELECT * FROM diary_entries WHERE deletedAt IS NULL AND pairId = (SELECT id FROM pair WHERE deletedAt IS NULL ORDER BY updatedAt DESC LIMIT 1) ORDER BY dateMillis DESC, updatedAt DESC")
+    fun observeAll(): Flow<List<DiaryEntryEntity>>
+
+    /** Включая tombstone: синку нужны удаления, экрану — нет. */
+    @Query("SELECT * FROM diary_entries ORDER BY dateMillis DESC, updatedAt DESC")
+    fun observeAllIncludingDeleted(): Flow<List<DiaryEntryEntity>>
+
+    @Upsert
+    suspend fun upsert(entry: DiaryEntryEntity)
+
+    @Query("UPDATE diary_entries SET deletedAt = :now, updatedAt = :now WHERE id = :id")
+    suspend fun softDelete(id: String, now: Long)
+}
+
+/**
+ * Напоминания дневника.
+ *
+ * [observeAll] отдаёт только активные (не удалённые и не выполненные) текущей пары:
+ * выполненные исчезают с экрана. Синку и копии нужен [observeAllIncludingDeleted].
+ */
+@Dao
+interface DiaryReminderDao {
+    @Query("SELECT * FROM diary_reminders WHERE deletedAt IS NULL AND doneAt IS NULL AND pairId = (SELECT id FROM pair WHERE deletedAt IS NULL ORDER BY updatedAt DESC LIMIT 1) ORDER BY remindAt ASC")
+    fun observeAll(): Flow<List<DiaryReminderEntity>>
+
+    /** Включая выполненные и tombstone: синку и резервной копии нужны все строки. */
+    @Query("SELECT * FROM diary_reminders ORDER BY remindAt ASC")
+    fun observeAllIncludingDeleted(): Flow<List<DiaryReminderEntity>>
+
+    @Upsert
+    suspend fun upsert(reminder: DiaryReminderEntity)
+
+    @Query("UPDATE diary_reminders SET doneAt = :doneAt, updatedAt = :now WHERE id = :id")
+    suspend fun setDone(id: String, doneAt: Long?, now: Long)
+
+    @Query("UPDATE diary_reminders SET deletedAt = :now, updatedAt = :now WHERE id = :id")
+    suspend fun softDelete(id: String, now: Long)
+}

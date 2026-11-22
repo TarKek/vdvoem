@@ -3,6 +3,8 @@ package app.vdvoem.core.sync
 import app.vdvoem.core.data.LocalChangeSignal
 import app.vdvoem.core.domain.repository.CalendarRepository
 import app.vdvoem.core.domain.repository.CycleRepository
+import app.vdvoem.core.domain.repository.DiaryRepository
+import app.vdvoem.core.domain.repository.DiaryReminderRepository
 import app.vdvoem.core.domain.repository.GiftRepository
 import app.vdvoem.core.domain.repository.LessonRepository
 import app.vdvoem.core.domain.repository.PairRepository
@@ -48,6 +50,8 @@ class PendingChanges(
     private val lessonRepository: LessonRepository,
     private val taskRepository: TaskRepository,
     private val cycleRepository: CycleRepository,
+    private val diaryRepository: DiaryRepository,
+    private val diaryReminderRepository: DiaryReminderRepository,
     private val statusHolder: SyncStatusHolder
 ) {
 
@@ -117,6 +121,13 @@ class PendingChanges(
             .count { it.pairId == pairId && isPending("cycleDay", it.id, it.updatedAt) }
         total += cycleRepository.observeSettingsIncludingDeleted().first()
             .count { it.pairId == pairId && isPending("cycleSettings", it.id, it.updatedAt) }
+        total += diaryRepository.observeEntriesIncludingDeleted().first()
+            .count { it.pairId == pairId && isPending("diary", it.id, it.updatedAt) }
+        // Приватные напоминания не синхронизируются — в «не отправлено» не считаем.
+        total += diaryReminderRepository.observeRemindersIncludingDeleted().first()
+            .count {
+                it.pairId == pairId && !it.isPrivate && isPending("diaryReminder", it.id, it.updatedAt)
+            }
         return total
     }
 }

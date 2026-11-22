@@ -148,6 +148,38 @@ CREATE TABLE IF NOT EXISTS cycle_settings (
 
 CREATE INDEX IF NOT EXISTS idx_cycle_settings_pair_updated ON cycle_settings (pair_id, updated_at);
 
+-- Общий дневник пары: одна запись на день (дата — UTC-полночь), мягкое удаление.
+CREATE TABLE IF NOT EXISTS diary_entries (
+    id          UUID PRIMARY KEY,
+    pair_id     UUID NOT NULL REFERENCES pairs (id) ON DELETE CASCADE,
+    date_millis BIGINT NOT NULL,
+    mood        TEXT NOT NULL DEFAULT 'CALM',
+    title       TEXT NOT NULL DEFAULT '',
+    body        TEXT NOT NULL DEFAULT '',
+    updated_at  BIGINT NOT NULL,
+    deleted_at  BIGINT,
+    revision    BIGINT NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_diary_entries_pair_updated ON diary_entries (pair_id, updated_at);
+CREATE INDEX IF NOT EXISTS idx_diary_entries_pair_revision ON diary_entries (pair_id, revision);
+
+-- Напоминания дневника пары: точный момент (дата + время) в remind_at.
+-- Личные напоминания синхронизируются только как часть ручной копии, на сервер не приходят.
+CREATE TABLE IF NOT EXISTS diary_reminders (
+    id         UUID PRIMARY KEY,
+    pair_id    UUID NOT NULL REFERENCES pairs (id) ON DELETE CASCADE,
+    text       TEXT NOT NULL DEFAULT '',
+    remind_at  BIGINT NOT NULL,
+    done_at    BIGINT,
+    updated_at BIGINT NOT NULL,
+    deleted_at BIGINT,
+    revision   BIGINT NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_diary_reminders_pair_updated ON diary_reminders (pair_id, updated_at);
+CREATE INDEX IF NOT EXISTS idx_diary_reminders_pair_revision ON diary_reminders (pair_id, revision);
+
 -- Монотонный курсор синхронизации. sync_cursor увеличивается в той же транзакции,
 -- что и revision изменённых строк, поэтому гонки sequence/commit не теряют записи.
 ALTER TABLE pairs ADD COLUMN IF NOT EXISTS sync_cursor BIGINT NOT NULL DEFAULT 0;
@@ -169,6 +201,8 @@ ALTER TABLE tasks ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0;
 ALTER TABLE lessons ADD COLUMN IF NOT EXISTS textbook_by TEXT NOT NULL DEFAULT '';
 ALTER TABLE cycle_days ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0;
 ALTER TABLE cycle_settings ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE diary_entries ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE diary_reminders ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0;
 
 CREATE INDEX IF NOT EXISTS idx_events_pair_revision ON events (pair_id, revision);
 CREATE INDEX IF NOT EXISTS idx_wishes_pair_revision ON wishes (pair_id, revision);
@@ -191,6 +225,8 @@ UPDATE lessons SET revision = 1 WHERE revision = 0;
 UPDATE tasks SET revision = 1 WHERE revision = 0;
 UPDATE cycle_days SET revision = 1 WHERE revision = 0;
 UPDATE cycle_settings SET revision = 1 WHERE revision = 0;
+UPDATE diary_entries SET revision = 1 WHERE revision = 0;
+UPDATE diary_reminders SET revision = 1 WHERE revision = 0;
 
 CREATE OR REPLACE FUNCTION vdvoem_assign_revision() RETURNS trigger AS $$
 BEGIN
@@ -225,6 +261,12 @@ CREATE TRIGGER assign_revision BEFORE INSERT OR UPDATE ON cycle_days
     FOR EACH ROW EXECUTE FUNCTION vdvoem_assign_revision();
 DROP TRIGGER IF EXISTS assign_revision ON cycle_settings;
 CREATE TRIGGER assign_revision BEFORE INSERT OR UPDATE ON cycle_settings
+    FOR EACH ROW EXECUTE FUNCTION vdvoem_assign_revision();
+DROP TRIGGER IF EXISTS assign_revision ON diary_entries;
+CREATE TRIGGER assign_revision BEFORE INSERT OR UPDATE ON diary_entries
+    FOR EACH ROW EXECUTE FUNCTION vdvoem_assign_revision();
+DROP TRIGGER IF EXISTS assign_revision ON diary_reminders;
+CREATE TRIGGER assign_revision BEFORE INSERT OR UPDATE ON diary_reminders
     FOR EACH ROW EXECUTE FUNCTION vdvoem_assign_revision();
 
 -- Вложения (фото, видео, голосовые): метаданные синкаются, файл лежит на диске по storage_key.

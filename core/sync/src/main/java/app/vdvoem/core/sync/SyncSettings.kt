@@ -118,6 +118,10 @@ class SyncSettingsStore(private val context: Context) {
             changes.tasks.forEach { put(syncAckKey(pairId, "task", it.id), it.updatedAt) }
             changes.cycleDays.forEach { put(syncAckKey(pairId, "cycleDay", it.id), it.updatedAt) }
             changes.cycleSettings.forEach { put(syncAckKey(pairId, "cycleSettings", it.id), it.updatedAt) }
+            changes.diaryEntries.forEach { put(syncAckKey(pairId, "diary", it.id), it.updatedAt) }
+            changes.diaryReminders.forEach {
+                put(syncAckKey(pairId, "diaryReminder", it.id), it.updatedAt)
+            }
         }
         if (stamps.isEmpty()) return
         context.syncDataStore.edit { prefs ->

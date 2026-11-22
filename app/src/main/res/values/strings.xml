@@ -73,6 +73,12 @@
     <string name="dashboard_today_lessons_empty">На сегодня уроков нет</string>
     <string name="dashboard_today_events">События</string>
     <string name="dashboard_today_events_empty">Ближайших событий нет</string>
+    <string name="dashboard_today_reminders">Напоминания</string>
+    <string name="dashboard_today_reminders_empty">На сегодня напоминаний нет</string>
+    <string name="dashboard_today_diary">Дневник</string>
+    <string name="dashboard_today_diary_empty">Записи за сегодня нет</string>
+    <string name="dashboard_today_diary_open">Открыть дневник</string>
+    <string name="dashboard_today_reminder_done">Отметить выполненным</string>
     <string name="dashboard_today_birthday">День рождения: %1$s</string>
     <string name="dashboard_today_event_today">сегодня</string>
     <string name="dashboard_today_event_tomorrow">завтра</string>
@@ -169,7 +175,7 @@
     <string name="more_store_title">Возможности</string>
     <string name="more_store_text">Всё уже внутри — выбери, что показывать в навигации</string>
     <string name="more_data_title">Данные</string>
-    <string name="more_export_text">Резервная копия пары, событий, желаний и подарков в файл</string>
+    <string name="more_export_text">Резервная копия пары, событий, желаний, подарков и дневника в файл</string>
     <string name="more_import_text">Добавит записи из копии, текущие данные останутся</string>
     <string name="more_update_section">Обновления</string>
     <string name="more_update_title">Обновления</string>
@@ -296,5 +302,11 @@
     <string name="widget_wish_high">Очень хочу</string>
     <string name="widget_wish_reserved">Уже выбрано</string>
     <string name="widget_wish_empty">Добавьте желание в список</string>
+
+    <!-- Системный виджет «Дневник» (Glance). -->
+    <string name="widget_diary_label">Дневник</string>
+    <string name="widget_diary_description">Запись за сегодня и напоминания дневника</string>
+    <string name="widget_diary_empty">Запишите, как прошёл день</string>
+    <string name="widget_diary_reminder">%1$s · %2$s</string>
     <string name="more_sync_now">Отправить изменения сейчас</string>
 </resources>

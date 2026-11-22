@@ -3,6 +3,8 @@ package app.vdvoem.ui.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.vdvoem.core.domain.model.CalendarEvent
+import app.vdvoem.core.domain.model.DiaryEntry
+import app.vdvoem.core.domain.model.DiaryReminder
 import app.vdvoem.core.domain.model.Lesson
 import app.vdvoem.core.domain.model.Pair
 import app.vdvoem.core.domain.model.Poke
@@ -12,6 +14,8 @@ import app.vdvoem.core.domain.cycle.CycleStats
 import app.vdvoem.core.domain.cycle.buildForecast
 import app.vdvoem.core.domain.repository.CalendarRepository
 import app.vdvoem.core.domain.repository.CycleRepository
+import app.vdvoem.core.domain.repository.DiaryReminderRepository
+import app.vdvoem.core.domain.repository.DiaryRepository
 import app.vdvoem.core.domain.repository.GiftRepository
 import app.vdvoem.core.domain.repository.LessonRepository
 import app.vdvoem.core.domain.repository.PairRepository
@@ -29,6 +33,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Duration
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -56,6 +61,10 @@ data class DashboardUiState(
     val today: LocalDate = Dates.today(),
     /** Уроки сегодняшнего дня недели — для кнопки «Сегодня» на карточке пары. */
     val todayLessons: List<Lesson> = emptyList(),
+    /** Напоминания дневника на сегодня — по времени, от ближайшего. */
+    val todayReminders: List<DiaryReminder> = emptyList(),
+    /** Запись дневника за сегодня; null, если её ещё нет. */
+    val todayEntry: DiaryEntry? = null,
     /** Ближайшие события в пределах срока напоминаний (0 — сегодня). */
     val upcomingEvents: List<TodayEvent> = emptyList()
 )
@@ -68,6 +77,8 @@ class DashboardViewModel(
     private val pokeRepository: PokeRepository,
     private val cycleRepository: CycleRepository,
     private val lessonRepository: LessonRepository,
+    private val diaryReminderRepository: DiaryReminderRepository,
+    private val diaryRepository: DiaryRepository,
     private val reminderLeadSettings: ReminderLeadSettings,
     private val deviceIdentity: DeviceIdentity
 ) : ViewModel() {
@@ -97,6 +108,39 @@ class DashboardViewModel(
     /** Дата и уроки вместе: в состоянии они всегда согласованы. */
     private val todayStateFlow = combine(todayFlow, todayLessonsFlow) { today, lessons ->
         today to lessons
+    }
+
+    /**
+     * Напоминания дневника на сегодня.
+     *
+     * `remindAt` — точный момент, поэтому день считается в поясе устройства, а не в UTC,
+     * как у дат без времени: иначе напоминание в 01:00 могло бы попасть во «вчера».
+     */
+    private val todayRemindersFlow = combine(
+        diaryReminderRepository.observeReminders(),
+        todayFlow
+    ) { reminders, today ->
+        reminders
+            .filter { reminder ->
+                reminder.isActive &&
+                    Instant.ofEpochMilli(reminder.remindAt)
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate() == today
+            }
+            .sortedBy { it.remindAt }
+    }
+
+    /**
+     * Запись дневника за сегодня: одна на день, поэтому берём первую не удалённую.
+     *
+     * Дата записи хранится UTC-полночью, как у событий, — сравниваем через [Dates.startOfDay].
+     */
+    private val todayEntryFlow = combine(
+        diaryRepository.observeEntries(),
+        todayFlow
+    ) { entries, today ->
+        val dayStart = Dates.startOfDay(today)
+        entries.firstOrNull { entry -> entry.deletedAt == null && entry.dateMillis == dayStart }
     }
 
     /** Срок напоминаний: за сколько дней до события показывать его на «Главной». */
@@ -155,6 +199,10 @@ class DashboardViewModel(
         dashboard.copy(cycleStats = cycle)
     }.combine(todayStateFlow) { dashboard, (today, lessons) ->
         dashboard.copy(today = today, todayLessons = lessons)
+    }.combine(todayRemindersFlow) { dashboard, reminders ->
+        dashboard.copy(todayReminders = reminders)
+    }.combine(todayEntryFlow) { dashboard, entry ->
+        dashboard.copy(todayEntry = entry)
     }.combine(reminderLeadDaysFlow) { dashboard, leadDays ->
         // Срок берём из настроек напоминаний календаря: за столько дней до события
         // показываем его на «Главной» и зажигаем точку на кнопке «Сегодня».
@@ -183,6 +231,11 @@ class DashboardViewModel(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = DashboardUiState()
     )
+
+    /** Отметить напоминание выполненным прямо из шторки «Сегодня». */
+    fun setReminderDone(id: String) {
+        viewModelScope.launch { diaryReminderRepository.setDone(id, true) }
+    }
 
     fun savePair(
         nameA: String,

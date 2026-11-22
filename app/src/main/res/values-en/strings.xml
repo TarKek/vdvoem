@@ -67,6 +67,12 @@
     <string name="dashboard_today_lessons_empty">No lessons today</string>
     <string name="dashboard_today_events">Events</string>
     <string name="dashboard_today_events_empty">No upcoming events</string>
+    <string name="dashboard_today_reminders">Reminders</string>
+    <string name="dashboard_today_reminders_empty">No reminders for today</string>
+    <string name="dashboard_today_diary">Diary</string>
+    <string name="dashboard_today_diary_empty">No entry for today</string>
+    <string name="dashboard_today_diary_open">Open diary</string>
+    <string name="dashboard_today_reminder_done">Mark as done</string>
     <string name="dashboard_today_birthday">Birthday: %1$s</string>
     <string name="dashboard_today_event_today">today</string>
     <string name="dashboard_today_event_tomorrow">tomorrow</string>
@@ -157,7 +163,7 @@
     <string name="more_store_title">Features</string>
     <string name="more_store_text">Everything is already built in — choose what to show in navigation</string>
     <string name="more_data_title">Data</string>
-    <string name="more_export_text">Back up your couple, events, wishes and gifts to a file</string>
+    <string name="more_export_text">Back up your couple, events, wishes, gifts and diary to a file</string>
     <string name="more_import_text">Adds records from a backup, keeps your current data</string>
     <string name="more_update_section">Updates</string>
     <string name="more_update_title">Updates</string>
@@ -278,5 +284,11 @@
     <string name="widget_wish_high">Really want it</string>
     <string name="widget_wish_reserved">Already chosen</string>
     <string name="widget_wish_empty">Add a wish to the list</string>
+
+    <!-- Diary home-screen widget (Glance). -->
+    <string name="widget_diary_label">Diary</string>
+    <string name="widget_diary_description">Today\'s entry and diary reminders</string>
+    <string name="widget_diary_empty">Write how the day went</string>
+    <string name="widget_diary_reminder">%1$s · %2$s</string>
     <string name="more_sync_now">Send changes now</string>
 </resources>

@@ -3,6 +3,9 @@ package app.vdvoem.sync
 import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.model.CycleDay
 import app.vdvoem.core.domain.model.CycleSettings
+import app.vdvoem.core.domain.model.DiaryEntry
+import app.vdvoem.core.domain.model.DiaryMood
+import app.vdvoem.core.domain.model.DiaryReminder
 import app.vdvoem.core.domain.model.Flow
 import app.vdvoem.core.domain.model.Gift
 import app.vdvoem.core.domain.model.GiftStatus
@@ -38,12 +41,19 @@ object PairBackup {
         val lessons: List<Lesson> = emptyList(),
         val tasks: List<SharedTask> = emptyList(),
         val cycleDays: List<CycleDay> = emptyList(),
+        val diaryEntries: List<DiaryEntry> = emptyList(),
+        /**
+         * Напоминания дневника. В отличие от синхронизации ручная копия включает и личные
+         * (`isPrivate`): она переносит данные пары на новое устройство целиком.
+         */
+        val diaryReminders: List<DiaryReminder> = emptyList(),
         val cycleSettings: CycleSettings? = null
     ) {
         /** Сколько записей реально переносится — для сообщения «Загружено записей». */
         val total: Int
             get() = events.size + wishes.size + gifts.size + pokes.size + quizScores.size +
-                lessons.size + tasks.size + cycleDays.size + (if (cycleSettings != null) 1 else 0)
+lessons.size + tasks.size + cycleDays.size + diaryEntries.size + diaryReminders.size +
+                (if (cycleSettings != null) 1 else 0)
     }
 
     fun export(snapshot: Snapshot): String {
@@ -207,6 +217,38 @@ object PairBackup {
             }
         })
 
+        root.put("diaryEntries", JSONArray().apply {
+            snapshot.diaryEntries.forEach { entry ->
+                put(
+                    JSONObject()
+                        .put("id", entry.id)
+                        .put("pairId", entry.pairId)
+                        .put("dateMillis", entry.dateMillis)
+                        .put("mood", entry.mood.name)
+                        .put("title", entry.title)
+                        .put("body", entry.body)
+                        .put("updatedAt", entry.updatedAt)
+                        .put("deletedAt", entry.deletedAt ?: JSONObject.NULL)
+                )
+            }
+        })
+
+        root.put("diaryReminders", JSONArray().apply {
+            snapshot.diaryReminders.forEach { reminder ->
+                put(
+                    JSONObject()
+                        .put("id", reminder.id)
+                        .put("pairId", reminder.pairId)
+                        .put("text", reminder.text)
+                        .put("remindAt", reminder.remindAt)
+                        .put("isPrivate", reminder.isPrivate)
+                        .put("doneAt", reminder.doneAt ?: JSONObject.NULL)
+                        .put("updatedAt", reminder.updatedAt)
+                        .put("deletedAt", reminder.deletedAt ?: JSONObject.NULL)
+                )
+            }
+        })
+
         snapshot.cycleSettings?.let { settings ->
             root.put(
                 "cycleSettings",
@@ -234,6 +276,8 @@ object PairBackup {
             snapshot.lessons.forEach { add(it.id) }
             snapshot.tasks.forEach { add(it.id) }
             snapshot.cycleDays.forEach { add(it.id) }
+            snapshot.diaryEntries.forEach { add(it.id) }
+            snapshot.diaryReminders.forEach { add(it.id) }
             snapshot.cycleSettings?.let { add(it.id) }
         }
         ids.forEach { UUID.fromString(it) }
@@ -366,6 +410,30 @@ object PairBackup {
                     weight = if (json.isNull("weight")) null else
                         json.optDouble("weight", 0.0).toFloat().takeIf { it.isFinite() && it in 20f..300f },
                     note = json.optString("note"),
+                    updatedAt = json.optLong("updatedAt", 0L),
+                    deletedAt = json.optLongOrNull("deletedAt")
+                )
+            },
+            diaryEntries = root.optJSONArray("diaryEntries").mapObjects { json ->
+                DiaryEntry(
+                    id = json.getString("id"),
+                    pairId = json.optString("pairId"),
+                    dateMillis = json.optLong("dateMillis", 0L),
+                    mood = enumOrDefault(json.optString("mood"), DiaryMood.CALM),
+                    title = json.optString("title"),
+                    body = json.optString("body"),
+                    updatedAt = json.optLong("updatedAt", 0L),
+                    deletedAt = json.optLongOrNull("deletedAt")
+                )
+            },
+            diaryReminders = root.optJSONArray("diaryReminders").mapObjects { json ->
+                DiaryReminder(
+                    id = json.getString("id"),
+                    pairId = json.optString("pairId"),
+                    text = json.optString("text"),
+                    remindAt = json.optLong("remindAt", 0L),
+                    isPrivate = json.optBoolean("isPrivate", false),
+                    doneAt = json.optLongOrNull("doneAt"),
                     updatedAt = json.optLong("updatedAt", 0L),
                     deletedAt = json.optLongOrNull("deletedAt")
                 )

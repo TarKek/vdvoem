@@ -427,6 +427,8 @@ fun VdvoemRoot(
                     cycleStats = dashboardState.cycleStats,
                     today = dashboardState.today,
                     todayLessons = dashboardState.todayLessons,
+                    todayReminders = dashboardState.todayReminders,
+                    todayEntry = dashboardState.todayEntry,
                     upcomingEvents = dashboardState.upcomingEvents,
                     refreshing = syncing,
                     syncReady = syncReady,
@@ -453,7 +455,8 @@ fun VdvoemRoot(
                             syncController.syncInBackground()
                         }
                     },
-                    onOpenCalendar = { openTab("calendar") }
+                    onOpenCalendar = { openTab("calendar") },
+                    onReminderDone = dashboardViewModel::setReminderDone
                 )
             }
             composable(Routes.STORE) {

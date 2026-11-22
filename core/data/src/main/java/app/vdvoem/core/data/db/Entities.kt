@@ -149,3 +149,34 @@ data class CycleSettingsEntity(
     val updatedAt: Long,
     val deletedAt: Long? = null
 )
+
+/** Запись общего дневника пары. `mood` — имя [app.vdvoem.core.domain.model.DiaryMood]. */
+@Entity(tableName = "diary_entries")
+data class DiaryEntryEntity(
+    @PrimaryKey val id: String,
+    val pairId: String,
+    val dateMillis: Long,
+    val mood: String,
+    val title: String,
+    val body: String,
+    val updatedAt: Long,
+    val deletedAt: Long? = null
+)
+
+/**
+ * Напоминание из дневника пары. `remindAt` — точный момент (дата + время), а не UTC-полночь.
+ *
+ * Личное напоминание ([isPrivate]) остаётся на устройстве: в синхронизацию и на сервер
+ * не уходит, но попадает в ручную резервную копию.
+ */
+@Entity(tableName = "diary_reminders")
+data class DiaryReminderEntity(
+    @PrimaryKey val id: String,
+    val pairId: String,
+    val text: String,
+    val remindAt: Long,
+    @ColumnInfo(defaultValue = "0") val isPrivate: Boolean = false,
+    val doneAt: Long? = null,
+    val updatedAt: Long,
+    val deletedAt: Long? = null
+)

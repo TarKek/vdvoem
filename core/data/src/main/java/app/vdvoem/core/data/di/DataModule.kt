@@ -4,6 +4,8 @@ import androidx.room.Room
 import app.vdvoem.core.data.db.VdvoemDatabase
 import app.vdvoem.core.data.repository.RoomCalendarRepository
 import app.vdvoem.core.data.repository.RoomCycleRepository
+import app.vdvoem.core.data.repository.RoomDiaryRepository
+import app.vdvoem.core.data.repository.RoomDiaryReminderRepository
 import app.vdvoem.core.data.repository.RoomGiftRepository
 import app.vdvoem.core.data.repository.RoomPairRepository
 import app.vdvoem.core.data.repository.RoomPokeRepository
@@ -17,6 +19,8 @@ import app.vdvoem.core.data.settings.DataStoreModuleSettingsRepository
 import app.vdvoem.core.domain.module.ModuleRegistry
 import app.vdvoem.core.domain.repository.CalendarRepository
 import app.vdvoem.core.domain.repository.CycleRepository
+import app.vdvoem.core.domain.repository.DiaryRepository
+import app.vdvoem.core.domain.repository.DiaryReminderRepository
 import app.vdvoem.core.domain.repository.GiftRepository
 import app.vdvoem.core.domain.repository.LessonRepository
 import app.vdvoem.core.domain.repository.ModuleSettingsRepository
@@ -51,7 +55,8 @@ val dataModule = module {
                 VdvoemDatabase.MIGRATION_8_9,
                 VdvoemDatabase.MIGRATION_9_10,
                 VdvoemDatabase.MIGRATION_10_11,
-                VdvoemDatabase.MIGRATION_11_12
+VdvoemDatabase.MIGRATION_11_12,
+                VdvoemDatabase.MIGRATION_12_13
             )
             .build()
     }
@@ -65,6 +70,8 @@ val dataModule = module {
     single { get<VdvoemDatabase>().taskDao() }
     single { get<VdvoemDatabase>().cycleDayDao() }
     single { get<VdvoemDatabase>().cycleSettingsDao() }
+    single { get<VdvoemDatabase>().diaryDao() }
+    single { get<VdvoemDatabase>().diaryReminderDao() }
 
     single<PairRepository> { RoomPairRepository(get()) }
     single<CalendarRepository> { RoomCalendarRepository(get()) }
@@ -76,5 +83,7 @@ val dataModule = module {
     single<LessonRepository> { RoomLessonRepository(get()) }
     single<TaskRepository> { RoomTaskRepository(get()) }
     single<CycleRepository> { RoomCycleRepository(get(), get()) }
+    single<DiaryRepository> { RoomDiaryRepository(get()) }
+    single<DiaryReminderRepository> { RoomDiaryReminderRepository(get()) }
     single<AppSettingsRepository> { DataStoreAppSettingsRepository(androidContext()) }
 }

@@ -78,7 +78,10 @@ data class ChangesDto(
     val lessons: List<LessonDto> = emptyList(),
     val tasks: List<TaskDto> = emptyList(),
     @SerialName("cycleDays") val cycleDays: List<CycleDayDto> = emptyList(),
-    @SerialName("cycleSettings") val cycleSettings: List<CycleSettingsDto> = emptyList()
+    @SerialName("cycleSettings") val cycleSettings: List<CycleSettingsDto> = emptyList(),
+    @SerialName("diaryEntries") val diaryEntries: List<DiaryDto> = emptyList(),
+    /** Общие напоминания дневника; приватные живут только на устройстве. */
+    @SerialName("diaryReminders") val diaryReminders: List<DiaryReminderDto> = emptyList()
 )
 
 @Serializable
@@ -146,6 +149,39 @@ data class CycleSettingsDto(
     val id: String,
     @SerialName("cycleLength") val cycleLength: Int = 28,
     @SerialName("periodLength") val periodLength: Int = 5,
+    @SerialName("updatedAt") val updatedAt: Long = 0,
+    @SerialName("deletedAt") val deletedAt: Long? = null
+)
+
+/**
+ * Запись общего дневника пары.
+ *
+ * `dateMillis` — UTC-полночь дня записи (как у событий календаря), `mood` — имя
+ * перечисления (JOY/CALM/NEUTRAL/SAD/TIRED). Удаление — tombstone в `deletedAt`.
+ */
+@Serializable
+data class DiaryDto(
+    val id: String,
+    @SerialName("dateMillis") val dateMillis: Long = 0,
+    val mood: String = "CALM",
+    val title: String = "",
+    val body: String = "",
+    @SerialName("updatedAt") val updatedAt: Long = 0,
+    @SerialName("deletedAt") val deletedAt: Long? = null
+)
+
+/**
+ * Напоминание дневника пары.
+ *
+ * `remindAt` — точный момент (дата + время) в миллисекундах, а не UTC-полночь.
+ * Поля приватности здесь нет: личные напоминания клиент не отправляет.
+ */
+@Serializable
+data class DiaryReminderDto(
+    val id: String,
+    val text: String = "",
+    @SerialName("remindAt") val remindAt: Long = 0,
+    @SerialName("doneAt") val doneAt: Long? = null,
     @SerialName("updatedAt") val updatedAt: Long = 0,
     @SerialName("deletedAt") val deletedAt: Long? = null
 )

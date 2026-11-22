@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -72,6 +73,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.vdvoem.R
 import app.vdvoem.core.domain.model.CalendarEvent
+import app.vdvoem.core.domain.model.DiaryEntry
+import app.vdvoem.core.domain.model.DiaryReminder
 import app.vdvoem.core.domain.model.Lesson
 import app.vdvoem.core.domain.model.Pair
 import app.vdvoem.core.domain.model.Poke
@@ -91,6 +94,9 @@ import app.vdvoem.data.HomeWidget
 import kotlin.math.absoluteValue
 import app.vdvoem.ui.presents.PresentsModule
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 
@@ -115,6 +121,10 @@ fun DashboardScreen(
     today: LocalDate,
     /** Уроки сегодняшнего дня — для шторки «Сегодня». */
     todayLessons: List<Lesson> = emptyList(),
+    /** Напоминания дневника на сегодня. */
+    todayReminders: List<DiaryReminder> = emptyList(),
+    /** Запись дневника за сегодня — показываем её в шторке «Сегодня». */
+    todayEntry: DiaryEntry? = null,
     /** Ближайшие события в пределах срока напоминаний. */
     upcomingEvents: List<TodayEvent> = emptyList(),
     onRefresh: () -> Unit = {},
@@ -129,6 +139,7 @@ fun DashboardScreen(
     onOpenCycle: () -> Unit,
     onOpenPairEditor: () -> Unit,
     onOpenCalendar: () -> Unit,
+    onReminderDone: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showPokeDialog by rememberSaveable { mutableStateOf(false) }
@@ -140,12 +151,17 @@ fun DashboardScreen(
     // Блоки шторки повторяют навигацию: нет модуля — нет и раздела, а не «уроков нет».
     val lessonsAvailable = "timetable" in enabledRoutes
     val eventsAvailable = "calendar" in enabledRoutes
+    val remindersAvailable = "diary" in enabledRoutes
     val todayLessonsVisible = remember(todayLessons, lessonsAvailable) {
         if (lessonsAvailable) todayLessons else emptyList()
     }
     val visibleEvents = remember(upcomingEvents, eventsAvailable) {
         if (eventsAvailable) upcomingEvents else emptyList()
     }
+    val visibleReminders = remember(todayReminders, remindersAvailable) {
+        if (remindersAvailable) todayReminders else emptyList()
+    }
+    val visibleDiaryEntry = if (remindersAvailable) todayEntry else null
     val visibleWidgets = remember(widgets, enabledRoutes) {
         widgets.filter { widgetAvailable(it.type, enabledRoutes) }
     }
@@ -294,6 +310,15 @@ fun DashboardScreen(
             lessonsAvailable = lessonsAvailable,
             events = visibleEvents,
             eventsAvailable = eventsAvailable,
+            diaryEntry = visibleDiaryEntry,
+            reminders = visibleReminders,
+            remindersAvailable = remindersAvailable,
+            onReminderDone = onReminderDone,
+            onOpenDiary = {
+                // Дневник открываем как обычную вкладку: шторка просто закрывается.
+                modules.firstOrNull { it.route == "diary" }?.let(onOpenModule)
+                showToday = false
+            },
             onDismiss = { showToday = false }
         )
     }
@@ -540,7 +565,7 @@ private fun TodayButton(
     }
 }
 
-/** Шторка «Сегодня»: уроки на сегодня и события, которые скоро наступят. */
+/** Шторка «Сегодня»: уроки, ближайшие события и напоминания дневника. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TodaySheet(
@@ -549,6 +574,11 @@ private fun TodaySheet(
     lessonsAvailable: Boolean,
     events: List<TodayEvent>,
     eventsAvailable: Boolean,
+    diaryEntry: DiaryEntry?,
+    reminders: List<DiaryReminder>,
+    remindersAvailable: Boolean,
+    onReminderDone: (String) -> Unit,
+    onOpenDiary: () -> Unit,
     onDismiss: () -> Unit
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -572,6 +602,8 @@ private fun TodaySheet(
             )
             Spacer(modifier = Modifier.size(VdvoemSpacing.xs))
 
+            var hasSection = false
+
             // Раздел показываем только вместе с его модулем: иначе «уроков нет» врёт,
             // когда уроки просто спрятаны вместе с «Расписанием».
             if (lessonsAvailable) {
@@ -588,13 +620,11 @@ private fun TodaySheet(
                 } else {
                     lessons.forEach { lesson -> TodayLessonRow(lesson) }
                 }
-            }
-
-            if (lessonsAvailable && eventsAvailable) {
-                HorizontalDivider()
+                hasSection = true
             }
 
             if (eventsAvailable) {
+                if (hasSection) HorizontalDivider()
                 Text(
                     text = stringResource(R.string.dashboard_today_events),
                     style = MaterialTheme.typography.titleMedium
@@ -608,6 +638,50 @@ private fun TodaySheet(
                 } else {
                     events.forEach { event -> TodayEventRow(event) }
                 }
+                hasSection = true
+            }
+
+            if (remindersAvailable) {
+                if (hasSection) HorizontalDivider()
+                Text(
+                    text = stringResource(R.string.dashboard_today_diary),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                if (diaryEntry == null) {
+                    Text(
+                        text = stringResource(R.string.dashboard_today_diary_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    TodayDiaryEntry(diaryEntry)
+                }
+                TextButton(onClick = onOpenDiary) {
+                    Text(stringResource(R.string.dashboard_today_diary_open))
+                }
+                hasSection = true
+            }
+
+            if (remindersAvailable) {
+                if (hasSection) HorizontalDivider()
+                Text(
+                    text = stringResource(R.string.dashboard_today_reminders),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                if (reminders.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.dashboard_today_reminders_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    reminders.forEach { reminder ->
+                        TodayReminderRow(
+                            reminder = reminder,
+                            onDone = { onReminderDone(reminder.id) }
+                        )
+                    }
+                }
             }
 
             TextButton(
@@ -616,6 +690,39 @@ private fun TodaySheet(
             ) {
                 Text(stringResource(R.string.connect_done))
             }
+        }
+    }
+}
+
+/** Сегодняшняя запись дневника: заголовок и несколько строк текста. */
+@Composable
+private fun TodayDiaryEntry(entry: DiaryEntry) {
+    val title = entry.title.trim().ifBlank {
+        entry.body.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty()
+    }
+    val rest = entry.body.trim()
+        .takeIf { it.isNotEmpty() && it != title }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = VdvoemSpacing.xs),
+        verticalArrangement = Arrangement.spacedBy(VdvoemSpacing.xs)
+    ) {
+        if (title.isNotEmpty()) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge
+            )
+        }
+        rest?.let { body ->
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
@@ -699,6 +806,50 @@ private fun TodayLessonRow(lesson: Lesson) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        }
+    }
+}
+
+/** Время напоминания в шторке: только часы и минуты, день и так сегодняшний. */
+private val reminderClockFormat: DateTimeFormatter
+    get() = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
+
+/** Одна строка напоминания: время, текст и кнопка «выполнено». */
+@Composable
+private fun TodayReminderRow(
+    reminder: DiaryReminder,
+    onDone: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = VdvoemSpacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(VdvoemSpacing.sm)
+    ) {
+        Text(
+            text = Instant.ofEpochMilli(reminder.remindAt)
+                .atZone(ZoneId.systemDefault())
+                .format(reminderClockFormat),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            modifier = Modifier.widthIn(min = VdvoemSizes.timeColumn)
+        )
+        Text(
+            text = reminder.text,
+            style = MaterialTheme.typography.bodyLarge,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+        IconButton(onClick = onDone) {
+            Icon(
+                imageVector = Icons.Filled.CheckCircle,
+                contentDescription = stringResource(R.string.dashboard_today_reminder_done),
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(VdvoemSizes.iconMd)
+            )
         }
     }
 }
