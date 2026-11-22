@@ -74,6 +74,7 @@ import androidx.compose.ui.unit.dp
 import app.vdvoem.R
 import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.model.DiaryEntry
+import app.vdvoem.core.domain.model.DiaryMood
 import app.vdvoem.core.domain.model.DiaryReminder
 import app.vdvoem.core.domain.model.Lesson
 import app.vdvoem.core.domain.model.Pair
@@ -232,6 +233,8 @@ fun DashboardScreen(
                 giftCount = giftCount,
                 enabledModules = modules.size,
                 cycleStats = cycleStats,
+                todayEntry = visibleDiaryEntry,
+                todayReminders = visibleReminders,
                 onOpenCycle = onOpenCycle,
                 onOpenPair = onOpenPairEditor,
                 onOpenCalendar = onOpenCalendar,
@@ -240,6 +243,10 @@ fun DashboardScreen(
                 onOpenQuizzes = onOpenQuizzes,
                 onOpenModule = { module -> onOpenModule(module) },
                 onOpenStore = onOpenStore,
+                onOpenDiary = {
+                    modules.firstOrNull { it.route == "diary" }?.let(onOpenModule)
+                    showToday = false
+                },
                 onAddWidget = { showWidgetPicker = true },
                 onConfigure = { id -> configWidgetId = id }
             )
@@ -900,6 +907,8 @@ private fun WidgetGrid(
     giftCount: Int,
     enabledModules: Int,
     cycleStats: CycleStats?,
+    todayEntry: DiaryEntry?,
+    todayReminders: List<DiaryReminder>,
     onOpenCycle: () -> Unit,
     onOpenPair: () -> Unit,
     onOpenCalendar: () -> Unit,
@@ -908,6 +917,7 @@ private fun WidgetGrid(
     onOpenQuizzes: () -> Unit,
     onOpenModule: (AppModule) -> Unit,
     onOpenStore: () -> Unit,
+    onOpenDiary: () -> Unit,
     onAddWidget: () -> Unit,
     onConfigure: (String) -> Unit
 ) {
@@ -1068,6 +1078,29 @@ private fun WidgetGrid(
                             onClick = onOpenStore,
                             modifier = Modifier.weight(1f)
                         )
+                        HomePreferences.WIDGET_DIARY -> {
+                            val entryTitle = todayEntry?.title?.takeIf { it.isNotBlank() }
+                                ?: todayEntry?.body?.lineSequence()?.firstOrNull { it.isNotBlank() }?.trim()
+                                ?: stringResource(R.string.widget_diary_empty)
+                            val moodIcon = when (todayEntry?.mood) {
+                                DiaryMood.JOY -> Icons.Filled.Favorite
+                                DiaryMood.SAD, DiaryMood.TIRED -> Icons.Filled.Star
+                                else -> Icons.Filled.DateRange
+                            }
+                            WidgetCard(
+                                icon = moodIcon,
+                                title = stringResource(R.string.widget_diary_label),
+                                value = entryTitle,
+                                onClick = onOpenDiary,
+                                caption = todayReminders.firstOrNull()?.let { r ->
+                                    val time = Instant.ofEpochMilli(r.remindAt)
+                                        .atZone(ZoneId.systemDefault())
+                                        .format(reminderClockFormat)
+                                    stringResource(R.string.widget_diary_reminder, time, r.text)
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                 }
                 if (row.size == 1) Spacer(modifier = Modifier.weight(1f))
@@ -1175,6 +1208,7 @@ private fun widgetAvailable(type: String, enabledRoutes: Set<String>): Boolean =
         PresentsModule.ROUTE in enabledRoutes
     HomePreferences.WIDGET_TESTS -> "quizzes" in enabledRoutes
     HomePreferences.WIDGET_CYCLE -> "cycle" in enabledRoutes
+    HomePreferences.WIDGET_DIARY -> "diary" in enabledRoutes
     else -> true
 }
 
@@ -1227,6 +1261,12 @@ private val widgetCatalog = listOf(
         R.string.dashboard_modules_title,
         R.string.widget_modules_description,
         Icons.Filled.Star
+    ),
+    WidgetEntry(
+        HomePreferences.WIDGET_DIARY,
+        R.string.widget_diary_label,
+        R.string.widget_diary_description,
+        Icons.Filled.DateRange
     ),
     WidgetEntry(
         HomePreferences.WIDGET_TOGETHER,
