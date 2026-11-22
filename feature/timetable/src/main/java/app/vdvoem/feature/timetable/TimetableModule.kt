@@ -41,6 +41,7 @@ class TimetableModule : AppModule {
             onSave = viewModel::save,
             onDelete = viewModel::delete,
             onSelectDate = viewModel::selectDate,
+            onRefreshToday = viewModel::refreshToday,
             modifier = modifier
         )
     }

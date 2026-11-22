@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.model.Pair
-import app.vdvoem.core.domain.model.birthdays
+import app.vdvoem.core.domain.model.birthdaysWithoutManualDuplicates
 import app.vdvoem.core.domain.model.upcomingDate
 import app.vdvoem.core.domain.repository.CalendarRepository
 import app.vdvoem.core.domain.repository.PairRepository
@@ -211,7 +211,7 @@ class CalendarViewModel(
                 annual = event.annual,
                 daysLeft = Dates.daysUntil(date, today)
             )
-        } + pair.birthdayEvents(today)
+        } + pair.birthdayEvents(events, today)
         val byNearest = sortEvents(all)
         val visible = all.filter { it.matches(selected, today) }
         return CalendarUiState(
@@ -255,9 +255,12 @@ class CalendarViewModel(
      * Дни рождения из профиля пары как события: без строки в базе они всегда
      * совпадают с профилем, а правка даты не требует ни миграции, ни синка.
      */
-    private fun Pair?.birthdayEvents(today: LocalDate): List<EventUi> {
+    private fun Pair?.birthdayEvents(
+        events: List<CalendarEvent>,
+        today: LocalDate
+    ): List<EventUi> {
         val pair = this ?: return emptyList()
-        return pair.birthdays().map { birthday ->
+        return pair.birthdaysWithoutManualDuplicates(events).map { birthday ->
             val date = birthday.upcomingDate(today)
             EventUi(
                 id = birthday.eventId,

@@ -6,7 +6,7 @@ import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.model.Lesson
 import app.vdvoem.core.domain.model.Pair
 import app.vdvoem.core.domain.model.Poke
-import app.vdvoem.core.domain.model.birthdays
+import app.vdvoem.core.domain.model.birthdaysWithoutManualDuplicates
 import app.vdvoem.core.domain.model.upcomingDate
 import app.vdvoem.core.domain.cycle.CycleStats
 import app.vdvoem.core.domain.cycle.buildForecast
@@ -144,7 +144,8 @@ class DashboardViewModel(
             nextEvent = (upcoming ?: latestPast)?.first,
             // Дни рождения из профиля пары — тоже события: иначе их приходилось
             // заводить в календаре руками, а теперь они появляются там сами.
-            eventCount = events.size + (pair?.birthdays()?.size ?: 0),
+            eventCount = events.size +
+                pair?.birthdaysWithoutManualDuplicates(events).orEmpty().size,
             wishCount = visibleWishes.size,
             giftCount = visibleGifts.size,
             lastPoke = pokes.firstOrNull(),
@@ -165,7 +166,10 @@ class DashboardViewModel(
         }
         // Дни рождения живут в профиле пары, но в календаре показываются как события,
         // поэтому и в «Сегодня» они идут той же строкой — иначе экраны расходятся.
-        val birthdays = dashboard.pair?.birthdays().orEmpty().mapNotNull { birthday ->
+        val birthdays = dashboard.pair
+            ?.birthdaysWithoutManualDuplicates(dashboard.events)
+            .orEmpty()
+            .mapNotNull { birthday ->
             val days = Dates.daysUntil(birthday.upcomingDate(today), today)
             if (days in 0..limit) TodayEvent(birthday.name, days, isBirthday = true) else null
         }
