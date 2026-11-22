@@ -21,6 +21,7 @@ import app.vdvoem.feature.notes.notesFeatureModule
 import app.vdvoem.feature.cycle.cycleFeatureModule
 import app.vdvoem.feature.dates.datesFeatureModule
 import app.vdvoem.feature.voice.voiceFeatureModule
+import app.vdvoem.feature.tasks.tasksFeatureModule
 import app.vdvoem.feature.wishes.wishesFeatureModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -59,6 +60,7 @@ class VdvoemApplication : Application() {
                 cycleFeatureModule,
                 datesFeatureModule,
                 voiceFeatureModule,
+                tasksFeatureModule,
                 storeFeatureModule
             )
         }

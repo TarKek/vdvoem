@@ -10,6 +10,7 @@ import app.vdvoem.core.domain.model.Lesson
 import app.vdvoem.core.domain.model.Pair
 import app.vdvoem.core.domain.model.Poke
 import app.vdvoem.core.domain.model.QuizScore
+import app.vdvoem.core.domain.model.SharedTask
 import app.vdvoem.core.domain.model.Wish
 import app.vdvoem.core.domain.model.WishStatus
 import org.junit.Test
@@ -31,6 +32,7 @@ class PairBackupTest {
         pokes: List<Poke> = emptyList(),
         quizScores: List<QuizScore> = emptyList(),
         lessons: List<Lesson> = emptyList(),
+        tasks: List<SharedTask> = emptyList(),
         cycleDays: List<CycleDay> = emptyList(),
         cycleSettings: CycleSettings? = null
     ) = PairBackup.Snapshot(
@@ -41,6 +43,7 @@ class PairBackupTest {
         pokes = pokes,
         quizScores = quizScores,
         lessons = lessons,
+        tasks = tasks,
         cycleDays = cycleDays,
         cycleSettings = cycleSettings
     )
@@ -59,6 +62,7 @@ class PairBackupTest {
         assertEquals(emptyList(), restored?.pokes)
         assertEquals(emptyList(), restored?.quizScores)
         assertEquals(emptyList(), restored?.lessons)
+        assertEquals(emptyList(), restored?.tasks)
     }
 
     @Test
@@ -529,6 +533,29 @@ class PairBackupTest {
         assertEquals(5, settings?.periodLength)
         assertEquals("", settings?.pairId)
         assertNull(settings?.deletedAt)
+    }
+
+    @Test
+    fun `shared task survives round trip with due date and completion`() {
+        val task = SharedTask(
+            id = "4bf8dc52-6f19-4fd7-9da3-5f9e9f3cb6a1",
+            pairId = "pair",
+            title = "Купить продукты",
+            note = "Сыр и хлеб",
+            dueAt = 1_762_086_400_000L,
+            isCompleted = true,
+            createdBy = "device-a",
+            createdAt = 1_762_000_000_000L,
+            updatedAt = 1_762_000_000_100L,
+            version = 3L
+        )
+        val original = snapshot(tasks = listOf(task))
+
+        val restored = PairBackup.parse(PairBackup.export(original))
+
+        assertEquals(original, restored)
+        assertEquals(1, restored?.total)
+        assertEquals(task, restored?.tasks?.single())
     }
 
     @Test

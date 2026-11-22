@@ -18,6 +18,7 @@ data class ChangesDto(
     val pokes: List<PokeDto> = emptyList(),
     val quizScores: List<QuizScoreDto> = emptyList(),
     val lessons: List<LessonDto> = emptyList(),
+    val tasks: List<TaskDto> = emptyList(),
     val cycleDays: List<CycleDayDto> = emptyList(),
     val cycleSettings: List<CycleSettingsDto> = emptyList(),
     /** Серверное время ответа — из него берётся следующий `since`. */
@@ -25,7 +26,7 @@ data class ChangesDto(
 ) {
     val size: Int
         get() = (if (pair != null) 1 else 0) + events.size + wishes.size + gifts.size + pokes.size +
-            quizScores.size + lessons.size + cycleDays.size + cycleSettings.size
+            quizScores.size + lessons.size + tasks.size + cycleDays.size + cycleSettings.size
 
     val isEmpty: Boolean
         get() = size == 0
@@ -125,6 +126,22 @@ data class LessonDto(
     val textbookBy: String = "",
     val updatedAt: Long = 0L,
     val deletedAt: Long? = null,
+    val pairId: String? = null
+)
+
+/** Общее дело пары. `dueAt` — UTC-полночь выбранной даты или null. */
+@Serializable
+data class TaskDto(
+    val id: String,
+    val title: String = "",
+    val note: String = "",
+    val dueAt: Long? = null,
+    val isCompleted: Boolean = false,
+    val createdBy: String = "",
+    val createdAt: Long = 0L,
+    val updatedAt: Long = 0L,
+    val deletedAt: Long? = null,
+    val version: Long = 1L,
     val pairId: String? = null
 )
 

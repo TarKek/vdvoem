@@ -8,6 +8,7 @@ import app.vdvoem.core.domain.repository.LessonRepository
 import app.vdvoem.core.domain.repository.PairRepository
 import app.vdvoem.core.domain.repository.PokeRepository
 import app.vdvoem.core.domain.repository.QuizScoreRepository
+import app.vdvoem.core.domain.repository.TaskRepository
 import app.vdvoem.core.domain.repository.WishRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -45,6 +46,7 @@ class PendingChanges(
     private val pokeRepository: PokeRepository,
     private val quizScoreRepository: QuizScoreRepository,
     private val lessonRepository: LessonRepository,
+    private val taskRepository: TaskRepository,
     private val cycleRepository: CycleRepository,
     private val statusHolder: SyncStatusHolder
 ) {
@@ -109,6 +111,8 @@ class PendingChanges(
             .count { it.pairId == pairId && isPending("quiz", it.id, it.updatedAt) }
         total += lessonRepository.observeIncludingDeleted().first()
             .count { it.pairId == pairId && isPending("lesson", it.id, it.updatedAt) }
+        total += taskRepository.observeIncludingDeleted().first()
+            .count { it.pairId == pairId && isPending("task", it.id, it.updatedAt) }
         total += cycleRepository.observeDaysIncludingDeleted().first()
             .count { it.pairId == pairId && isPending("cycleDay", it.id, it.updatedAt) }
         total += cycleRepository.observeSettingsIncludingDeleted().first()

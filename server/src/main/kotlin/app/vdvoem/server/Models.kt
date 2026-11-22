@@ -76,6 +76,7 @@ data class ChangesDto(
     val pokes: List<PokeDto> = emptyList(),
     @SerialName("quizScores") val quizScores: List<QuizScoreDto> = emptyList(),
     val lessons: List<LessonDto> = emptyList(),
+    val tasks: List<TaskDto> = emptyList(),
     @SerialName("cycleDays") val cycleDays: List<CycleDayDto> = emptyList(),
     @SerialName("cycleSettings") val cycleSettings: List<CycleSettingsDto> = emptyList()
 )
@@ -93,6 +94,20 @@ data class LessonDto(
     @SerialName("textbookBy") val textbookBy: String? = null,
     @SerialName("updatedAt") val updatedAt: Long = 0,
     @SerialName("deletedAt") val deletedAt: Long? = null
+)
+
+@Serializable
+data class TaskDto(
+    val id: String,
+    val title: String = "",
+    val note: String = "",
+    @SerialName("dueAt") val dueAt: Long? = null,
+    @SerialName("isCompleted") val isCompleted: Boolean = false,
+    @SerialName("createdBy") val createdBy: String = "",
+    @SerialName("createdAt") val createdAt: Long = 0,
+    @SerialName("updatedAt") val updatedAt: Long = 0,
+    @SerialName("deletedAt") val deletedAt: Long? = null,
+    val version: Long = 1L
 )
 
 @Serializable

@@ -115,6 +115,7 @@ class SyncSettingsStore(private val context: Context) {
             changes.pokes.forEach { put(syncAckKey(pairId, "poke", it.id), it.updatedAt) }
             changes.quizScores.forEach { put(syncAckKey(pairId, "quiz", it.id), it.updatedAt) }
             changes.lessons.forEach { put(syncAckKey(pairId, "lesson", it.id), it.updatedAt) }
+            changes.tasks.forEach { put(syncAckKey(pairId, "task", it.id), it.updatedAt) }
             changes.cycleDays.forEach { put(syncAckKey(pairId, "cycleDay", it.id), it.updatedAt) }
             changes.cycleSettings.forEach { put(syncAckKey(pairId, "cycleSettings", it.id), it.updatedAt) }
         }
