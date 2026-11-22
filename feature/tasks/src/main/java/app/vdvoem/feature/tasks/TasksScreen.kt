@@ -74,14 +74,17 @@ fun TasksScreen(
                 modifier = Modifier.align(Alignment.Center)
             )
 
-            state.isEmpty -> EmptyState(
-                icon = Icons.Filled.CheckCircle,
-                title = stringResource(R.string.tasks_empty_title),
-                message = stringResource(R.string.tasks_empty_message),
-                actionLabel = stringResource(R.string.tasks_add),
-                onAction = onAdd,
-                modifier = Modifier.padding(top = VdvoemSpacing.huge)
-            )
+            state.isEmpty -> Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                EmptyState(
+                    icon = Icons.Filled.CheckCircle,
+                    title = stringResource(R.string.tasks_empty_title),
+                    message = stringResource(R.string.tasks_empty_message),
+                    modifier = Modifier.padding(horizontal = VdvoemSpacing.xl)
+                )
+            }
 
             else -> LazyColumn(
                 modifier = Modifier.fillMaxSize(),
