@@ -289,6 +289,32 @@ class Repository(private val dataSource: DataSource) {
             }
         }
 
+        val tasks = connection.prepareStatement(
+            "SELECT id, title, note, due_at, is_completed, created_by, created_at, updated_at, deleted_at, version " +
+                "FROM tasks WHERE pair_id = ? AND revision > ? ORDER BY updated_at"
+        ).use { statement ->
+            statement.setObject(1, java.util.UUID.fromString(pairId))
+            statement.setLong(2, since)
+            statement.executeQuery().use { rows ->
+                buildList {
+                    while (rows.next()) add(
+                        TaskDto(
+                            id = rows.getString(1),
+                            title = rows.getString(2).orEmpty(),
+                            note = rows.getString(3).orEmpty(),
+                            dueAt = rows.getLong(4).takeUnless { rows.wasNull() },
+                            isCompleted = rows.getBoolean(5),
+                            createdBy = rows.getString(6).orEmpty(),
+                            createdAt = rows.getLong(7),
+                            updatedAt = rows.getLong(8),
+                            deletedAt = rows.getLong(9).takeUnless { rows.wasNull() },
+                            version = rows.getLong(10).coerceAtLeast(1)
+                        )
+                    )
+                }
+            }
+        }
+
         val cycleDays = connection.prepareStatement(
             "SELECT id, date_millis, period, flow, symptoms, mood, weight, note, updated_at, deleted_at " +
                 "FROM cycle_days WHERE pair_id = ? AND revision > ? ORDER BY date_millis"
@@ -338,7 +364,7 @@ class Repository(private val dataSource: DataSource) {
 
         ChangesDto(
             pair = pair, events = events, wishes = wishes, gifts = gifts, pokes = pokes,
-            quizScores = quizScores, lessons = lessons, cycleDays = cycleDays,
+            quizScores = quizScores, lessons = lessons, tasks = tasks, cycleDays = cycleDays,
             cycleSettings = cycleSettings
         )
     }
@@ -545,6 +571,37 @@ class Repository(private val dataSource: DataSource) {
                     if (lesson.deletedAt != null) statement.setLong(11, lesson.deletedAt)
                     else statement.setNull(11, java.sql.Types.BIGINT)
                     statement.setString(12, lesson.textbookBy)
+                    statement.executeUpdate()
+                }
+            }
+
+            changes.tasks.forEach { task ->
+                applied += tx.prepareStatement(
+                    """
+                    INSERT INTO tasks (id, pair_id, title, note, due_at, is_completed,
+                        created_by, created_at, updated_at, deleted_at, version)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title,
+                        note = EXCLUDED.note, due_at = EXCLUDED.due_at,
+                        is_completed = EXCLUDED.is_completed, created_by = EXCLUDED.created_by,
+                        created_at = EXCLUDED.created_at, updated_at = EXCLUDED.updated_at,
+                        deleted_at = EXCLUDED.deleted_at, version = EXCLUDED.version
+                    WHERE tasks.pair_id = EXCLUDED.pair_id AND EXCLUDED.updated_at > tasks.updated_at
+                    """.trimIndent()
+                ).use { statement ->
+                    statement.setObject(1, java.util.UUID.fromString(task.id))
+                    statement.setObject(2, java.util.UUID.fromString(pairId))
+                    statement.setString(3, task.title)
+                    statement.setString(4, task.note)
+                    if (task.dueAt != null) statement.setLong(5, task.dueAt)
+                    else statement.setNull(5, java.sql.Types.BIGINT)
+                    statement.setBoolean(6, task.isCompleted)
+                    statement.setString(7, task.createdBy)
+                    statement.setLong(8, if (task.createdAt > 0) task.createdAt else task.updatedAt)
+                    statement.setLong(9, task.updatedAt)
+                    if (task.deletedAt != null) statement.setLong(10, task.deletedAt)
+                    else statement.setNull(10, java.sql.Types.BIGINT)
+                    statement.setLong(11, task.version.coerceAtLeast(1))
                     statement.executeUpdate()
                 }
             }

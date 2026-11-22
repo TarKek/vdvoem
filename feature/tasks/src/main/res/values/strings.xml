@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tasks_module_title">Общие дела</string>
+    <string name="tasks_module_description">Один список задач для двоих: планы, сроки и маленькие бытовые дела</string>
+    <string name="tasks_add">Добавить дело</string>
+    <string name="tasks_loading">Загружаем общие дела…</string>
+    <string name="tasks_empty_title">Пока нет общих дел</string>
+    <string name="tasks_empty_message">Добавьте первую задачу — она появится у обоих партнёров после синхронизации.</string>
+    <string name="tasks_new">Новое дело</string>
+    <string name="tasks_edit">Общее дело</string>
+    <string name="tasks_field_title">Что нужно сделать</string>
+    <string name="tasks_field_note">Короткая заметка</string>
+    <string name="tasks_field_due">Срок: %1$s</string>
+    <string name="tasks_field_no_due">Добавить срок</string>
+    <string name="tasks_clear_due">Убрать срок</string>
+    <string name="tasks_save">Сохранить</string>
+    <string name="tasks_cancel">Отмена</string>
+    <string name="tasks_ok">Готово</string>
+    <string name="tasks_delete">Удалить</string>
+    <string name="tasks_delete_confirm_title">Удалить дело?</string>
+    <string name="tasks_delete_confirm_message">Дело исчезнет из общего списка у обоих партнёров.</string>
+    <string name="tasks_mark_completed">Отметить выполненной</string>
+    <string name="tasks_mark_active">Вернуть в активные</string>
+    <string name="tasks_completed">Выполнено</string>
+    <string name="tasks_error_empty_title">Укажите, что нужно сделать</string>
+    <string name="tasks_error_dialog_title">Не получилось</string>
+    <string name="tasks_error_load">Не удалось загрузить общие дела. Попробуйте ещё раз.</string>
+    <string name="tasks_error_save">Не удалось сохранить изменения. Проверьте хранилище и попробуйте ещё раз.</string>
+    <string name="tasks_error_dismiss">Понятно</string>
+</resources>

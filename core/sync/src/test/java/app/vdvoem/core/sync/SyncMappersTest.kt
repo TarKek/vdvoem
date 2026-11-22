@@ -2,6 +2,7 @@ package app.vdvoem.core.sync
 
 import app.vdvoem.core.domain.model.Gift
 import app.vdvoem.core.domain.model.GiftStatus
+import app.vdvoem.core.domain.model.SharedTask
 import app.vdvoem.core.domain.model.Wish
 import app.vdvoem.core.domain.model.WishStatus
 import app.vdvoem.core.sync.SyncMappers.toDomain
@@ -86,5 +87,37 @@ class SyncMappersTest {
             .toDomain(fallbackPairId = "pair")
         assertNull(back.wishId)
         assertNull(back.deletedAt)
+    }
+
+    @Test
+    fun `shared task keeps due date completion and tombstone`() {
+        val task = SharedTask(
+            id = "t1",
+            pairId = "pair",
+            title = "Купить продукты",
+            note = "Сыр",
+            dueAt = 1_762_086_400_000L,
+            isCompleted = true,
+            createdBy = "device-a",
+            createdAt = 1_762_000_000_000L,
+            updatedAt = 1_762_000_000_100L,
+            deletedAt = 1_762_000_000_200L,
+            version = 4L
+        )
+
+        val back = task.toDto().toDomain(fallbackPairId = "fallback")
+
+        assertEquals(task, back)
+    }
+
+    @Test
+    fun `task without a pair id uses the settings pair`() {
+        val dto = TaskDto(id = "t2", title = "Позвонить")
+
+        val back = dto.toDomain(fallbackPairId = "settings-pair")
+
+        assertEquals("settings-pair", back.pairId)
+        assertNull(back.dueAt)
+        assertEquals(1L, back.version)
     }
 }

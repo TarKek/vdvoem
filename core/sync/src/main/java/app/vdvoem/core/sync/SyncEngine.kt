@@ -9,6 +9,7 @@ import app.vdvoem.core.domain.model.Lesson
 import app.vdvoem.core.domain.model.Pair
 import app.vdvoem.core.domain.model.Poke
 import app.vdvoem.core.domain.model.QuizScore
+import app.vdvoem.core.domain.model.SharedTask
 import app.vdvoem.core.domain.model.Wish
 import app.vdvoem.core.domain.repository.CalendarRepository
 import app.vdvoem.core.domain.repository.CycleRepository
@@ -17,6 +18,7 @@ import app.vdvoem.core.domain.repository.LessonRepository
 import app.vdvoem.core.domain.repository.PairRepository
 import app.vdvoem.core.domain.repository.PokeRepository
 import app.vdvoem.core.domain.repository.QuizScoreRepository
+import app.vdvoem.core.domain.repository.TaskRepository
 import app.vdvoem.core.domain.repository.WishRepository
 import app.vdvoem.core.sync.SyncMappers.toDomain
 import app.vdvoem.core.sync.SyncMappers.toDto
@@ -50,6 +52,7 @@ class SyncEngine(
     private val pokeRepository: PokeRepository,
     private val quizScoreRepository: QuizScoreRepository,
     private val lessonRepository: LessonRepository,
+    private val taskRepository: TaskRepository,
     private val cycleRepository: CycleRepository,
     private val statusHolder: SyncStatusHolder,
     /** Колбэк «пришло новое сердечко от партнёра»: уведомление рисует слой приложения. */
@@ -99,6 +102,7 @@ class SyncEngine(
 
             applied += applyQuizScores(remote.quizScores, pairId)
             applied += applyLessons(remote.lessons, pairId)
+            applied += applyTasks(remote.tasks, pairId)
             applied += applyCycleDays(remote.cycleDays, pairId)
             applied += applyCycleSettings(remote.cycleSettings, pairId)
             settingsStore.markPushed(pairId, remote)
@@ -124,6 +128,7 @@ class SyncEngine(
 
                 applied += applyQuizScores(response.quizScores, pairId)
                 applied += applyLessons(response.lessons, pairId)
+                applied += applyTasks(response.tasks, pairId)
                 applied += applyCycleDays(response.cycleDays, pairId)
                 applied += applyCycleSettings(response.cycleSettings, pairId)
 
@@ -248,6 +253,21 @@ class SyncEngine(
         return applied
     }
 
+    /** Применяет общие дела партнёра; tombstone не даёт воскресить удалённое. */
+    private suspend fun applyTasks(remote: List<TaskDto>, pairId: String): Int {
+        if (remote.isEmpty()) return 0
+        val localById = taskRepository.observeIncludingDeleted().first().associateBy { it.id }
+        var applied = 0
+        remote.forEach { dto ->
+            val local = localById[dto.id]
+            if (shouldApplyRemote(local?.updatedAt, local?.deletedAt, dto.updatedAt)) {
+                taskRepository.save(dto.toDomain(fallbackPairId = pairId))
+                applied++
+            }
+        }
+        return applied
+    }
+
     /** Применяет дни цикла партнёра; tombstone важнее старых локальных копий. */
     private suspend fun applyCycleDays(remote: List<CycleDayDto>, pairId: String): Int {
         if (remote.isEmpty()) return 0
@@ -299,6 +319,8 @@ class SyncEngine(
             .filter { it.pairId == pairId && isPending("quiz", it.id, it.updatedAt) }
         val lessons: List<Lesson> = lessonRepository.observeIncludingDeleted().first()
             .filter { it.pairId == pairId && isPending("lesson", it.id, it.updatedAt) }
+        val tasks: List<SharedTask> = taskRepository.observeIncludingDeleted().first()
+            .filter { it.pairId == pairId && isPending("task", it.id, it.updatedAt) }
         val cycleDays: List<CycleDay> = cycleRepository.observeDaysIncludingDeleted().first()
             .filter { it.pairId == pairId && isPending("cycleDay", it.id, it.updatedAt) }
         val cycleSettings: List<CycleSettings> = cycleRepository.observeSettingsIncludingDeleted().first()
@@ -312,6 +334,7 @@ class SyncEngine(
             pokes = pokes.map { it.toDto() },
             quizScores = quizScores.map { it.toDto() },
             lessons = lessons.map { it.toDto() },
+            tasks = tasks.map { it.toDto() },
             cycleDays = cycleDays.map { it.toDto() },
             cycleSettings = cycleSettings.map { it.toDto() }
         )

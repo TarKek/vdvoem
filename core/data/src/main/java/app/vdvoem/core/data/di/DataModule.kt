@@ -9,6 +9,7 @@ import app.vdvoem.core.data.repository.RoomPairRepository
 import app.vdvoem.core.data.repository.RoomPokeRepository
 import app.vdvoem.core.data.repository.RoomQuizScoreRepository
 import app.vdvoem.core.data.repository.RoomLessonRepository
+import app.vdvoem.core.data.repository.RoomTaskRepository
 import app.vdvoem.core.data.repository.RoomWishGiftConverter
 import app.vdvoem.core.data.repository.RoomWishRepository
 import app.vdvoem.core.data.settings.DataStoreAppSettingsRepository
@@ -22,6 +23,7 @@ import app.vdvoem.core.domain.repository.ModuleSettingsRepository
 import app.vdvoem.core.domain.repository.PairRepository
 import app.vdvoem.core.domain.repository.PokeRepository
 import app.vdvoem.core.domain.repository.QuizScoreRepository
+import app.vdvoem.core.domain.repository.TaskRepository
 import app.vdvoem.core.domain.repository.WishGiftConverter
 import app.vdvoem.core.domain.repository.WishRepository
 import app.vdvoem.core.domain.settings.AppSettingsRepository
@@ -48,7 +50,8 @@ val dataModule = module {
                 VdvoemDatabase.MIGRATION_7_8,
                 VdvoemDatabase.MIGRATION_8_9,
                 VdvoemDatabase.MIGRATION_9_10,
-                VdvoemDatabase.MIGRATION_10_11
+                VdvoemDatabase.MIGRATION_10_11,
+                VdvoemDatabase.MIGRATION_11_12
             )
             .build()
     }
@@ -59,6 +62,7 @@ val dataModule = module {
     single { get<VdvoemDatabase>().pokeDao() }
     single { get<VdvoemDatabase>().quizScoreDao() }
     single { get<VdvoemDatabase>().lessonDao() }
+    single { get<VdvoemDatabase>().taskDao() }
     single { get<VdvoemDatabase>().cycleDayDao() }
     single { get<VdvoemDatabase>().cycleSettingsDao() }
 
@@ -70,6 +74,7 @@ val dataModule = module {
     single<PokeRepository> { RoomPokeRepository(get()) }
     single<QuizScoreRepository> { RoomQuizScoreRepository(get()) }
     single<LessonRepository> { RoomLessonRepository(get()) }
+    single<TaskRepository> { RoomTaskRepository(get()) }
     single<CycleRepository> { RoomCycleRepository(get(), get()) }
     single<AppSettingsRepository> { DataStoreAppSettingsRepository(androidContext()) }
 }

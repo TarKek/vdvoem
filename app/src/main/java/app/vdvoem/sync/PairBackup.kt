@@ -10,6 +10,7 @@ import app.vdvoem.core.domain.model.Lesson
 import app.vdvoem.core.domain.model.Pair
 import app.vdvoem.core.domain.model.Poke
 import app.vdvoem.core.domain.model.QuizScore
+import app.vdvoem.core.domain.model.SharedTask
 import app.vdvoem.core.domain.model.Wish
 import app.vdvoem.core.domain.model.WishStatus
 import org.json.JSONArray
@@ -35,13 +36,14 @@ object PairBackup {
         val pokes: List<Poke> = emptyList(),
         val quizScores: List<QuizScore> = emptyList(),
         val lessons: List<Lesson> = emptyList(),
+        val tasks: List<SharedTask> = emptyList(),
         val cycleDays: List<CycleDay> = emptyList(),
         val cycleSettings: CycleSettings? = null
     ) {
         /** Сколько записей реально переносится — для сообщения «Загружено записей». */
         val total: Int
             get() = events.size + wishes.size + gifts.size + pokes.size + quizScores.size +
-                lessons.size + cycleDays.size + (if (cycleSettings != null) 1 else 0)
+                lessons.size + tasks.size + cycleDays.size + (if (cycleSettings != null) 1 else 0)
     }
 
     fun export(snapshot: Snapshot): String {
@@ -167,6 +169,25 @@ object PairBackup {
             }
         })
 
+        root.put("tasks", JSONArray().apply {
+            snapshot.tasks.forEach { task ->
+                put(
+                    JSONObject()
+                        .put("id", task.id)
+                        .put("pairId", task.pairId)
+                        .put("title", task.title)
+                        .put("note", task.note)
+                        .put("dueAt", task.dueAt ?: JSONObject.NULL)
+                        .put("isCompleted", task.isCompleted)
+                        .put("createdBy", task.createdBy)
+                        .put("createdAt", task.createdAt)
+                        .put("updatedAt", task.updatedAt)
+                        .put("deletedAt", task.deletedAt ?: JSONObject.NULL)
+                        .put("version", task.version)
+                )
+            }
+        })
+
         root.put("cycleDays", JSONArray().apply {
             snapshot.cycleDays.forEach { day ->
                 put(
@@ -211,6 +232,7 @@ object PairBackup {
             snapshot.pokes.forEach { add(it.id) }
             snapshot.quizScores.forEach { add(it.id) }
             snapshot.lessons.forEach { add(it.id) }
+            snapshot.tasks.forEach { add(it.id) }
             snapshot.cycleDays.forEach { add(it.id) }
             snapshot.cycleSettings?.let { add(it.id) }
         }
@@ -315,6 +337,21 @@ object PairBackup {
                     textbookBy = json.optString("textbookBy"),
                     updatedAt = json.optLong("updatedAt", 0L),
                     deletedAt = json.optLongOrNull("deletedAt")
+                )
+            },
+            tasks = root.optJSONArray("tasks").mapObjects { json ->
+                SharedTask(
+                    id = json.getString("id"),
+                    pairId = json.optString("pairId"),
+                    title = json.optString("title"),
+                    note = json.optString("note"),
+                    dueAt = json.optLongOrNull("dueAt"),
+                    isCompleted = json.optBoolean("isCompleted", false),
+                    createdBy = json.optString("createdBy"),
+                    createdAt = json.optLong("createdAt", 0L),
+                    updatedAt = json.optLong("updatedAt", 0L),
+                    deletedAt = json.optLongOrNull("deletedAt"),
+                    version = json.optLong("version", 1L).coerceAtLeast(1L)
                 )
             },
             cycleDays = root.optJSONArray("cycleDays").mapObjects { json ->

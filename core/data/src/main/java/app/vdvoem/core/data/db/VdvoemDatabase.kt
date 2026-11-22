@@ -15,10 +15,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PokeEntity::class,
         QuizScoreEntity::class,
         LessonEntity::class,
+        TaskEntity::class,
         CycleDayEntity::class,
         CycleSettingsEntity::class
     ],
-    version = 11,
+    version = 12,
     exportSchema = false
 )
 @TypeConverters(CycleConverters::class)
@@ -30,6 +31,7 @@ abstract class VdvoemDatabase : RoomDatabase() {
     abstract fun pokeDao(): PokeDao
     abstract fun quizScoreDao(): QuizScoreDao
     abstract fun lessonDao(): LessonDao
+    abstract fun taskDao(): TaskDao
     abstract fun cycleDayDao(): CycleDayDao
     abstract fun cycleSettingsDao(): CycleSettingsDao
 
@@ -229,6 +231,31 @@ abstract class VdvoemDatabase : RoomDatabase() {
         val MIGRATION_10_11 = object : Migration(10, 11) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE `lessons` ADD COLUMN `textbook_by` TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
+        /** v11 → v12: общие дела пары. */
+        val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `tasks` (
+                        `id` TEXT NOT NULL,
+                        `pairId` TEXT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `note` TEXT NOT NULL DEFAULT '',
+                        `dueAt` INTEGER,
+                        `isCompleted` INTEGER NOT NULL DEFAULT 0,
+                        `createdBy` TEXT NOT NULL DEFAULT '',
+                        `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        `deletedAt` INTEGER,
+                        `version` INTEGER NOT NULL DEFAULT 1,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_tasks_pairId` ON `tasks` (`pairId`)")
             }
         }
     }

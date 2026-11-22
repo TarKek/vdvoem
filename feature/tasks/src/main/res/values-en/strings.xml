@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tasks_module_title">Shared tasks</string>
+    <string name="tasks_module_description">One task list for both of you: plans, deadlines and everyday chores</string>
+    <string name="tasks_add">Add task</string>
+    <string name="tasks_loading">Loading shared tasks…</string>
+    <string name="tasks_empty_title">No shared tasks yet</string>
+    <string name="tasks_empty_message">Add your first task — both partners will see it after syncing.</string>
+    <string name="tasks_new">New task</string>
+    <string name="tasks_edit">Shared task</string>
+    <string name="tasks_field_title">What needs doing</string>
+    <string name="tasks_field_note">Short note</string>
+    <string name="tasks_field_due">Due: %1$s</string>
+    <string name="tasks_field_no_due">Add due date</string>
+    <string name="tasks_clear_due">Remove due date</string>
+    <string name="tasks_save">Save</string>
+    <string name="tasks_cancel">Cancel</string>
+    <string name="tasks_ok">Done</string>
+    <string name="tasks_delete">Delete</string>
+    <string name="tasks_delete_confirm_title">Delete this task?</string>
+    <string name="tasks_delete_confirm_message">The task will disappear from both partners’ shared list.</string>
+    <string name="tasks_mark_completed">Mark as completed</string>
+    <string name="tasks_mark_active">Move back to active</string>
+    <string name="tasks_completed">Completed</string>
+    <string name="tasks_error_empty_title">Enter what needs doing</string>
+    <string name="tasks_error_dialog_title">Something went wrong</string>
+    <string name="tasks_error_load">Couldn’t load shared tasks. Please try again.</string>
+    <string name="tasks_error_save">Couldn’t save your changes. Check device storage and try again.</string>
+    <string name="tasks_error_dismiss">Got it</string>
+</resources>

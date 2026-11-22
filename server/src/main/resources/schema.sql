@@ -100,6 +100,22 @@ CREATE TABLE IF NOT EXISTS lessons (
 );
 CREATE INDEX IF NOT EXISTS idx_lessons_pair_updated ON lessons (pair_id, updated_at);
 
+-- Общие дела пары: чек-лист со сроком, заметкой и tombstones.
+CREATE TABLE IF NOT EXISTS tasks (
+    id           UUID PRIMARY KEY,
+    pair_id      UUID NOT NULL REFERENCES pairs (id) ON DELETE CASCADE,
+    title        TEXT NOT NULL DEFAULT '',
+    note         TEXT NOT NULL DEFAULT '',
+    due_at       BIGINT,
+    is_completed BOOLEAN NOT NULL DEFAULT FALSE,
+    created_by   TEXT NOT NULL DEFAULT '',
+    created_at   BIGINT NOT NULL DEFAULT 0,
+    updated_at   BIGINT NOT NULL,
+    deleted_at   BIGINT,
+    version      BIGINT NOT NULL DEFAULT 1
+);
+CREATE INDEX IF NOT EXISTS idx_tasks_pair_updated ON tasks (pair_id, updated_at);
+
 -- Трекер менструального цикла пары: дни и настройки.
 -- id здесь TEXT, а не UUID: если клиент принесёт id не в формате UUID (например, из
 -- файла резервной копии), приведение типа не сорвёт весь push.
@@ -147,6 +163,7 @@ ALTER TABLE gifts ADD COLUMN IF NOT EXISTS given_at BIGINT;
 ALTER TABLE pokes ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0;
 ALTER TABLE quiz_scores ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0;
 ALTER TABLE lessons ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0;
 
 -- Кто берёт учебник на предмет: свободный текст, по умолчанию пусто.
 ALTER TABLE lessons ADD COLUMN IF NOT EXISTS textbook_by TEXT NOT NULL DEFAULT '';
@@ -159,6 +176,7 @@ CREATE INDEX IF NOT EXISTS idx_gifts_pair_revision ON gifts (pair_id, revision);
 CREATE INDEX IF NOT EXISTS idx_pokes_pair_revision ON pokes (pair_id, revision);
 CREATE INDEX IF NOT EXISTS idx_quiz_scores_pair_revision ON quiz_scores (pair_id, revision);
 CREATE INDEX IF NOT EXISTS idx_lessons_pair_revision ON lessons (pair_id, revision);
+CREATE INDEX IF NOT EXISTS idx_tasks_pair_revision ON tasks (pair_id, revision);
 CREATE INDEX IF NOT EXISTS idx_cycle_days_pair_revision ON cycle_days (pair_id, revision);
 CREATE INDEX IF NOT EXISTS idx_cycle_settings_pair_revision ON cycle_settings (pair_id, revision);
 
@@ -170,6 +188,7 @@ UPDATE gifts SET revision = 1 WHERE revision = 0;
 UPDATE pokes SET revision = 1 WHERE revision = 0;
 UPDATE quiz_scores SET revision = 1 WHERE revision = 0;
 UPDATE lessons SET revision = 1 WHERE revision = 0;
+UPDATE tasks SET revision = 1 WHERE revision = 0;
 UPDATE cycle_days SET revision = 1 WHERE revision = 0;
 UPDATE cycle_settings SET revision = 1 WHERE revision = 0;
 
@@ -197,6 +216,9 @@ CREATE TRIGGER assign_revision BEFORE INSERT OR UPDATE ON quiz_scores
     FOR EACH ROW EXECUTE FUNCTION vdvoem_assign_revision();
 DROP TRIGGER IF EXISTS assign_revision ON lessons;
 CREATE TRIGGER assign_revision BEFORE INSERT OR UPDATE ON lessons
+    FOR EACH ROW EXECUTE FUNCTION vdvoem_assign_revision();
+DROP TRIGGER IF EXISTS assign_revision ON tasks;
+CREATE TRIGGER assign_revision BEFORE INSERT OR UPDATE ON tasks
     FOR EACH ROW EXECUTE FUNCTION vdvoem_assign_revision();
 DROP TRIGGER IF EXISTS assign_revision ON cycle_days;
 CREATE TRIGGER assign_revision BEFORE INSERT OR UPDATE ON cycle_days

@@ -12,6 +12,7 @@ import app.vdvoem.core.domain.model.Lesson
 import app.vdvoem.core.domain.model.Pair
 import app.vdvoem.core.domain.model.Poke
 import app.vdvoem.core.domain.model.QuizScore
+import app.vdvoem.core.domain.model.SharedTask
 import app.vdvoem.core.domain.model.Wish
 import app.vdvoem.core.domain.model.WishStatus
 
@@ -149,6 +150,34 @@ object SyncMappers {
         textbookBy = textbookBy,
         updatedAt = updatedAt,
         deletedAt = deletedAt
+    )
+
+    fun SharedTask.toDto(): TaskDto = TaskDto(
+        id = id,
+        title = title,
+        note = note,
+        dueAt = dueAt,
+        isCompleted = isCompleted,
+        createdBy = createdBy,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+        deletedAt = deletedAt,
+        version = version,
+        pairId = pairId
+    )
+
+    fun TaskDto.toDomain(fallbackPairId: String = ""): SharedTask = SharedTask(
+        id = id,
+        pairId = pairId?.takeIf { it.isNotBlank() } ?: fallbackPairId,
+        title = title,
+        note = note,
+        dueAt = dueAt,
+        isCompleted = isCompleted,
+        createdBy = createdBy,
+        createdAt = if (createdAt > 0) createdAt else updatedAt,
+        updatedAt = updatedAt,
+        deletedAt = deletedAt,
+        version = version.coerceAtLeast(1)
     )
 
     fun Poke.toDto(): PokeDto = PokeDto(

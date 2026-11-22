@@ -2,6 +2,7 @@ package app.vdvoem.core.data.db
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "pair")
@@ -97,6 +98,24 @@ data class LessonEntity(
     @ColumnInfo(name = "textbook_by") val textbookBy: String = "",
     val updatedAt: Long,
     val deletedAt: Long? = null
+)
+
+/**
+ * Общее дело пары: местный кэш и tombstones для синхронизации.
+ */
+@Entity(tableName = "tasks", indices = [Index("pairId")])
+data class TaskEntity(
+    @PrimaryKey val id: String,
+    val pairId: String,
+    val title: String,
+    @ColumnInfo(defaultValue = "''") val note: String = "",
+    val dueAt: Long? = null,
+    @ColumnInfo(defaultValue = "0") val isCompleted: Boolean = false,
+    @ColumnInfo(defaultValue = "''") val createdBy: String = "",
+    val createdAt: Long,
+    val updatedAt: Long,
+    val deletedAt: Long? = null,
+    @ColumnInfo(defaultValue = "1") val version: Long = 1L
 )
 
 /**

@@ -32,6 +32,7 @@ internal fun ChangesDto.maxUpdatedAt(): Long = (
         pokes.map { it.updatedAt } +
         quizScores.map { it.updatedAt } +
         lessons.map { it.updatedAt } +
+        tasks.map { it.updatedAt } +
         cycleDays.map { it.updatedAt } +
         cycleSettings.map { it.updatedAt }
     ).maxOrNull() ?: 0L

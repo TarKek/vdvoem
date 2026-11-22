@@ -10,6 +10,7 @@ import app.vdvoem.feature.settings.SettingsModule
 import app.vdvoem.feature.settings.SettingsViewModel
 import app.vdvoem.feature.store.StoreModule
 import app.vdvoem.feature.timetable.TimetableModule
+import app.vdvoem.feature.tasks.TasksModule
 import app.vdvoem.feature.notes.NotesModule
 import app.vdvoem.feature.cycle.CycleModule
 import app.vdvoem.feature.dates.DatesModule
@@ -42,6 +43,7 @@ val appKoinModule = module {
                 get<SettingsModule>(),
                 get<QuizzesModule>(),
                 get<TimetableModule>(),
+                get<TasksModule>(),
                 get<NotesModule>(),
                 get<CycleModule>(),
                 get<DatesModule>(),
@@ -80,6 +82,7 @@ val appKoinModule = module {
             pokeRepository = get(),
             quizScoreRepository = get(),
             lessonRepository = get(),
+            taskRepository = get(),
             cycleRepository = get(),
             deviceIdentity = get(),
             database = get()

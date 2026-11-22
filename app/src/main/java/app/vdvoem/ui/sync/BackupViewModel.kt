@@ -12,6 +12,7 @@ import app.vdvoem.core.domain.repository.LessonRepository
 import app.vdvoem.core.domain.repository.PairRepository
 import app.vdvoem.core.domain.repository.PokeRepository
 import app.vdvoem.core.domain.repository.QuizScoreRepository
+import app.vdvoem.core.domain.repository.TaskRepository
 import app.vdvoem.core.domain.repository.WishRepository
 import app.vdvoem.sync.PairBackup
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +33,7 @@ class BackupViewModel(
     private val pokeRepository: PokeRepository,
     private val quizScoreRepository: QuizScoreRepository,
     private val lessonRepository: LessonRepository,
+    private val taskRepository: TaskRepository,
     private val cycleRepository: CycleRepository,
     private val deviceIdentity: DeviceIdentity,
     private val database: VdvoemDatabase
@@ -52,6 +54,7 @@ class BackupViewModel(
                 pokes = pokeRepository.observe().first(),
                 quizScores = quizScoreRepository.observe().first(),
                 lessons = lessonRepository.observe().first(),
+                tasks = taskRepository.observe().first(),
                 // Ручная копия не содержит приватный payload удалённых медицинских записей.
                 cycleDays = cycleRepository.observeDays().first(),
                 cycleSettings = cycleRepository.observeSettings().first()
@@ -126,6 +129,15 @@ class BackupViewModel(
                 val local = lessons[incoming.id]
                 if (isNewer(incoming.updatedAt, incoming.deletedAt, local?.updatedAt, local?.deletedAt)) {
                     lessonRepository.save(incoming)
+                    imported++
+                }
+            }
+
+            val tasks = taskRepository.observeIncludingDeleted().first().associateBy { it.id }
+            snapshot.tasks.forEach { incoming ->
+                val local = tasks[incoming.id]
+                if (isNewer(incoming.updatedAt, incoming.deletedAt, local?.updatedAt, local?.deletedAt)) {
+                    taskRepository.save(incoming)
                     imported++
                 }
             }

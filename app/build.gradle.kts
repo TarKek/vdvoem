@@ -107,6 +107,7 @@ dependencies {
     implementation(project(":feature:cycle"))
     implementation(project(":feature:dates"))
     implementation(project(":feature:voice"))
+    implementation(project(":feature:tasks"))
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 

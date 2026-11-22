@@ -114,6 +114,26 @@ interface LessonDao {
 }
 
 @Dao
+interface TaskDao {
+    @Query(
+        "SELECT * FROM tasks WHERE deletedAt IS NULL " +
+            "AND pairId = (SELECT id FROM pair WHERE deletedAt IS NULL ORDER BY updatedAt DESC LIMIT 1) " +
+            "ORDER BY isCompleted ASC, CASE WHEN dueAt IS NULL THEN 1 ELSE 0 END, dueAt ASC, updatedAt DESC"
+    )
+    fun observeAll(): Flow<List<TaskEntity>>
+
+    /** Включая tombstone: синку нужны удаления, экрану — нет. */
+    @Query("SELECT * FROM tasks ORDER BY updatedAt DESC")
+    fun observeAllIncludingDeleted(): Flow<List<TaskEntity>>
+
+    @Upsert
+    suspend fun upsert(task: TaskEntity)
+
+    @Query("UPDATE tasks SET deletedAt = :now, updatedAt = :now WHERE id = :id")
+    suspend fun softDelete(id: String, now: Long)
+}
+
+@Dao
 interface CycleDayDao {
     @Query("SELECT * FROM cycle_days WHERE deletedAt IS NULL AND pairId = (SELECT id FROM pair WHERE deletedAt IS NULL ORDER BY updatedAt DESC LIMIT 1) ORDER BY dateMillis ASC")
     fun observeAll(): Flow<List<CycleDayEntity>>
