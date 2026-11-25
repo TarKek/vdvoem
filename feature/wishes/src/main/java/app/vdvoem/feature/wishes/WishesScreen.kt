@@ -3,7 +3,6 @@ package app.vdvoem.feature.wishes
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -593,9 +592,9 @@ private fun WishLink(url: String) {
     val context = LocalContext.current
     val openLabel = stringResource(R.string.wishes_open_link)
     Text(
-        text = "Ссылка: $url",
+        text = url,
         style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onPrimary,
+        color = MaterialTheme.colorScheme.primary,
         textDecoration = TextDecoration.Underline,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
@@ -603,7 +602,6 @@ private fun WishLink(url: String) {
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.small)
             .clickable(onClickLabel = openLabel) { openLink(context, url) }
-            .background(MaterialTheme.colorScheme.primary, shape = MaterialTheme.shapes.small)
     )
 }
 
@@ -676,6 +674,15 @@ private fun WishDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it.trim() },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    label = { Text(stringResource(R.string.wishes_field_url)) },
+                    placeholder = { Text(stringResource(R.string.wishes_field_url_hint)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
                     minLines = 2,
@@ -692,15 +699,6 @@ private fun WishDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     label = { Text(stringResource(R.string.wishes_field_price)) },
                     placeholder = { Text(stringResource(R.string.wishes_field_price_hint)) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = url,
-                    onValueChange = { url = it.trim() },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                    label = { Text(stringResource(R.string.wishes_field_url)) },
-                    placeholder = { Text(stringResource(R.string.wishes_field_url_hint)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 PriorityPicker(priority = priority, onPriorityChange = { priority = it })
