@@ -3,6 +3,7 @@ package app.vdvoem.feature.wishes
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -592,9 +593,9 @@ private fun WishLink(url: String) {
     val context = LocalContext.current
     val openLabel = stringResource(R.string.wishes_open_link)
     Text(
-        text = url,
+        text = "Ссылка: $url",
         style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.primary,
+        color = MaterialTheme.colorScheme.onPrimary,
         textDecoration = TextDecoration.Underline,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
@@ -602,6 +603,7 @@ private fun WishLink(url: String) {
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.small)
             .clickable(onClickLabel = openLabel) { openLink(context, url) }
+            .background(MaterialTheme.colorScheme.primary, shape = MaterialTheme.shapes.small)
     )
 }
 
