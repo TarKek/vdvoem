@@ -674,6 +674,15 @@ private fun WishDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it.trim() },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    label = { Text(stringResource(R.string.wishes_field_url)) },
+                    placeholder = { Text(stringResource(R.string.wishes_field_url_hint)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
                     minLines = 2,
@@ -690,15 +699,6 @@ private fun WishDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     label = { Text(stringResource(R.string.wishes_field_price)) },
                     placeholder = { Text(stringResource(R.string.wishes_field_price_hint)) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = url,
-                    onValueChange = { url = it.trim() },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                    label = { Text(stringResource(R.string.wishes_field_url)) },
-                    placeholder = { Text(stringResource(R.string.wishes_field_url_hint)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 PriorityPicker(priority = priority, onPriorityChange = { priority = it })
