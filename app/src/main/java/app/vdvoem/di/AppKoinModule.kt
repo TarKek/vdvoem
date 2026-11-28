@@ -15,6 +15,7 @@ import app.vdvoem.feature.notes.NotesModule
 import app.vdvoem.feature.cycle.CycleModule
 import app.vdvoem.feature.dates.DatesModule
 import app.vdvoem.feature.voice.VoiceModule
+import app.vdvoem.feature.diary.DiaryModule
 import app.vdvoem.feature.wishes.WishesViewModel
 import app.vdvoem.data.HomePreferences
 import app.vdvoem.notify.PokeNotifier
@@ -47,6 +48,7 @@ val appKoinModule = module {
                 get<NotesModule>(),
                 get<CycleModule>(),
                 get<DatesModule>(),
+                get<DiaryModule>(),
                 get<VoiceModule>(),
                 get<StoreModule>()
             )
@@ -62,6 +64,8 @@ val appKoinModule = module {
             pokeRepository = get(),
             cycleRepository = get(),
             lessonRepository = get(),
+            diaryReminderRepository = get(),
+            diaryRepository = get(),
             reminderLeadSettings = get(),
             deviceIdentity = get()
         )

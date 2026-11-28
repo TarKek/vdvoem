@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="diary_module_title">Couple diary</string>
+    <string name="diary_module_description">Shared notes about your days, moods and little things that matter</string>
+
+    <string name="diary_title">Couple diary</string>
+    <string name="diary_subtitle">Shared with your partner</string>
+    <string name="diary_hero_hint">You both see every entry — they stay in sync</string>
+
+    <string name="diary_section_entries">Entries</string>
+    <string name="diary_loading">Loading entries…</string>
+
+    <string name="diary_section_reminders">Reminders</string>
+    <string name="diary_reminder_add">Add reminder</string>
+    <string name="diary_reminder_empty">No reminders yet…</string>
+    <string name="diary_reminder_private">Private</string>
+    <string name="diary_reminder_done">Mark as done</string>
+    <string name="diary_reminder_today">Today, %1$s</string>
+    <string name="diary_reminder_tomorrow">Tomorrow, %1$s</string>
+
+    <string name="diary_reminder_editor_new">New reminder</string>
+    <string name="diary_reminder_editor_edit">Edit reminder</string>
+    <string name="diary_reminder_field_text">What should I remind you about?</string>
+    <string name="diary_reminder_field_text_hint">For example, buy flowers</string>
+    <string name="diary_reminder_time_label">Time: %1$s</string>
+    <string name="diary_reminder_time_title">Reminder time</string>
+    <string name="diary_reminder_time_input">Type it in</string>
+    <string name="diary_reminder_time_dial">Pick on the dial</string>
+    <string name="diary_reminder_field_private">Private</string>
+    <string name="diary_reminder_private_hint">Your partner won\'t see this reminder</string>
+    <string name="diary_reminder_past">Pick a time in the future</string>
+    <string name="diary_reminder_delete_title">Delete this reminder?</string>
+    <string name="diary_reminder_delete_message">The reminder will disappear and won\'t notify you again.</string>
+
+    <string name="diary_reminder_notification_title">Reminder</string>
+    <string name="diary_reminder_notification_private">Private reminder</string>
+    <string name="diary_reminder_channel">Diary reminders</string>
+    <string name="diary_reminder_channel_description">Reminders from your couple diary</string>
+
+    <string name="diary_empty_title">The diary is empty</string>
+    <string name="diary_empty_message">Write how your day went: your partner will see it and can add their own entry.</string>
+    <string name="diary_empty_action">First entry</string>
+    <string name="diary_add">Add entry</string>
+
+    <string name="diary_today">Today</string>
+    <string name="diary_yesterday">Yesterday</string>
+
+    <string name="diary_editor_new">New entry</string>
+    <string name="diary_editor_edit">Edit entry</string>
+    <string name="diary_field_date">Date: %1$s</string>
+    <string name="diary_field_mood">Mood</string>
+    <string name="diary_field_title">Title</string>
+    <string name="diary_field_title_hint">For example, a quiet evening together</string>
+    <string name="diary_field_body">How did the day go?</string>
+    <string name="diary_field_body_hint">A couple of lines about what you remember</string>
+
+    <string name="diary_mood_joy">🙂 Joyful</string>
+    <string name="diary_mood_calm">😌 Calm</string>
+    <string name="diary_mood_neutral">😐 Neutral</string>
+    <string name="diary_mood_sad">😔 Sad</string>
+    <string name="diary_mood_tired">😴 Tired</string>
+
+    <string name="diary_card_delete">Delete the entry for %1$s</string>
+    <string name="diary_delete_title">Delete this entry?</string>
+    <string name="diary_delete_message">The entry will disappear for both of you. This cannot be undone.</string>
+    <string name="diary_delete_confirm">Delete</string>
+
+    <string name="diary_save">Save</string>
+    <string name="diary_cancel">Cancel</string>
+    <string name="diary_ok">OK</string>
+
+    <plurals name="diary_entries_count">
+        <item quantity="one">%1$d entry</item>
+        <item quantity="other">%1$d entries</item>
+    </plurals>
+</resources>

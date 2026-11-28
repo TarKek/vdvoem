@@ -22,6 +22,9 @@ import app.vdvoem.feature.cycle.cycleFeatureModule
 import app.vdvoem.feature.dates.datesFeatureModule
 import app.vdvoem.feature.voice.voiceFeatureModule
 import app.vdvoem.feature.tasks.tasksFeatureModule
+import app.vdvoem.feature.diary.DiaryReminderObserver
+import app.vdvoem.feature.diary.DiaryReminderWorker
+import app.vdvoem.feature.diary.diaryFeatureModule
 import app.vdvoem.feature.wishes.wishesFeatureModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -60,16 +63,20 @@ class VdvoemApplication : Application() {
                 cycleFeatureModule,
                 datesFeatureModule,
                 voiceFeatureModule,
-                tasksFeatureModule,
+tasksFeatureModule,
+                diaryFeatureModule,
                 storeFeatureModule
             )
         }
 
         // Канал сердечек создаём заранее: уведомление может прийти из фонового воркера.
         runCatching { PokeNotifier.ensureChannel(this) }
+        // Канал напоминаний дневника: воркер сработает и без открытого экрана.
+        runCatching { DiaryReminderWorker.ensureChannel(this) }
 
         val koin = GlobalContext.get()
         koin.get<CalendarReminderObserver>().start()
+        koin.get<DiaryReminderObserver>().start()
         applicationScope.launch {
             val cycle = koin.get<CycleRepository>()
             merge(cycle.observeDays(), cycle.observeSettings()).collect {

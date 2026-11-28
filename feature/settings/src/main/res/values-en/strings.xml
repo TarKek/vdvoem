@@ -19,7 +19,7 @@
     <string name="settings_section_data">Data</string>
     <string name="settings_section_data_hint">Everything is stored on this phone only.</string>
     <string name="settings_data_backup_title">Backup</string>
-    <string name="settings_data_backup_text">Saves the calendar, wishes, gifts, hearts, quiz results and lessons to a file — handy when you change phones. Open the “⋮” menu on the home screen → “Save data to file”.</string>
+    <string name="settings_data_backup_text">Saves the calendar, wishes, gifts, diary, hearts, quiz results and lessons to a file — handy when you change phones. Open the “⋮” menu on the home screen → “Save data to file”.</string>
     <string name="settings_data_restore_title">Restore</string>
     <string name="settings_data_restore_text">Loads data from a file: “⋮” → “Load data from file”. Shared couple records are kept.</string>
     <string name="settings_data_storage_title">Where data is stored</string>

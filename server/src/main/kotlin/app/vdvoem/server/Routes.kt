@@ -174,6 +174,8 @@ private fun validateSyncRequest(pairId: String, deviceId: String, changes: Chang
         changes.lessons.forEach { add(it.id) }
         changes.cycleDays.forEach { add(it.id) }
         changes.cycleSettings.forEach { add(it.id) }
+        changes.diaryEntries.forEach { add(it.id) }
+        changes.diaryReminders.forEach { add(it.id) }
     }
     if (ids.size > MAX_SYNC_CHANGES) return "too many changes"
     if (ids.any { runCatching { UUID.fromString(it) }.isFailure }) return "invalid entity id"
@@ -192,6 +194,8 @@ private fun validateSyncRequest(pairId: String, deviceId: String, changes: Chang
         changes.lessons.forEach { add(it.updatedAt) }
         changes.cycleDays.forEach { add(it.updatedAt) }
         changes.cycleSettings.forEach { add(it.updatedAt) }
+        changes.diaryEntries.forEach { add(it.updatedAt) }
+        changes.diaryReminders.forEach { add(it.updatedAt) }
     }
     val newestAllowed = System.currentTimeMillis() + MAX_CLOCK_SKEW_MILLIS
     if (timestamps.any { it < 0L || it > newestAllowed }) return "invalid updatedAt"

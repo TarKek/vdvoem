@@ -5,6 +5,9 @@ import app.vdvoem.core.domain.cycle.DEFAULT_PERIOD_LENGTH
 import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.model.CycleDay
 import app.vdvoem.core.domain.model.CycleSettings
+import app.vdvoem.core.domain.model.DiaryEntry
+import app.vdvoem.core.domain.model.DiaryMood
+import app.vdvoem.core.domain.model.DiaryReminder
 import app.vdvoem.core.domain.model.Flow
 import app.vdvoem.core.domain.model.Gift
 import app.vdvoem.core.domain.model.GiftStatus
@@ -260,6 +263,50 @@ object SyncMappers {
         pairId = pairId?.takeIf { it.isNotBlank() } ?: fallbackPairId,
         cycleLength = if (cycleLength > 0) cycleLength else DEFAULT_CYCLE_LENGTH,
         periodLength = if (periodLength > 0) periodLength else DEFAULT_PERIOD_LENGTH,
+        updatedAt = updatedAt,
+        deletedAt = deletedAt
+    )
+
+    fun DiaryEntry.toDto(): DiaryDto = DiaryDto(
+        id = id,
+        dateMillis = dateMillis,
+        mood = mood.name,
+        title = title,
+        body = body,
+        updatedAt = updatedAt,
+        deletedAt = deletedAt,
+        pairId = pairId
+    )
+
+    fun DiaryDto.toDomain(fallbackPairId: String = ""): DiaryEntry = DiaryEntry(
+        id = id,
+        pairId = pairId?.takeIf { it.isNotBlank() } ?: fallbackPairId,
+        dateMillis = dateMillis,
+        mood = runCatching { DiaryMood.valueOf(mood) }.getOrDefault(DiaryMood.CALM),
+        title = title,
+        body = body,
+        updatedAt = updatedAt,
+        deletedAt = deletedAt
+    )
+
+    fun DiaryReminder.toDto(): DiaryReminderDto = DiaryReminderDto(
+        id = id,
+        text = text,
+        remindAt = remindAt,
+        doneAt = doneAt,
+        updatedAt = updatedAt,
+        deletedAt = deletedAt,
+        pairId = pairId
+    )
+
+    /** С сервера приходят только общие напоминания: `isPrivate` всегда false. */
+    fun DiaryReminderDto.toDomain(fallbackPairId: String = ""): DiaryReminder = DiaryReminder(
+        id = id,
+        pairId = pairId?.takeIf { it.isNotBlank() } ?: fallbackPairId,
+        text = text,
+        remindAt = remindAt,
+        isPrivate = false,
+        doneAt = doneAt,
         updatedAt = updatedAt,
         deletedAt = deletedAt
     )

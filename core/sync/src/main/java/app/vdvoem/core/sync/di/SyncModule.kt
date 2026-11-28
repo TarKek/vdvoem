@@ -44,6 +44,8 @@ val syncModule: Module = module {
             lessonRepository = get(),
             taskRepository = get(),
             cycleRepository = get(),
+            diaryRepository = get(),
+            diaryReminderRepository = get(),
             statusHolder = get(),
             pokeReceiver = { pokes -> get<IncomingPokeHandler>().onIncoming(pokes) }
         )
@@ -64,6 +66,8 @@ val syncModule: Module = module {
             lessonRepository = get(),
             taskRepository = get(),
             cycleRepository = get(),
+            diaryRepository = get(),
+            diaryReminderRepository = get(),
             statusHolder = get()
         )
     }

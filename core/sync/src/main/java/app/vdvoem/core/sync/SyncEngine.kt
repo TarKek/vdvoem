@@ -4,6 +4,8 @@ import app.vdvoem.core.data.LocalChangeSignal
 import app.vdvoem.core.domain.model.CalendarEvent
 import app.vdvoem.core.domain.model.CycleDay
 import app.vdvoem.core.domain.model.CycleSettings
+import app.vdvoem.core.domain.model.DiaryEntry
+import app.vdvoem.core.domain.model.DiaryReminder
 import app.vdvoem.core.domain.model.Gift
 import app.vdvoem.core.domain.model.Lesson
 import app.vdvoem.core.domain.model.Pair
@@ -13,6 +15,8 @@ import app.vdvoem.core.domain.model.SharedTask
 import app.vdvoem.core.domain.model.Wish
 import app.vdvoem.core.domain.repository.CalendarRepository
 import app.vdvoem.core.domain.repository.CycleRepository
+import app.vdvoem.core.domain.repository.DiaryRepository
+import app.vdvoem.core.domain.repository.DiaryReminderRepository
 import app.vdvoem.core.domain.repository.GiftRepository
 import app.vdvoem.core.domain.repository.LessonRepository
 import app.vdvoem.core.domain.repository.PairRepository
@@ -54,6 +58,8 @@ class SyncEngine(
     private val lessonRepository: LessonRepository,
     private val taskRepository: TaskRepository,
     private val cycleRepository: CycleRepository,
+    private val diaryRepository: DiaryRepository,
+    private val diaryReminderRepository: DiaryReminderRepository,
     private val statusHolder: SyncStatusHolder,
     /** Колбэк «пришло новое сердечко от партнёра»: уведомление рисует слой приложения. */
     private val pokeReceiver: suspend (List<Poke>) -> Unit = {}
@@ -105,6 +111,8 @@ class SyncEngine(
             applied += applyTasks(remote.tasks, pairId)
             applied += applyCycleDays(remote.cycleDays, pairId)
             applied += applyCycleSettings(remote.cycleSettings, pairId)
+            applied += applyDiaryEntries(remote.diaryEntries, pairId)
+            applied += applyDiaryReminders(remote.diaryReminders, pairId)
             settingsStore.markPushed(pairId, remote)
             val outgoing = collectLocalChanges(pairId)
 
@@ -131,6 +139,8 @@ class SyncEngine(
                 applied += applyTasks(response.tasks, pairId)
                 applied += applyCycleDays(response.cycleDays, pairId)
                 applied += applyCycleSettings(response.cycleSettings, pairId)
+                applied += applyDiaryEntries(response.diaryEntries, pairId)
+                applied += applyDiaryReminders(response.diaryReminders, pairId)
 
                 // Каждая запись подтверждается отдельно в markPushed: глобальный
                 // timestamp больше не может навсегда скрыть офлайн-правку.
@@ -298,6 +308,40 @@ class SyncEngine(
         return applied
     }
 
+    /** Применяет записи дневника партнёра; tombstone важнее старых локальных копий. */
+    private suspend fun applyDiaryEntries(remote: List<DiaryDto>, pairId: String): Int {
+        if (remote.isEmpty()) return 0
+        val localById = diaryRepository.observeEntriesIncludingDeleted().first().associateBy { it.id }
+        var applied = 0
+        remote.forEach { dto ->
+            val local = localById[dto.id]
+            if (local == null || dto.updatedAt > local.updatedAt) {
+                diaryRepository.upsert(dto.toDomain(fallbackPairId = pairId))
+                applied++
+            }
+        }
+        return applied
+    }
+
+    /**
+     * Применяет общие напоминания дневника партнёра. Личные напоминания на сервер
+     * не попадают и с сервера не приходят, поэтому конфликтовать с ними не могут.
+     */
+    private suspend fun applyDiaryReminders(remote: List<DiaryReminderDto>, pairId: String): Int {
+        if (remote.isEmpty()) return 0
+        val localById = diaryReminderRepository.observeRemindersIncludingDeleted().first()
+            .associateBy { it.id }
+        var applied = 0
+        remote.forEach { dto ->
+            val local = localById[dto.id]
+            if (shouldApplyRemote(local?.updatedAt, local?.deletedAt, dto.updatedAt)) {
+                diaryReminderRepository.upsert(dto.toDomain(fallbackPairId = pairId))
+                applied++
+            }
+        }
+        return applied
+    }
+
     // --- сбор локальных изменений ---
 
     private suspend fun collectLocalChanges(pairId: String): ChangesDto {
@@ -325,6 +369,12 @@ class SyncEngine(
             .filter { it.pairId == pairId && isPending("cycleDay", it.id, it.updatedAt) }
         val cycleSettings: List<CycleSettings> = cycleRepository.observeSettingsIncludingDeleted().first()
             .filter { it.pairId == pairId && isPending("cycleSettings", it.id, it.updatedAt) }
+        val diaryEntries: List<DiaryEntry> = diaryRepository.observeEntriesIncludingDeleted().first()
+            .filter { it.pairId == pairId && isPending("diary", it.id, it.updatedAt) }
+        // Приватные напоминания — только на этом устройстве: в синк не уходят никогда.
+        val diaryReminders: List<DiaryReminder> =
+            diaryReminderRepository.observeRemindersIncludingDeleted().first()
+                .filter { it.pairId == pairId && !it.isPrivate && isPending("diaryReminder", it.id, it.updatedAt) }
 
         return ChangesDto(
             pair = localPair?.toDto(),
@@ -336,7 +386,9 @@ class SyncEngine(
             lessons = lessons.map { it.toDto() },
             tasks = tasks.map { it.toDto() },
             cycleDays = cycleDays.map { it.toDto() },
-            cycleSettings = cycleSettings.map { it.toDto() }
+            cycleSettings = cycleSettings.map { it.toDto() },
+            diaryEntries = diaryEntries.map { it.toDto() },
+            diaryReminders = diaryReminders.map { it.toDto() }
         )
     }
 

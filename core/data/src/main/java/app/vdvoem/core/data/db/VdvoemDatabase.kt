@@ -17,9 +17,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         LessonEntity::class,
         TaskEntity::class,
         CycleDayEntity::class,
-        CycleSettingsEntity::class
+        CycleSettingsEntity::class,
+        DiaryEntryEntity::class,
+        DiaryReminderEntity::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = false
 )
 @TypeConverters(CycleConverters::class)
@@ -34,6 +36,8 @@ abstract class VdvoemDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
     abstract fun cycleDayDao(): CycleDayDao
     abstract fun cycleSettingsDao(): CycleSettingsDao
+    abstract fun diaryDao(): DiaryDao
+    abstract fun diaryReminderDao(): DiaryReminderDao
 
     companion object {
         const val NAME = "vdvoem.db"
@@ -234,7 +238,7 @@ abstract class VdvoemDatabase : RoomDatabase() {
             }
         }
 
-        /** v11 → v12: общие дела пары. */
+/** v11 → v12: общие дела пары. */
         val MIGRATION_11_12 = object : Migration(11, 12) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
@@ -256,6 +260,47 @@ abstract class VdvoemDatabase : RoomDatabase() {
                     """.trimIndent()
                 )
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_tasks_pairId` ON `tasks` (`pairId`)")
+            }
+        }
+
+        /**
+         * v12 → v13: дневник пары и напоминания дневника.
+         *
+         * Дефолт `isPrivate` обязан совпадать с `@ColumnInfo(defaultValue = "0")`
+         * в [DiaryReminderEntity], иначе Room не примет миграцию при проверке схемы.
+         */
+        val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `diary_entries` (
+                        `id` TEXT NOT NULL,
+                        `pairId` TEXT NOT NULL,
+                        `dateMillis` INTEGER NOT NULL,
+                        `mood` TEXT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `body` TEXT NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        `deletedAt` INTEGER,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `diary_reminders` (
+                        `id` TEXT NOT NULL,
+                        `pairId` TEXT NOT NULL,
+                        `text` TEXT NOT NULL,
+                        `remindAt` INTEGER NOT NULL,
+                        `isPrivate` INTEGER NOT NULL DEFAULT 0,
+                        `doneAt` INTEGER,
+                        `updatedAt` INTEGER NOT NULL,
+                        `deletedAt` INTEGER,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
             }
         }
     }

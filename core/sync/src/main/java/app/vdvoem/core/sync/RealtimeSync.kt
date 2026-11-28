@@ -41,6 +41,10 @@ internal fun nextDelayMs(
  * вообще — там остаётся обычный `SyncWorker`. Короткий интервал выбран как компромисс:
  * 12 с — заметная «реалтаймовость» при лёгком pull'е и без ощутимого расхода.
  *
+ * Первый проход идёт сразу при `start()`: мгновенного пуша в приложении больше нет,
+ * поэтому возврат на экран должен подтягивать данные без ожидания первого интервала.
+ * Дальше пауза [REALTIME_BASE_INTERVAL_MS], а после ошибки — [REALTIME_FAILURE_BACKOFF_MS].
+ *
  * Пропуск тика: если предыдущий проход ещё держит [gate] (например, долгий сетевой
  * вызов или параллельный `stop()`/`start()`), тик не встаёт в очередь, а просто
  * переносится на следующий — busy loop'а нет.
@@ -84,20 +88,20 @@ class RealtimeSync(
     private suspend fun loop() {
         var lastFailed = false
         while (true) {
-            // Первый тик тоже через паузу: при возврате в приложение стартовый синк
-            // уже делает VdvoemApplication, дублировать его незачем.
-            delay(nextDelayMs(lastFailed, baseIntervalMs, failureBackoffMs))
-
+            // Первый проход — сразу: мгновенного пуша больше нет, и при возврате на экран
+            // данные должны обновиться без ожидания первого интервала.
             if (!gate.tryLock()) {
                 // Предыдущий проход ещё идёт — не копим очередь и не крутимся вхолостую.
                 Log.d(TAG, "tick skipped: previous sync still running")
-                continue
+            } else {
+                try {
+                    lastFailed = runTick()
+                } finally {
+                    gate.unlock()
+                }
             }
-            try {
-                lastFailed = runTick()
-            } finally {
-                gate.unlock()
-            }
+            // Пауза после прохода: 12 с, а после ошибки — 30 с.
+            delay(nextDelayMs(lastFailed, baseIntervalMs, failureBackoffMs))
         }
     }
 
