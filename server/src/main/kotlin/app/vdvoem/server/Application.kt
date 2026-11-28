@@ -33,6 +33,10 @@ fun Application.configureServer(repository: Repository, mediaRepository: MediaRe
         exception<io.ktor.serialization.JsonConvertException> { call, _ ->
             call.respond(HttpStatusCode.BadRequest, ErrorResponse("invalid json"))
         }
+        // Тело может не разобраться и вне ContentNegotiation (например, ручной decode в /v1/sync).
+        exception<kotlinx.serialization.SerializationException> { call, _ ->
+            call.respond(HttpStatusCode.BadRequest, ErrorResponse("invalid json"))
+        }
         exception<Throwable> { call, cause ->
             this@configureServer.log.error("request failed", cause)
             call.respond(HttpStatusCode.InternalServerError, ErrorResponse("internal error"))

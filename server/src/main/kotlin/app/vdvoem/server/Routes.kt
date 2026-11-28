@@ -108,7 +108,11 @@ fun Application.configureRouting(repository: Repository, mediaRepository: MediaR
                     call.respond(HttpStatusCode.PayloadTooLarge, ErrorResponse("sync body too large"))
                     return@post
                 }
-                val request = syncJson.decodeFromString<PushRequest>(raw)
+                val request = parsePushRequest(raw)
+                if (request == null) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("invalid json"))
+                    return@post
+                }
                 val validationError = validateSyncRequest(pairId, device.deviceId, request.changes)
                 if (validationError != null) {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse(validationError))
@@ -163,7 +167,13 @@ private const val MAX_SYNC_BODY_CHARS = 2_000_000
 private const val MAX_SYNC_CHANGES = 5_000
 private const val MAX_CLOCK_SKEW_MILLIS = 24L * 60 * 60 * 1000
 
-private fun validateSyncRequest(pairId: String, deviceId: String, changes: ChangesDto): String? {
+/**
+ * Разбирает тело `POST /v1/sync`; `null` — тело битое или неполное (клиенту нужен 400, а не 500).
+ */
+internal fun parsePushRequest(raw: String): PushRequest? =
+    runCatching { syncJson.decodeFromString<PushRequest>(raw) }.getOrNull()
+
+internal fun validateSyncRequest(pairId: String, deviceId: String, changes: ChangesDto): String? {
     val ids = buildList {
         changes.pair?.let { add(it.id) }
         changes.events.forEach { add(it.id) }
@@ -172,6 +182,7 @@ private fun validateSyncRequest(pairId: String, deviceId: String, changes: Chang
         changes.pokes.forEach { add(it.id) }
         changes.quizScores.forEach { add(it.id) }
         changes.lessons.forEach { add(it.id) }
+        changes.tasks.forEach { add(it.id) }
         changes.cycleDays.forEach { add(it.id) }
         changes.cycleSettings.forEach { add(it.id) }
         changes.diaryEntries.forEach { add(it.id) }
@@ -192,6 +203,7 @@ private fun validateSyncRequest(pairId: String, deviceId: String, changes: Chang
         changes.pokes.forEach { add(it.updatedAt) }
         changes.quizScores.forEach { add(it.updatedAt) }
         changes.lessons.forEach { add(it.updatedAt) }
+        changes.tasks.forEach { add(it.updatedAt) }
         changes.cycleDays.forEach { add(it.updatedAt) }
         changes.cycleSettings.forEach { add(it.updatedAt) }
         changes.diaryEntries.forEach { add(it.updatedAt) }
