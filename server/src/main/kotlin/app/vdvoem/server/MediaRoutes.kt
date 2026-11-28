@@ -8,6 +8,7 @@ import io.ktor.http.content.PartData
 import io.ktor.http.content.streamProvider
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
+import io.ktor.server.request.contentType
 import io.ktor.server.request.receiveMultipart
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
@@ -31,6 +32,13 @@ private const val APK_MIME = "application/vnd.android.package-archive"
 private val PLUGIN_ID = Regex("^[a-z0-9][a-z0-9._-]{0,63}$")
 private val PLUGIN_VERSION = Regex("^[0-9A-Za-z][0-9A-Za-z._+-]{0,31}$")
 
+/**
+ * Загрузки ждут `multipart/form-data`. Раньше запрос с JSON-телом падал внутри
+ * `receiveMultipart()` с `IOException` и отдавал 500 — теперь такой запрос отклоняется заранее.
+ */
+internal fun isMultipart(contentType: ContentType?): Boolean =
+    contentType != null && contentType.match(ContentType.MultiPart.FormData)
+
 // --- вложения -------------------------------------------------------------
 
 fun Route.attachmentRoutes(repository: Repository, media: MediaRepository) {
@@ -44,10 +52,17 @@ fun Route.attachmentRoutes(repository: Repository, media: MediaRepository) {
 
     post("/attachments") {
         val pairId = call.requirePair(repository) ?: return@post
+        if (!isMultipart(call.request.contentType())) {
+            call.respond(HttpStatusCode.BadRequest, ErrorResponse("multipart body required"))
+            return@post
+        }
         val upload = try {
             call.receiveUpload("file", MAX_FILE_BYTES)
         } catch (_: TooLargeException) {
             call.respond(HttpStatusCode.PayloadTooLarge, ErrorResponse("file too large"))
+            return@post
+        } catch (_: java.io.IOException) {
+            call.respond(HttpStatusCode.BadRequest, ErrorResponse("invalid multipart body"))
             return@post
         }
 
@@ -194,10 +209,17 @@ fun Route.adminRoutes(media: MediaRepository) {
             return@post
         }
 
+        if (!isMultipart(call.request.contentType())) {
+            call.respond(HttpStatusCode.BadRequest, ErrorResponse("multipart body required"))
+            return@post
+        }
         val upload = try {
             call.receiveUpload("apk", MAX_APK_BYTES)
         } catch (_: TooLargeException) {
             call.respond(HttpStatusCode.PayloadTooLarge, ErrorResponse("apk too large"))
+            return@post
+        } catch (_: java.io.IOException) {
+            call.respond(HttpStatusCode.BadRequest, ErrorResponse("invalid multipart body"))
             return@post
         }
 

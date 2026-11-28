@@ -5,7 +5,7 @@
 
 ## 2026-11-28 (вечер) — баги сервера найдены и исправлены, задеплоено
 
-Проверка «а что если клиент пришлёт мусор» на проде вскрыла четыре дефекта — все воспроизведены
+Проверка «а что если клиент пришлёт мусор» на проде вскрыла пять дефектов — все воспроизведены
 живыми запросами на `https://185.213.240.43.sslip.io:18443` и исправлены.
 
 1. **Сервер отвечал 500 на битое тело `POST /v1/sync`.** `syncJson.decodeFromString` вызывался без
@@ -18,13 +18,19 @@
    (id + `updatedAt`) и входят в лимит 5000 записей.
 3. **`updatedAt` в будущем для задач сохранялся** — следствие п. 2, после фикса отклоняется с
    `400 {"error":"invalid updatedAt"}`.
-4. Попутно проверены все публичные эндпоинты на 5xx без токена: `/v1/pairs`, `/v1/pairs/join`,
+4. **`POST /v1/attachments` и `POST /admin/plugins` отвечали 500 на не-multipart запрос.**
+   `receiveMultipart()` бросал `java.io.IOException: Failed to parse multipart: Content-Type should be
+   multipart/*` — до общего обработчика. Теперь перед чтением тела стоит `isMultipart()`
+   (`400 {"error":"multipart body required"}`), а `IOException` в самих загрузках тоже → 400
+   `invalid multipart body` (битый multipart-поток).
+5. Попутно проверены все публичные эндпоинты на 5xx без токена: `/v1/pairs`, `/v1/pairs/join`,
    `/v1/pairs/leave`, `/v1/sync`, `/v1/attachments`, `/v1/plugins`, `/admin/plugins` — отвечают
    400/401/404/503 как надо, других 5xx нет.
 
-- Тесты: новый `server/src/test/kotlin/.../SyncValidationTest.kt` — 8 проверок (битый JSON, тело
+- Тесты: `server/src/test/kotlin/.../SyncValidationTest.kt` — 8 проверок (битый JSON, тело
   без `changes`, валидное тело с дневником и задачей, не-UUID id, будущее/отрицательное `updatedAt`,
-  нормальное значение, лимит записей). `server: test` — 12 тестов зелёные.
+  нормальное значение, лимит записей) и `MultipartGuardTest.kt` — 3 проверки (`isMultipart` для
+  JSON, отсутствующего Content-Type и `multipart/form-data` с boundary). `server: test` — 15 тестов зелёные.
 - Совместимость со старыми APK сохранена: `updatedAt = 0` у старых задач проходит валидацию,
   плоский ответ без `X-Device-Id` не менялся.
 - **Деплой на srv1:** залиты `server/src` и сборочные файлы, `docker compose up -d --build`,
@@ -32,7 +38,11 @@
   пара после проверки удалена: в базе 3 настоящие пары, `tasks`/`diary_entries` без тестового мусора.
 - **Проверка на проде после деплоя:** битый JSON → 400 `invalid json`, `{}` → 400 `invalid json`,
   задача с `id:"t1"` → 400 `invalid entity id`, задача с `updatedAt: 99999999999999` →
-  400 `invalid updatedAt`, а валидные задача + запись дневника → 200 и читаются обратно через GET.
+  400 `invalid updatedAt`, пара не из токена → 400 `pair id mismatch`, JSON-тело и пустой
+  Content-Type в загрузке → 400 `multipart body required`, multipart без файла → 400 `file is required`.
+  Валидные задача + запись дневника → 200 и читаются обратно; валидная загрузка → 201,
+  скачивание → 200 с тем же `Content-Length`/`ETag` и совпадающими байтами.
+  В логах контейнера после деплоя 0 записей `request failed`/500.
 - Версия приложения не менялась (правки только серверные), новый APK не выпускался.
 
 ## 2026-11-25 — 0.18.0: дневник пары (PR #7) и ссылка в желаниях (PR #8)
